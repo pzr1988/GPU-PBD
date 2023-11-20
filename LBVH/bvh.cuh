@@ -17,6 +17,7 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/execution_policy.h>
+#include <thrust/unique.h>
 
 namespace lbvh
 {
@@ -320,7 +321,7 @@ class bvh
 
         const auto aabb_whole = thrust::reduce(
             aabbs_.begin() + num_internal_nodes, aabbs_.end(), default_aabb,
-            [] __device__ (const aabb_type& lhs, const aabb_type& rhs) {
+            [] __host__ __device__ (const aabb_type& lhs, const aabb_type& rhs) {
                 return merge(lhs, rhs);
             });
 
