@@ -2,7 +2,6 @@
 #define GEOMETRY_CUH
 #include "Utils.h"
 #include <thrust/device_vector.h>
-#include <LBVH/lbvh.cuh>
 
 namespace GPUPBD {
 //This struct represents a capsule-shaped object
@@ -16,34 +15,6 @@ struct Capsule {
   DECL_MAT_VEC_MAP_TYPES_T
   T _len,_radius;
   Mat3X4T _trans;
-};
-
-// 获得胶囊体的bounding box
-template<typename T>
-struct aabb_getter
-{
-    __device__
-    lbvh::aabb<float> operator()(const Capsule<T> c) const noexcept
-    {
-        lbvh::aabb<float> retval;
-        // 假设胶囊体长轴与z轴对齐
-        Eigen::Matrix<float, 4, 1> end1(0, 0, 0, 1); // 第一个端点
-        Eigen::Matrix<float, 4, 1> end2(0, 0, static_cast<float>(c._len), 1); // 第二个端点
-
-        Eigen::Matrix<float, 3, 1> transformedEnd1 = c._trans * end1;
-        Eigen::Matrix<float, 3, 1> transformedEnd2 = c._trans * end2;
-        
-        Eigen::Matrix<float, 3, 1> upper = transformedEnd1.head<3>().cwiseMax(transformedEnd2.head<3>());
-        float radius = static_cast<float>(c._radius);
-        retval.upper.x = upper.x() + radius;
-        retval.upper.y = upper.y() + radius;
-        retval.upper.z = upper.z() + radius;
-        Eigen::Matrix<float, 3, 1> lower = transformedEnd1.head<3>().cwiseMin(transformedEnd2.head<3>()) ;
-        retval.lower.x = lower.x() - radius;
-        retval.lower.y = lower.y() - radius;
-        retval.lower.z = lower.z() - radius;
-        return retval;
-    }
 };
 
 //The geometry stores a vector of capsules

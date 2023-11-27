@@ -50,7 +50,7 @@ void CollisionDetector<T>::detectCollisions() {
   auto bIter = _geometry->getCapsules().cbegin();
   auto eIter = _geometry->getCapsules().cend();
   // TODO yeti, lbvh里的host和device中的capsule是没必要创建的。
-  lbvh::bvh<float, GPUPBD::Capsule<T>, aabb_getter<T>> bvh(bIter, eIter, true);
+  lbvh::bvh<float, GPUPBD::Capsule<T>, lbvh::aabb_getter<GPUPBD::Capsule, T>> bvh(bIter, eIter, true);
   const auto bvh_dev = bvh.get_device_repr();
   int N = 10;
   std::cout << "testing query_device:overlap ...\n";
