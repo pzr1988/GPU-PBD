@@ -171,9 +171,8 @@ struct aabb_getter<::GPUPBD::Capsule, T>
     lbvh::aabb<float> operator()(const GPUPBD::Capsule<T> &c) const noexcept
     {
         lbvh::aabb<float> retval;
-        // 假设胶囊体长轴与z轴对齐
-        Eigen::Matrix<float, 4, 1> end1(0, 0, 0, 1); // 第一个端点
-        Eigen::Matrix<float, 4, 1> end2(0, 0, static_cast<float>(c._len), 1); // 第二个端点
+        Eigen::Matrix<float, 4, 1> end1(static_cast<float>(c._len)/2.0, 0, 0, 1); // 第一个端点
+        Eigen::Matrix<float, 4, 1> end2(-static_cast<float>(c._len)/2.0, 0, 0, 1); // 第二个端点
 
         Eigen::Matrix<float, 3, 1> transformedEnd1 = c._trans * end1;
         Eigen::Matrix<float, 3, 1> transformedEnd2 = c._trans * end2;
