@@ -9,11 +9,12 @@ namespace lbvh
 // requirements:
 // - OutputIterator should be writable and its object_type should be uint32_t
 //
-template<typename Real, typename Objects, bool IsConst, typename OutputIterator>
+template<typename Real, typename Objects, bool IsConst, typename OutputIterator,
+    template<typename> class QueryObjects>
 __device__
 unsigned int query_device(
         const detail::basic_device_bvh<Real, Objects, IsConst>& bvh,
-        const query_overlap<Real> q, OutputIterator outiter,
+        const query_overlap<QueryObjects, Real> q, OutputIterator outiter,
         const unsigned int max_buffer_size = 0xFFFFFFFF) noexcept
 {
     using bvh_type   = detail::basic_device_bvh<Real, Objects, IsConst>;
@@ -158,10 +159,10 @@ thrust::pair<unsigned int, Real> query_device(
 }
 
 template<typename Real, typename Objects, typename AABBGetter,
-         typename MortonCodeCalculator, typename OutputIterator>
+         typename MortonCodeCalculator, typename OutputIterator, template<typename> class QueryObjects>
 unsigned int query_host(
     const bvh<Real, Objects, AABBGetter, MortonCodeCalculator>& tree,
-    const query_overlap<Real> q, OutputIterator outiter,
+    const query_overlap<QueryObjects, Real> q, OutputIterator outiter,
     const unsigned int max_buffer_size = 0xFFFFFFFF)
 {
     using bvh_type   = ::lbvh::bvh<Real, Objects, AABBGetter, MortonCodeCalculator>;

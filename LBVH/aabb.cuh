@@ -142,13 +142,15 @@ inline typename vector_of<T>::type centroid(const aabb<T>& box) noexcept
     return c;
 }
 
-// 获得胶囊体的bounding box
+// 获得物体的bounding box
 template<template<typename> class Geometry, typename T>
 struct aabb_getter
 {
     __device__
     lbvh::aabb<float> operator()(const Geometry<T>& c) const noexcept
     {
+        lbvh::aabb<float> retval;
+        return retval;
     }
 };
 

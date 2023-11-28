@@ -67,12 +67,8 @@ void CollisionDetector<T>::detectCollisions() {
           {
               buffer[j] = 0xFFFFFFFF;
           }
-          const float r = dr * i;
-          lbvh::aabb<float> query_box;
-          query_box.lower = make_float4(self._trans(0,3)-r, self._trans(1,3)-r, self._trans(2,3)-r, 0);
-          query_box.upper = make_float4(self._trans(0,3)+r, self._trans(1,3)+r, self._trans(2,3)+r, 0);
           const auto num_found = lbvh::query_device(
-              bvh_dev, lbvh::overlaps(query_box), buffer, 10);
+              bvh_dev, lbvh::overlaps(self), buffer, 10);
       }
       return ;
   });

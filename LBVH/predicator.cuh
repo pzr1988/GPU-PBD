@@ -5,11 +5,12 @@
 namespace lbvh
 {
 
-template<typename Real>
+template<template<typename> class Geometry, typename Real>
 struct query_overlap
 {
     __device__ __host__
-    query_overlap(const aabb<Real>& tgt): target(tgt) {}
+    query_overlap(const Geometry<Real>& tgt):origin(tgt),
+        target(aabb_getter<Geometry, Real>()(tgt)) {}
 
     query_overlap()  = default;
     ~query_overlap() = default;
@@ -19,19 +20,19 @@ struct query_overlap
     query_overlap& operator=(query_overlap&&)      = default;
 
     __device__ __host__
-    inline bool operator()(const aabb<Real>& box) noexcept
+    inline bool operator()(const aabb<float>& box) noexcept
     {
         return intersects(box, target);
     }
-
-    aabb<Real> target;
+    Geometry<Real> origin;
+    aabb<float> target;
 };
 
-template<typename Real>
+template<template<typename> class Geometry, typename Real>
 __device__ __host__
-query_overlap<Real> overlaps(const aabb<Real>& region) noexcept
+query_overlap<Geometry, Real> overlaps(const Geometry<Real>& region) noexcept
 {
-    return query_overlap<Real>(region);
+    return query_overlap<Geometry, Real>(region);
 }
 
 template<typename Real>
