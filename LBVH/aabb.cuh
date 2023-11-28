@@ -25,13 +25,50 @@ inline bool intersects(const aabb<T>& lhs, const aabb<T>& rhs) noexcept
     return true;
 }
 
+
+// 计算两个点之间的距离
+template <typename T>
+__device__ __host__
+T distance(const Eigen::Matrix<T, 3, 1>& p1, const Eigen::Matrix<T, 3, 1>& p2) {
+  return (p1 - p2).norm();
+}
+
+// 计算点到线段的最短距离
+template <typename T>
+__device__ __host__
+T pointToSegmentDistance(const Eigen::Matrix<T, 3, 1>& p, const Eigen::Matrix<T, 3, 1>& a, const Eigen::Matrix<T, 3, 1>& b) {
+  Eigen::Matrix<T, 3, 1> ab = b - a;
+  Eigen::Matrix<T, 3, 1> ap = p - a;
+  T t = ap.dot(ab) / ab.squaredNorm();
+  t = std::max(T(0), std::min(T(1), t)); // Clamp t to the range [0, 1]
+  Eigen::Matrix<T, 3, 1> closest = a + t * ab;
+  return distance(p, closest);
+}
+
 // 胶囊体碰撞
 template<typename T>
 __device__ __host__
 inline bool intersects(const ::GPUPBD::Capsule<T>& lhs, ::GPUPBD::Capsule<T>& rhs) noexcept
 {
-    // TODO
-    return true;
+    // 计算胶囊体的端点
+    Eigen::Matrix<T, 4, 1> end1(-lhs._len / 2, 0, 0, 1);
+    Eigen::Matrix<T, 4, 1> end2(lhs._len / 2, 0, 0, 1);
+    Eigen::Matrix<T, 3, 1> capsule1Point1 = (lhs._trans * end1).template head<3>();
+    Eigen::Matrix<T, 3, 1> capsule1Point2 = (lhs._trans * end2).template head<3>();
+
+    end1 = Eigen::Matrix<T, 4, 1>(-rhs._len / 2, 0, 0, 1);
+    end2 = Eigen::Matrix<T, 4, 1>(rhs._len / 2, 0, 0, 1);
+    Eigen::Matrix<T, 3, 1> capsule2Point1 = (rhs._trans * end1).template head<3>();
+    Eigen::Matrix<T, 3, 1> capsule2Point2 = (rhs._trans * end2).template head<3>();
+
+    // 计算两条线段之间的最短距离(暫時忽略相交)
+    T dist = pointToSegmentDistance(capsule1Point1, capsule2Point1, capsule2Point2);
+    dist = std::min(dist, pointToSegmentDistance(capsule1Point2, capsule2Point1, capsule2Point2));
+    dist = std::min(dist, pointToSegmentDistance(capsule2Point1, capsule1Point1, capsule1Point2));
+    dist = std::min(dist, pointToSegmentDistance(capsule2Point2, capsule1Point1, capsule1Point2));
+
+    // 如果最短距离小于或等于半径之和，则认为碰撞
+    return dist <= (lhs._radius + rhs._radius);
 }
 
 __device__ __host__
