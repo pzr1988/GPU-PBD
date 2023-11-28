@@ -33,32 +33,38 @@ unsigned int query_device(
         const index_type L_idx = bvh.nodes[node].left_idx;
         const index_type R_idx = bvh.nodes[node].right_idx;
 
-        if(intersects(q.target, bvh.aabbs[L_idx]))
+        if(intersects(q.target, bvh.aabbs[L_idx])) //包围盒是否碰撞
         {
             const auto obj_idx = bvh.nodes[L_idx].object_idx;
             if(obj_idx != 0xFFFFFFFF)
             {
-                if(num_found < max_buffer_size)
+                if(intersects(q.origin, bvh.objects[L_idx])) // 胶囊体碰撞
                 {
-                    *outiter++ = obj_idx;
+                    if(num_found < max_buffer_size)
+                    {
+                        *outiter++ = obj_idx;
+                    }
+                    ++num_found;
                 }
-                ++num_found;
             }
             else // the node is not a leaf.
             {
                 *stack_ptr++ = L_idx;
             }
         }
-        if(intersects(q.target, bvh.aabbs[R_idx]))
+        if(intersects(q.target, bvh.aabbs[R_idx])) //包围盒是否碰撞
         {
             const auto obj_idx = bvh.nodes[R_idx].object_idx;
             if(obj_idx != 0xFFFFFFFF)
             {
-                if(num_found < max_buffer_size)
+                if(intersects(q.origin, bvh.objects[R_idx])) // 胶囊体碰撞
                 {
-                    *outiter++ = obj_idx;
+                    if(num_found < max_buffer_size)
+                    {
+                        *outiter++ = obj_idx;
+                    }
+                    ++num_found;
                 }
-                ++num_found;
             }
             else // the node is not a leaf.
             {

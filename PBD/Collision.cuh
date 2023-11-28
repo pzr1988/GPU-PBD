@@ -52,25 +52,17 @@ void CollisionDetector<T>::detectCollisions() {
   // TODO yeti, lbvh里的host和device中的capsule是没必要创建的。
   lbvh::bvh<float, GPUPBD::Capsule<T>, lbvh::aabb_getter<GPUPBD::Capsule, T>> bvh(bIter, eIter, true);
   const auto bvh_dev = bvh.get_device_repr();
-  int N = 10;
+  const int nodeNum = 10;
   std::cout << "testing query_device:overlap ...\n";
   thrust::for_each(thrust::device,
       thrust::make_counting_iterator<std::size_t>(0),
-      thrust::make_counting_iterator<std::size_t>(N),
-      [bvh_dev] __device__ (std::size_t idx) {
-      unsigned int buffer[10];
+      thrust::make_counting_iterator<std::size_t>(nodeNum),
+      [bvh_dev, nodeNum] __device__ (std::size_t idx) {
+      unsigned int buffer[nodeNum];
       const auto self = bvh_dev.objects[idx];
-      const float  dr = 0.1f;
-      for(std::size_t i=1; i<10; ++i)
-      {
-          for(unsigned int j=0; j<10; ++j)
-          {
-              buffer[j] = 0xFFFFFFFF;
-          }
-          const auto num_found = lbvh::query_device(
-              bvh_dev, lbvh::overlaps(self), buffer, 10);
-      }
-      return ;
+      const auto num_found = lbvh::query_device(
+          bvh_dev, lbvh::overlaps(self), buffer, nodeNum);
+      return;
   });
 }
 

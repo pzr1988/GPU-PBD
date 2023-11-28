@@ -25,6 +25,15 @@ inline bool intersects(const aabb<T>& lhs, const aabb<T>& rhs) noexcept
     return true;
 }
 
+// 胶囊体碰撞
+template<typename T>
+__device__ __host__
+inline bool intersects(const ::GPUPBD::Capsule<T>& lhs, ::GPUPBD::Capsule<T>& rhs) noexcept
+{
+    // TODO
+    return true;
+}
+
 __device__ __host__
 inline aabb<double> merge(const aabb<double>& lhs, const aabb<double>& rhs) noexcept
 {
@@ -156,7 +165,7 @@ struct aabb_getter
 
 // 获得胶囊体的bounding box
 template<typename T>
-struct aabb_getter<GPUPBD::Capsule, T>
+struct aabb_getter<::GPUPBD::Capsule, T>
 {
     __device__
     lbvh::aabb<float> operator()(const GPUPBD::Capsule<T> &c) const noexcept
