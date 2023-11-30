@@ -48,7 +48,8 @@ T pointToSegmentDistance(const Eigen::Matrix<T, 3, 1>& p, const Eigen::Matrix<T,
 // 胶囊体碰撞
 template<typename T>
 __device__ __host__
-inline bool intersects(const ::GPUPBD::Capsule<T>& lhs, ::GPUPBD::Capsule<T>& rhs) noexcept
+inline int narrowPhaseCollision(const ::GPUPBD::Capsule<T>& lhs, ::GPUPBD::Capsule<T>& rhs,
+        size_t maxCollisionNum) noexcept
 {
     // 计算胶囊体的端点
     Eigen::Matrix<T, 4, 1> end1(-lhs._len / 2, 0, 0, 1);
@@ -68,7 +69,8 @@ inline bool intersects(const ::GPUPBD::Capsule<T>& lhs, ::GPUPBD::Capsule<T>& rh
     dist = std::min(dist, pointToSegmentDistance(capsule2Point2, capsule1Point1, capsule1Point2));
 
     // 如果最短距离小于或等于半径之和，则认为碰撞
-    return dist <= (lhs._radius + rhs._radius);
+    //return dist <= (lhs._radius + rhs._radius);
+    return 0;
 }
 
 __device__ __host__

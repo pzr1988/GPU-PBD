@@ -9,8 +9,8 @@ template<template<typename> class Geometry, typename Real>
 struct query_overlap
 {
     __device__ __host__
-    query_overlap(const Geometry<Real>& tgt):origin(tgt),
-        target(aabb_getter<Geometry, Real>()(tgt)) {}
+    query_overlap(const Geometry<Real>& tgt, int index):origin(tgt),
+        target(aabb_getter<Geometry, Real>()(tgt)), idx(index){}
 
     query_overlap()  = default;
     ~query_overlap() = default;
@@ -26,13 +26,14 @@ struct query_overlap
     }
     Geometry<Real> origin;
     aabb<float> target;
+    int idx;
 };
 
 template<template<typename> class Geometry, typename Real>
 __device__ __host__
-query_overlap<Geometry, Real> overlaps(const Geometry<Real>& region) noexcept
+query_overlap<Geometry, Real> overlaps(const Geometry<Real>& region, int idx) noexcept
 {
-    return query_overlap<Geometry, Real>(region);
+    return query_overlap<Geometry, Real>(region, idx);
 }
 
 template<typename Real>

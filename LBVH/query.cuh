@@ -40,13 +40,12 @@ unsigned int query_device(
             const auto obj_idx = bvh.nodes[L_idx].object_idx;
             if(obj_idx != 0xFFFFFFFF)
             {
-                if(intersects(q.origin, bvh.objects[L_idx])) // 胶囊体碰撞
-                {
-                    if(num_found < maxCollisionsPerNode)
-                    {
-                        // *outiter++ = obj_idx;
-                    }
-                    ++num_found;
+                // 胶囊体碰撞
+                if(obj_idx > q.idx && num_found < maxCollisionsPerNode){
+                    int numCollision = narrowPhaseCollision(q.origin, bvh.objects[L_idx],
+                        // localMemory, maxCollisionsPerNode-num_found);
+                        maxCollisionsPerNode-num_found);
+                    num_found += numCollision;
                 }
             }
             else // the node is not a leaf.
@@ -57,16 +56,12 @@ unsigned int query_device(
         if(intersects(q.target, bvh.aabbs[R_idx])) //包围盒是否碰撞
         {
             const auto obj_idx = bvh.nodes[R_idx].object_idx;
-            if(obj_idx != 0xFFFFFFFF)
-            {
-                if(intersects(q.origin, bvh.objects[R_idx])) // 胶囊体碰撞
-                {
-                    if(num_found < maxCollisionsPerNode)
-                    {
-                        // *outiter++ = obj_idx;
-                    }
-                    ++num_found;
-                }
+            // 胶囊体碰撞
+            if(obj_idx > q.idx && num_found < maxCollisionsPerNode){
+                int numCollision = narrowPhaseCollision(q.origin, bvh.objects[R_idx],
+                    // localMemory, maxCollisionsPerNode-num_found);
+                    maxCollisionsPerNode-num_found);
+                num_found += numCollision;
             }
             else // the node is not a leaf.
             {

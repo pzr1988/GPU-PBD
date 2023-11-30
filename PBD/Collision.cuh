@@ -68,7 +68,7 @@ void CollisionDetector<T>::detectCollisions() {
       Collision<T> localMemory[maxCollisionsPerNode];
       const auto self = bvh_dev.objects[idx];
       const auto num_found = lbvh::query_device(
-          bvh_dev, lbvh::overlaps(self),
+          bvh_dev, lbvh::overlaps(self, idx),
           maxCollisionsPerNode,
           localMemory);
       for (size_t i = 0; i < num_found; i++) {
