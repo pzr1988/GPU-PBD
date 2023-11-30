@@ -9,8 +9,8 @@ template<template<typename> class Geometry, typename Real>
 struct query_overlap
 {
     __device__ __host__
-    query_overlap(const Geometry<Real>& tgt, int index):origin(tgt),
-        target(aabb_getter<Geometry, Real>()(tgt)), idx(index){}
+    query_overlap(const Geometry<Real>& tgt, std::uint32_t index):origin(tgt),
+        bbox(aabb_getter<Geometry, Real>()(tgt)), object_idx(index){}
 
     query_overlap()  = default;
     ~query_overlap() = default;
@@ -22,16 +22,16 @@ struct query_overlap
     __device__ __host__
     inline bool operator()(const aabb<float>& box) noexcept
     {
-        return intersects(box, target);
+        return intersects(box, bbox);
     }
     Geometry<Real> origin;
-    aabb<float> target;
-    int idx;
+    aabb<float> bbox;
+    std::uint32_t object_idx;
 };
 
 template<template<typename> class Geometry, typename Real>
 __device__ __host__
-query_overlap<Geometry, Real> overlaps(const Geometry<Real>& region, int idx) noexcept
+query_overlap<Geometry, Real> overlaps(const Geometry<Real>& region, std::uint32_t idx) noexcept
 {
     return query_overlap<Geometry, Real>(region, idx);
 }

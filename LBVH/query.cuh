@@ -35,15 +35,15 @@ unsigned int query_device(
         const index_type L_idx = bvh.nodes[node].left_idx;
         const index_type R_idx = bvh.nodes[node].right_idx;
 
-        if(intersects(q.target, bvh.aabbs[L_idx])) //包围盒是否碰撞
+        if(intersects(q.bbox, bvh.aabbs[L_idx])) //包围盒是否碰撞
         {
             const auto obj_idx = bvh.nodes[L_idx].object_idx;
             if(obj_idx != 0xFFFFFFFF)
             {
                 // 胶囊体碰撞
-                if(obj_idx > q.idx && num_found < maxCollisionsPerNode){
+                if(obj_idx > q.object_idx && num_found < maxCollisionsPerNode){
                     int numCollision = narrowPhaseCollision(
-                        q.origin, q.idx,
+                        q.origin, q.object_idx,
                         bvh.objects[L_idx], obj_idx,
                         localMemory, num_found, maxCollisionsPerNode-num_found);
                     num_found += numCollision;
@@ -54,13 +54,13 @@ unsigned int query_device(
                 *stack_ptr++ = L_idx;
             }
         }
-        if(intersects(q.target, bvh.aabbs[R_idx])) //包围盒是否碰撞
+        if(intersects(q.bbox, bvh.aabbs[R_idx])) //包围盒是否碰撞
         {
             const auto obj_idx = bvh.nodes[R_idx].object_idx;
             // 胶囊体碰撞
-            if(obj_idx > q.idx && num_found < maxCollisionsPerNode){
+            if(obj_idx > q.object_idx && num_found < maxCollisionsPerNode){
                 int numCollision = narrowPhaseCollision(
-                    q.origin, q.idx,
+                    q.origin, q.object_idx,
                     bvh.objects[R_idx], obj_idx,
                     localMemory, num_found, maxCollisionsPerNode-num_found);
                 num_found += numCollision;
@@ -96,7 +96,7 @@ thrust::pair<unsigned int, Real> query_device(
     // pair of {node_idx, mindist}
     thrust::pair<index_type, real_type>  stack[64];
     thrust::pair<index_type, real_type>* stack_ptr = stack;
-    *stack_ptr++ = thrust::make_pair(0, mindist(bvh.aabbs[0], q.target));
+    *stack_ptr++ = thrust::make_pair(0, mindist(bvh.aabbs[0], q.bbox));
 
     unsigned int nearest = 0xFFFFFFFF;
     real_type dist_to_nearest_object = infinity<real_type>();
@@ -115,11 +115,11 @@ thrust::pair<unsigned int, Real> query_device(
         const aabb_type& L_box = bvh.aabbs[L_idx];
         const aabb_type& R_box = bvh.aabbs[R_idx];
 
-        const real_type L_mindist = mindist(L_box, q.target);
-        const real_type R_mindist = mindist(R_box, q.target);
+        const real_type L_mindist = mindist(L_box, q.bbox);
+        const real_type R_mindist = mindist(R_box, q.bbox);
 
-        const real_type L_minmaxdist = minmaxdist(L_box, q.target);
-        const real_type R_minmaxdist = minmaxdist(R_box, q.target);
+        const real_type L_minmaxdist = minmaxdist(L_box, q.bbox);
+        const real_type R_minmaxdist = minmaxdist(R_box, q.bbox);
 
         // there should be an object that locates within minmaxdist.
 
@@ -128,7 +128,7 @@ thrust::pair<unsigned int, Real> query_device(
             const auto obj_idx = bvh.nodes[L_idx].object_idx;
             if(obj_idx != 0xFFFFFFFF) // leaf node
             {
-                const real_type dist = calc_dist(q.target, bvh.objects[obj_idx]);
+                const real_type dist = calc_dist(q.bbox, bvh.objects[obj_idx]);
                 if(dist <= dist_to_nearest_object)
                 {
                     dist_to_nearest_object = dist;
@@ -145,7 +145,7 @@ thrust::pair<unsigned int, Real> query_device(
             const auto obj_idx = bvh.nodes[R_idx].object_idx;
             if(obj_idx != 0xFFFFFFFF) // leaf node
             {
-                const real_type dist = calc_dist(q.target, bvh.objects[obj_idx]);
+                const real_type dist = calc_dist(q.bbox, bvh.objects[obj_idx]);
                 if(dist <= dist_to_nearest_object)
                 {
                     dist_to_nearest_object = dist;
@@ -191,7 +191,7 @@ unsigned int query_host(
         const index_type L_idx = tree.nodes_host()[node].left_idx;
         const index_type R_idx = tree.nodes_host()[node].right_idx;
 
-        if(intersects(q.target, tree.aabbs_host()[L_idx]))
+        if(intersects(q.bbox, tree.aabbs_host()[L_idx]))
         {
             const auto obj_idx = tree.nodes_host()[L_idx].object_idx;
             if(obj_idx != 0xFFFFFFFF)
@@ -207,7 +207,7 @@ unsigned int query_host(
                 stack.push_back(L_idx);
             }
         }
-        if(intersects(q.target, tree.aabbs_host()[R_idx]))
+        if(intersects(q.bbox, tree.aabbs_host()[R_idx]))
         {
             const auto obj_idx = tree.nodes_host()[R_idx].object_idx;
             if(obj_idx != 0xFFFFFFFF)
@@ -247,7 +247,7 @@ std::pair<unsigned int, Real> query_host(
 
     // pair of {node_idx, mindist}
     std::vector<std::pair<index_type, real_type>> stack = {
-        {0, mindist(tree.aabbs_host()[0], q.target)}
+        {0, mindist(tree.aabbs_host()[0], q.bbox)}
     };
     stack.reserve(64);
 
@@ -268,11 +268,11 @@ std::pair<unsigned int, Real> query_host(
         const aabb_type& L_box = tree.aabbs_host()[L_idx];
         const aabb_type& R_box = tree.aabbs_host()[R_idx];
 
-        const real_type L_mindist = mindist(L_box, q.target);
-        const real_type R_mindist = mindist(R_box, q.target);
+        const real_type L_mindist = mindist(L_box, q.bbox);
+        const real_type R_mindist = mindist(R_box, q.bbox);
 
-        const real_type L_minmaxdist = minmaxdist(L_box, q.target);
-        const real_type R_minmaxdist = minmaxdist(R_box, q.target);
+        const real_type L_minmaxdist = minmaxdist(L_box, q.bbox);
+        const real_type R_minmaxdist = minmaxdist(R_box, q.bbox);
 
        // there should be an object that locates within minmaxdist.
 
@@ -281,7 +281,7 @@ std::pair<unsigned int, Real> query_host(
             const auto obj_idx = tree.nodes_host()[L_idx].object_idx;
             if(obj_idx != 0xFFFFFFFF) // leaf node
             {
-                const real_type dist = calc_dist(q.target, tree.objects_host()[obj_idx]);
+                const real_type dist = calc_dist(q.bbox, tree.objects_host()[obj_idx]);
                 if(dist <= current_nearest_dist)
                 {
                     current_nearest_dist = dist;
@@ -298,7 +298,7 @@ std::pair<unsigned int, Real> query_host(
             const auto obj_idx = tree.nodes_host()[R_idx].object_idx;
             if(obj_idx != 0xFFFFFFFF) // leaf node
             {
-                const real_type dist = calc_dist(q.target, tree.objects_host()[obj_idx]);
+                const real_type dist = calc_dist(q.bbox, tree.objects_host()[obj_idx]);
                 if(dist <= current_nearest_dist)
                 {
                     current_nearest_dist = dist;
