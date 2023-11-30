@@ -7,15 +7,17 @@ namespace lbvh
 // query object indices that potentially overlaps with query aabb.
 //
 // requirements:
-// - OutputIterator should be writable and its object_type should be uint32_t
 //
-template<typename Real, typename Objects, bool IsConst, typename OutputIterator,
-    template<typename> class QueryObjects>
+template<typename Real, typename Objects, bool IsConst,
+    template<typename> class QueryObjects,
+    template<typename> class Collision>
 __device__
 unsigned int query_device(
         const detail::basic_device_bvh<Real, Objects, IsConst>& bvh,
-        const query_overlap<QueryObjects, Real> q, OutputIterator outiter,
-        const unsigned int max_buffer_size = 0xFFFFFFFF) noexcept
+        const query_overlap<QueryObjects, Real> q,
+        size_t maxCollisionsPerNode,
+        Collision<Real>* localMemory
+        ) noexcept
 {
     using bvh_type   = detail::basic_device_bvh<Real, Objects, IsConst>;
     using index_type = typename bvh_type::index_type;
@@ -40,9 +42,9 @@ unsigned int query_device(
             {
                 if(intersects(q.origin, bvh.objects[L_idx])) // 胶囊体碰撞
                 {
-                    if(num_found < max_buffer_size)
+                    if(num_found < maxCollisionsPerNode)
                     {
-                        *outiter++ = obj_idx;
+                        // *outiter++ = obj_idx;
                     }
                     ++num_found;
                 }
@@ -59,9 +61,9 @@ unsigned int query_device(
             {
                 if(intersects(q.origin, bvh.objects[R_idx])) // 胶囊体碰撞
                 {
-                    if(num_found < max_buffer_size)
+                    if(num_found < maxCollisionsPerNode)
                     {
-                        *outiter++ = obj_idx;
+                        // *outiter++ = obj_idx;
                     }
                     ++num_found;
                 }
