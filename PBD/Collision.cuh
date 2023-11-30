@@ -24,7 +24,15 @@ class CollisionDetector {
  private:
   // 在中间过程使用的，碰撞点集合 
   thrust::device_vector<Collision<T>> _globalMemory;
+  const static T _epsDir;
+  const static T _epsDist;
 };
+
+template <typename T>
+const T CollisionDetector<T>::_epsDir = T(1e-3);
+
+template <typename T>
+const T CollisionDetector<T>::_epsDist = T(1e-3);
 
 template <typename T>
 CollisionDetector<T>::CollisionDetector(std::shared_ptr<Geometry<T>> geometry)
@@ -54,7 +62,8 @@ void CollisionDetector<T>::detectCollisions() {
       const auto num_found = lbvh::query_device(
           bvh_dev, lbvh::overlaps(self, idx),
           maxCollisionsPerNode,
-          localMemory);
+          localMemory,
+          _epsDir, _epsDist);
       for (size_t i = 0; i < num_found; i++) {
           size_t globalIndex = idx * maxCollisionsPerNode + i;
           collisionsPtr[globalIndex] = localMemory[i];

@@ -16,7 +16,8 @@ unsigned int query_device(
         const detail::basic_device_bvh<Real, Objects, IsConst>& bvh,
         const query_overlap<QueryObjects, Real> q,
         size_t maxCollisionsPerNode,
-        Collision<Real>* localMemory
+        Collision<Real>* localMemory,
+        Real epsDir, Real epsDist
         ) noexcept
 {
     using bvh_type   = detail::basic_device_bvh<Real, Objects, IsConst>;
@@ -45,7 +46,8 @@ unsigned int query_device(
                     int numCollision = narrowPhaseCollision(
                         q.origin, q.object_idx,
                         bvh.objects[L_idx], obj_idx,
-                        localMemory, num_found, maxCollisionsPerNode-num_found);
+                        localMemory, num_found, maxCollisionsPerNode,
+                        epsDir, epsDist);
                     num_found += numCollision;
                 }
             }
@@ -62,7 +64,8 @@ unsigned int query_device(
                 int numCollision = narrowPhaseCollision(
                     q.origin, q.object_idx,
                     bvh.objects[R_idx], obj_idx,
-                    localMemory, num_found, maxCollisionsPerNode-num_found);
+                    localMemory, num_found, maxCollisionsPerNode,
+                    epsDir, epsDist);
                 num_found += numCollision;
             }
             else // the node is not a leaf.

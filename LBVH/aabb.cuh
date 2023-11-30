@@ -25,54 +25,130 @@ inline bool intersects(const aabb<T>& lhs, const aabb<T>& rhs) noexcept
     return true;
 }
 
-
-// 计算两个点之间的距离
-template <typename T>
+template<typename T>
 __device__ __host__
-T distance(const Eigen::Matrix<T, 3, 1>& p1, const Eigen::Matrix<T, 3, 1>& p2) {
-  return (p1 - p2).norm();
-}
+inline void generateManifoldSphereSphereInternal(
+    ::GPUPBD::Collision<T>* localMemory, size_t& offset, int& numCollision,
+    const Eigen::Matrix<T,3,1>& cA1,const Eigen::Matrix<T,3,1>& cA2, T cARadius, int lhs_idx, 
+    const Eigen::Matrix<T,3,1>& cB1,const Eigen::Matrix<T,3,1>& cB2, T cBRadius, int rhs_idx,
+    T epsDist 
+    ) {
 
-// 计算点到线段的最短距离
-template <typename T>
-__device__ __host__
-T pointToSegmentDistance(const Eigen::Matrix<T, 3, 1>& p, const Eigen::Matrix<T, 3, 1>& a, const Eigen::Matrix<T, 3, 1>& b) {
-  Eigen::Matrix<T, 3, 1> ab = b - a;
-  Eigen::Matrix<T, 3, 1> ap = p - a;
-  T t = ap.dot(ab) / ab.squaredNorm();
-  t = std::max(T(0), std::min(T(1), t)); // Clamp t to the range [0, 1]
-  Eigen::Matrix<T, 3, 1> closest = a + t * ab;
-  return distance(p, closest);
+    typedef Eigen::Matrix<T,3,1> Vec3T;
+    typedef Eigen::Matrix<T,4,1> Vec4T;
+    Vec4T distSqrs((cA1-cB1).squaredNorm(),(cA2-cB1).squaredNorm(),(cA1-cB2).squaredNorm(),(cA2-cB2).squaredNorm());
+    typename Vec4T::Index id;
+    T distSqr=distSqrs.minCoeff(&id),dist=0;
+    T sumRad=cARadius+cBRadius,sumRadSqr=sumRad*sumRad;
+    const Vec3T& cA=(id%2==0)?cA1:cA2;
+    const Vec3T& cB=(id<2)?cB1:cB2;
+    //not in contact
+    if(distSqr>sumRadSqr)
+        return;
+    //in contact
+    Vec3T nA2B;
+    if(distSqr>epsDist*epsDist) {
+        //a single contact point
+        nA2B=cB-cA;
+        nA2B/=dist=sqrt((double)distSqr);
+    } else {
+        //overlapping degenerate case
+        distSqrs.maxCoeff(&id);
+        const Vec3T& cAn=(id%2==0)?cA1:cA2;
+        const Vec3T& cBn=(id<2)?cB1:cB2;
+        nA2B=cBn-cAn;
+        nA2B/=nA2B.template cast<double>().norm();
+    }
+    localMemory[offset]._capsuleIdA = lhs_idx;
+    localMemory[offset]._capsuleIdB = rhs_idx;
+    localMemory[offset]._localPointA = cA+nA2B*cARadius;
+    localMemory[offset]._localPointB = cB-nA2B*cBRadius;
+    localMemory[offset]._globalNormal = nA2B;
+    localMemory[offset]._isValid = true;
+    offset++;
+    numCollision++;
 }
 
 // 胶囊体碰撞
+// localMemory中存入的是lhs单个胶囊体的全部碰撞。
+// offset是本次碰撞检测在localMemory中的插入位置
+// maxCollisionsPerNode是单个胶囊体碰撞的最大数目
 template<typename T>
 __device__ __host__
 inline int narrowPhaseCollision(
         const ::GPUPBD::Capsule<T>& lhs, int lhs_idx,
-        ::GPUPBD::Capsule<T>& rhs, int rhs_idx,
-        ::GPUPBD::Collision<T>* localMemory, size_t offset, size_t maxCollisionNum) noexcept
+        const ::GPUPBD::Capsule<T>& rhs, int rhs_idx,
+        ::GPUPBD::Collision<T>* localMemory, size_t offset, size_t maxCollisionsPerNode,
+        T epsDir, T epsDist) noexcept
 {
-    // 计算胶囊体的端点
-    Eigen::Matrix<T, 4, 1> end1(-lhs._len / 2, 0, 0, 1);
-    Eigen::Matrix<T, 4, 1> end2(lhs._len / 2, 0, 0, 1);
-    Eigen::Matrix<T, 3, 1> capsule1Point1 = (lhs._trans * end1).template head<3>();
-    Eigen::Matrix<T, 3, 1> capsule1Point2 = (lhs._trans * end2).template head<3>();
+    typedef Eigen::Matrix<T,2,1> Vec2T;
+    typedef Eigen::Matrix<T,3,1> Vec3T;
 
-    end1 = Eigen::Matrix<T, 4, 1>(-rhs._len / 2, 0, 0, 1);
-    end2 = Eigen::Matrix<T, 4, 1>(rhs._len / 2, 0, 0, 1);
-    Eigen::Matrix<T, 3, 1> capsule2Point1 = (rhs._trans * end1).template head<3>();
-    Eigen::Matrix<T, 3, 1> capsule2Point2 = (rhs._trans * end2).template head<3>();
-
-    // 计算两条线段之间的最短距离(暫時忽略相交)
-    T dist = pointToSegmentDistance(capsule1Point1, capsule2Point1, capsule2Point2);
-    dist = std::min(dist, pointToSegmentDistance(capsule1Point2, capsule2Point1, capsule2Point2));
-    dist = std::min(dist, pointToSegmentDistance(capsule2Point1, capsule1Point1, capsule1Point2));
-    dist = std::min(dist, pointToSegmentDistance(capsule2Point2, capsule1Point1, capsule1Point2));
-
-    // 如果最短距离小于或等于半径之和，则认为碰撞
-    //return dist <= (lhs._radius + rhs._radius);
-    return 0;
+    int numCollision = 0;
+    Vec3T cA1=ROT(lhs._trans)*lhs.minCorner().template cast<T>()+CTR(lhs._trans);
+    Vec3T cA2=ROT(lhs._trans)*lhs.maxCorner().template cast<T>()+CTR(lhs._trans);
+    Vec3T cB1=ROT(rhs._trans)*rhs.minCorner().template cast<T>()+CTR(lhs._trans);
+    Vec3T cB2=ROT(rhs._trans)*rhs.maxCorner().template cast<T>()+CTR(lhs._trans);
+    Vec3T nA=cA2-cA1,nB=cB2-cB1;
+    T nLenASqr=nA.squaredNorm(),nLenA=sqrt((double)nLenASqr);
+    T nLenBSqr=nB.squaredNorm(),nLenB=sqrt((double)nLenBSqr);
+    nA/=nLenA;
+    nB/=nLenB;
+    
+    if(abs(nA.dot(nB))>1-epsDir)
+    {
+      //nearly parallel 产生1~2个碰撞点
+      T dB1=(cB1-cA1).dot(nA);
+      T dB2=(cB2-cA1).dot(nA);
+      if(dB1<=0 && dB2<=0) {
+        //sphere-sphere 产生0/1个碰撞点
+        generateManifoldSphereSphereInternal(localMemory, offset, numCollision,
+                                             cA1, cA2, lhs._radius, lhs_idx,
+                                             cB1, cB2, rhs._radius, rhs_idx,
+                                             epsDist);
+      } else if(dB1>=nLenA && dB2>=nLenA)
+      {   
+        //sphere-sphere 产生0/1个碰撞点
+        generateManifoldSphereSphereInternal(localMemory, offset, numCollision,
+                                             cA1, cA2, lhs._radius, lhs_idx,
+                                             cB1, cB2, rhs._radius, rhs_idx,
+                                             epsDist);
+      } else if (maxCollisionsPerNode-offset>2)
+      {
+        //range 产生0/2个碰撞点
+        Vec3T dir=cB1-cA1-dB1*nA;
+        T distSqr=dir.squaredNorm(),dist=0;
+        T sumRad=lhs._radius+rhs._radius,sumRadSqr=sumRad*sumRad;
+        //not in contact
+        if(distSqr>sumRadSqr)
+          return numCollision;
+        //in contact
+        Vec3T nA2B;
+        if(distSqr>epsDist*epsDist) {
+          nA2B=dir;
+          nA2B/=dist=sqrt((double)distSqr);
+        } else {
+          typename Vec3T::Index id;
+          nA.cwiseAbs().minCoeff(&id);
+          nA2B=nA.cross(Vec3T::Unit(id));
+          nA2B/=nA2B.template cast<double>().norm();
+        }
+        //two contacts
+        Vec2T range(std::max<T>(0,std::min(dB1,dB2)),std::min(nLenA,std::max(dB1,dB2)));
+        for(const T& r:range)
+        {
+            localMemory[offset]._capsuleIdA = lhs_idx;
+            localMemory[offset]._capsuleIdB = rhs_idx;
+            localMemory[offset]._localPointA = cA1+nA*r+nA2B*lhs._radius;
+            localMemory[offset]._localPointB = cA1+nA*r+dir-nA2B*rhs._radius;
+            localMemory[offset]._globalNormal = nA2B;
+            localMemory[offset]._isValid = true;
+            offset++;
+            numCollision++;
+        }
+      }
+    } 
+    return numCollision;
 }
 
 __device__ __host__

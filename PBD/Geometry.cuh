@@ -15,6 +15,8 @@ struct Capsule {
   DECL_MAT_VEC_MAP_TYPES_T
   T _len,_radius;
   Mat3X4T _trans;
+  Vec3T minCorner() const {return Vec3T(-_len / 2, 0, 0);};
+  Vec3T maxCorner() const {return Vec3T(_len / 2, 0, 0);};
 };
 
 //This structure represents a collision between a pair of capsules
