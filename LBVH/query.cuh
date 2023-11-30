@@ -42,9 +42,10 @@ unsigned int query_device(
             {
                 // 胶囊体碰撞
                 if(obj_idx > q.idx && num_found < maxCollisionsPerNode){
-                    int numCollision = narrowPhaseCollision(q.origin, bvh.objects[L_idx],
-                        // localMemory, maxCollisionsPerNode-num_found);
-                        maxCollisionsPerNode-num_found);
+                    int numCollision = narrowPhaseCollision(
+                        q.origin, q.idx,
+                        bvh.objects[L_idx], obj_idx,
+                        localMemory, num_found, maxCollisionsPerNode-num_found);
                     num_found += numCollision;
                 }
             }
@@ -58,9 +59,10 @@ unsigned int query_device(
             const auto obj_idx = bvh.nodes[R_idx].object_idx;
             // 胶囊体碰撞
             if(obj_idx > q.idx && num_found < maxCollisionsPerNode){
-                int numCollision = narrowPhaseCollision(q.origin, bvh.objects[R_idx],
-                    // localMemory, maxCollisionsPerNode-num_found);
-                    maxCollisionsPerNode-num_found);
+                int numCollision = narrowPhaseCollision(
+                    q.origin, q.idx,
+                    bvh.objects[R_idx], obj_idx,
+                    localMemory, num_found, maxCollisionsPerNode-num_found);
                 num_found += numCollision;
             }
             else // the node is not a leaf.

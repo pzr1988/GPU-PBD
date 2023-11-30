@@ -17,6 +17,23 @@ struct Capsule {
   Mat3X4T _trans;
 };
 
+//This structure represents a collision between a pair of capsules
+//The index of first/second capsule is store in _capsuleIdA/_capsuleIdB
+//The points of contact in local coordinates are stored in _localPointA/_localPointB
+//The separating direction of contact is stored in _globalNormal, extending from A to B and having unit norm
+template <typename T>
+struct Collision {
+  DECL_MAT_VEC_MAP_TYPES_T
+  int _capsuleIdA;
+  int _capsuleIdB;
+  Vec3T _localPointA;
+  Vec3T _localPointB;
+  Vec3T _globalNormal;
+  bool _isValid;
+  __host__ __device__
+  Collision() : _capsuleIdA(-1), _capsuleIdB(-1), _localPointA(Vec3T()), _localPointB(Vec3T()), _globalNormal(Vec3T()), _isValid(false) {}
+};
+
 //The geometry stores a vector of capsules
 //The vector is over-sized and pre-allocated
 //The number of capsules in use is stored in _nrCapsule

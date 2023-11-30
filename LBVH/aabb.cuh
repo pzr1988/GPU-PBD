@@ -48,8 +48,10 @@ T pointToSegmentDistance(const Eigen::Matrix<T, 3, 1>& p, const Eigen::Matrix<T,
 // 胶囊体碰撞
 template<typename T>
 __device__ __host__
-inline int narrowPhaseCollision(const ::GPUPBD::Capsule<T>& lhs, ::GPUPBD::Capsule<T>& rhs,
-        size_t maxCollisionNum) noexcept
+inline int narrowPhaseCollision(
+        const ::GPUPBD::Capsule<T>& lhs, int lhs_idx,
+        ::GPUPBD::Capsule<T>& rhs, int rhs_idx,
+        ::GPUPBD::Collision<T>* localMemory, size_t offset, size_t maxCollisionNum) noexcept
 {
     // 计算胶囊体的端点
     Eigen::Matrix<T, 4, 1> end1(-lhs._len / 2, 0, 0, 1);
