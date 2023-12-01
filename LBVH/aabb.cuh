@@ -165,8 +165,8 @@ inline int narrowPhaseCollision(
     int numCollision = 0;
     Vec3T cA1=ROT(lhs._trans)*lhs.minCorner().template cast<T>()+CTR(lhs._trans);
     Vec3T cA2=ROT(lhs._trans)*lhs.maxCorner().template cast<T>()+CTR(lhs._trans);
-    Vec3T cB1=ROT(rhs._trans)*rhs.minCorner().template cast<T>()+CTR(lhs._trans);
-    Vec3T cB2=ROT(rhs._trans)*rhs.maxCorner().template cast<T>()+CTR(lhs._trans);
+    Vec3T cB1=ROT(rhs._trans)*rhs.minCorner().template cast<T>()+CTR(rhs._trans);
+    Vec3T cB2=ROT(rhs._trans)*rhs.maxCorner().template cast<T>()+CTR(rhs._trans);
     Vec3T nA=cA2-cA1,nB=cB2-cB1;
     T nLenASqr=nA.squaredNorm(),nLenA=sqrt((double)nLenASqr);
     T nLenBSqr=nB.squaredNorm(),nLenB=sqrt((double)nLenBSqr);
