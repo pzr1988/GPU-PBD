@@ -34,6 +34,7 @@ struct Collision {
   bool _isValid;
   __host__ __device__
   Collision() : _capsuleIdA(-1), _capsuleIdB(-1), _localPointA(Vec3T()), _localPointB(Vec3T()), _globalNormal(Vec3T()), _isValid(false) {}
+  T depth() const { return (_localPointA-_localPointB).dot(_globalNormal);};
 };
 
 //The geometry stores a vector of capsules

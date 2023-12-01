@@ -29,7 +29,7 @@ unsigned int query_device(
     index_type* stack_ptr = stack;
     *stack_ptr++ = 0; // root node is always 0
 
-    unsigned int num_found = 0;
+    size_t num_found = 0;
     do
     {
         const index_type node  = *--stack_ptr;
@@ -48,7 +48,6 @@ unsigned int query_device(
                         bvh.objects[L_idx], obj_idx,
                         localMemory, num_found, maxCollisionsPerNode,
                         epsDir, epsDist);
-                    num_found += numCollision;
                 }
             }
             else // the node is not a leaf.
@@ -66,7 +65,6 @@ unsigned int query_device(
                     bvh.objects[R_idx], obj_idx,
                     localMemory, num_found, maxCollisionsPerNode,
                     epsDir, epsDist);
-                num_found += numCollision;
             }
             else // the node is not a leaf.
             {

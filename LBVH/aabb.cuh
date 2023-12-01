@@ -25,6 +25,7 @@ inline bool intersects(const aabb<T>& lhs, const aabb<T>& rhs) noexcept
     return true;
 }
 
+// 在胶囊体碰撞中使用的球体球体碰撞
 template<typename T>
 __device__ __host__
 inline void generateManifoldSphereSphereInternal(
@@ -68,6 +69,82 @@ inline void generateManifoldSphereSphereInternal(
     offset++;
     numCollision++;
 }
+template<typename T>
+__device__ __host__
+inline void generateManifoldSphereCapsuleInternal(
+    ::GPUPBD::Collision<T>& originCollision,
+    const Eigen::Matrix<T,3,1>& cA, T cARadius, int lhs_idx, 
+    const Eigen::Matrix<T,3,1>& cB1,const Eigen::Matrix<T,3,1>& cB2, T cBRadius, int rhs_idx,
+    T epsDist ) {
+
+    typedef Eigen::Matrix<T,3,1> Vec3T;
+
+    ::GPUPBD::Collision<T> collision;
+    Vec3T n=cB2-cB1;
+    T nLenSqr=n.squaredNorm(),nLen=sqrt((double)nLenSqr);
+    n/=nLen;
+    T d=(cA-cB1).dot(n);
+    T sumRad=cARadius+cBRadius,sumRadSqr=sumRad*sumRad;
+    //three cases
+    if(d<=0) {
+        T distSqr=(cA-cB1).squaredNorm(),dist=0;
+        //not in contact
+        if(distSqr>sumRadSqr)
+        return;
+        //in contact
+        if(distSqr>epsDist*epsDist) {
+        //a single contact point
+        collision._globalNormal=cB1-cA;
+        collision._globalNormal/=dist=sqrt((double)distSqr);
+        } else {
+        collision._globalNormal=n;
+        }
+        collision._localPointA=cA+collision._globalNormal*cARadius;
+        collision._localPointB=cB1-collision._globalNormal*cBRadius;
+    } else if(d>=nLen)
+    {
+        T distSqr=(cA-cB2).squaredNorm(),dist=0;
+        //not in contact
+        if(distSqr>sumRadSqr)
+            return;
+        //in contact
+        if(distSqr>epsDist*epsDist) {
+            //a single contact point
+            collision._globalNormal=cB2-cA;
+            collision._globalNormal/=dist=sqrt((double)distSqr);
+        } else {
+            collision._globalNormal=-n;
+        }
+        collision._localPointA=cA+collision._globalNormal*cARadius;
+        collision._localPointB=cB2-collision._globalNormal*cBRadius;
+    } else if(d>0 && d<nLen) {
+        Vec3T dir=cA-cB1-n*d;
+        T distSqr=dir.squaredNorm(),dist=0;
+            //not in contact
+        if(distSqr>sumRadSqr)
+            return;
+        //in contact
+        if(distSqr>epsDist*epsDist) {
+            collision._globalNormal=-dir;
+            collision._globalNormal/=dist=sqrt((double)distSqr);
+        } else {
+            typename Vec3T::Index id;
+            n.cwiseAbs().minCoeff(&id);
+            collision._globalNormal=n.cross(Vec3T::Unit(id));
+            collision._globalNormal/=collision._globalNormal.template cast<double>().norm();
+        }
+        collision._localPointA=cA+collision._globalNormal*cARadius;
+        collision._localPointB=cA-dir-collision._globalNormal*cBRadius;
+    }
+    if(!originCollision._isValid || originCollision.depth() < collision.depth()){
+        originCollision._capsuleIdA = lhs_idx;
+        originCollision._capsuleIdB = rhs_idx;
+        originCollision._localPointA = collision._localPointA;
+        originCollision._localPointB = collision._localPointB;
+        originCollision._globalNormal = collision._globalNormal;
+        originCollision._isValid = true;
+    }
+}
 
 // 胶囊体碰撞
 // localMemory中存入的是lhs单个胶囊体的全部碰撞。
@@ -78,11 +155,12 @@ __device__ __host__
 inline int narrowPhaseCollision(
         const ::GPUPBD::Capsule<T>& lhs, int lhs_idx,
         const ::GPUPBD::Capsule<T>& rhs, int rhs_idx,
-        ::GPUPBD::Collision<T>* localMemory, size_t offset, size_t maxCollisionsPerNode,
+        ::GPUPBD::Collision<T>* localMemory, size_t &offset, size_t maxCollisionsPerNode,
         T epsDir, T epsDist) noexcept
 {
     typedef Eigen::Matrix<T,2,1> Vec2T;
     typedef Eigen::Matrix<T,3,1> Vec3T;
+    typedef Eigen::Matrix<T,3,2> Mat3X2T;
 
     int numCollision = 0;
     Vec3T cA1=ROT(lhs._trans)*lhs.minCorner().template cast<T>()+CTR(lhs._trans);
@@ -113,7 +191,7 @@ inline int narrowPhaseCollision(
                                              cA1, cA2, lhs._radius, lhs_idx,
                                              cB1, cB2, rhs._radius, rhs_idx,
                                              epsDist);
-      } else if (maxCollisionsPerNode-offset>2)
+      } else if (maxCollisionsPerNode-offset>2) // 假如localMemory不夠就忽略了
       {
         //range 产生0/2个碰撞点
         Vec3T dir=cB1-cA1-dB1*nA;
@@ -147,7 +225,61 @@ inline int narrowPhaseCollision(
             numCollision++;
         }
       }
-    } 
+    } else {
+      //not parallel
+      Mat3X2T LHS;
+      LHS.col(0)=-(cA2-cA1);
+      LHS.col(1)= (cB2-cB1);
+      Vec2T bary=(LHS.transpose()*LHS).inverse()*(LHS.transpose()*(cA1-cB1));
+      if((bary.array()>=0).all() && (bary.array()<=1).all()) {
+        Vec3T cA=cA1*(1-bary[0])+cA2*bary[0];
+        Vec3T cB=cB1*(1-bary[1])+cB2*bary[1];
+        T distSqr=(cA-cB).squaredNorm();
+        T sumRad=lhs._radius+rhs._radius,sumRadSqr=sumRad*sumRad;
+        if(distSqr>sumRadSqr)
+          return true;
+        Vec3T nA2B=nA.cross(nB);
+        nA2B/=nA2B.template cast<double>().norm();
+        if((cB-cA).dot(nA2B)<0)
+          nA2B*=-1;
+        localMemory[offset]._capsuleIdA = lhs_idx;
+        localMemory[offset]._capsuleIdB = rhs_idx;
+        localMemory[offset]._localPointA = cA+nA2B*lhs._radius;
+        localMemory[offset]._localPointB = cB-nA2B*rhs._radius;
+        localMemory[offset]._globalNormal = nA2B;
+        localMemory[offset]._isValid = true;
+        offset++;
+        numCollision++;
+      } else {
+        ::GPUPBD::Collision<T> collision;
+        generateManifoldSphereCapsuleInternal(collision,
+                                              cA1, lhs._radius, lhs_idx,
+                                              cB1, cB2, rhs._radius, rhs_idx,
+                                              epsDist);
+        generateManifoldSphereCapsuleInternal(collision,
+                                              cA2, lhs._radius, lhs_idx,
+                                              cB1, cB2, rhs._radius, rhs_idx,
+                                              epsDist);
+        generateManifoldSphereCapsuleInternal(collision,
+                                              cB1, rhs._radius, rhs_idx,
+                                              cA1, cA2, lhs._radius, lhs_idx,
+                                              epsDist);
+        generateManifoldSphereCapsuleInternal(collision,
+                                              cB2, rhs._radius, rhs_idx,
+                                              cA1, cA2, lhs._radius, lhs_idx,
+                                              epsDist);
+        if(collision._isValid){
+            localMemory[offset]._capsuleIdA = collision._capsuleIdA;
+            localMemory[offset]._capsuleIdB = collision._capsuleIdB;
+            localMemory[offset]._localPointA = collision._localPointA;
+            localMemory[offset]._localPointB = collision._localPointB;
+            localMemory[offset]._globalNormal = collision._globalNormal;
+            localMemory[offset]._isValid = true;
+            offset++;
+            numCollision++;
+        }
+      }
+    }
     return numCollision;
 }
 
