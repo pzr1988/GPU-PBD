@@ -1,7 +1,6 @@
 #ifndef BBOX_H
 #define BBOX_H
 
-#include "Epsilon.h"
 #include "Utils.h"
 
 namespace GPUPBD {

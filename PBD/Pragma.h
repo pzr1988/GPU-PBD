@@ -1,6 +1,10 @@
 #ifndef PRAGMA_H
 #define PRAGMA_H
 
+#define LSCALAR float
+#define epsDir 1e-3f
+#define epsDist 1e-3f
+
 #if defined(_MSC_VER) and !defined(__CUDACC__)
 #define _USE_MATH_DEFINES // for C++
 #define DLL_EXPORT __declspec(dllexport)
@@ -9,6 +13,7 @@
 #define DLL_EXPORT
 #endif
 
+//cuda macro
 #ifdef __CUDACC__
 extern void initializeGPU();
 extern void finalizeGPU();
@@ -17,6 +22,46 @@ extern void finalizeGPU();
 #else
 #define DEVICE_HOST
 #define FINALIZE_GPU
+#endif
+
+//openmp macro prepare
+#ifdef _MSC_VER
+#define STRINGIFY_OMP(X) X
+#define PRAGMA __pragma
+#else
+#define STRINGIFY_OMP(X) #X
+#define PRAGMA _Pragma
+#endif
+#ifndef NO_OPENMP
+//openmp convenient functions
+#define OMP_PARALLEL_FOR_ PRAGMA(STRINGIFY_OMP(omp parallel for schedule(static)))
+#define OMP_PARALLEL_FOR_I(...) PRAGMA(STRINGIFY_OMP(omp parallel for schedule(static) __VA_ARGS__))
+#define OMP_PARALLEL_FOR_X(X) PRAGMA(STRINGIFY_OMP(omp parallel for num_threads(X) schedule(static)))
+#define OMP_PARALLEL_FOR_XI(X,...) PRAGMA(STRINGIFY_OMP(omp parallel for num_threads(X) schedule(static) __VA_ARGS__))
+#define OMP_ADD(...) reduction(+: __VA_ARGS__)
+#define OMP_PRI(...) private(__VA_ARGS__)
+#define OMP_FPRI(...) firstprivate(__VA_ARGS__)
+#define OMP_ATOMIC_ PRAGMA(STRINGIFY_OMP(omp atomic))
+#ifdef _MSC_VER
+#define OMP_ATOMIC_CAPTURE_ PRAGMA(STRINGIFY_OMP(omp critical))	// VS doesn't support capture, use critical instead
+#else
+#define OMP_ATOMIC_CAPTURE_ PRAGMA(STRINGIFY_OMP(omp atomic capture))
+#endif
+#define OMP_CRITICAL_ PRAGMA(STRINGIFY_OMP(omp critical))
+#define OMP_FLUSH_(X) PRAGMA(STRINGIFY_OMP(omp flush(X)))
+#else
+//openmp convenient functions
+#define OMP_PARALLEL_FOR_
+#define OMP_PARALLEL_FOR_I(...)
+#define OMP_PARALLEL_FOR_X(X)
+#define OMP_PARALLEL_FOR_XI(X,...)
+#define OMP_ADD(...)
+#define OMP_PRI(...)
+#define OMP_FPRI(...)
+#define OMP_ATOMIC_
+#define OMP_ATOMIC_CAPTURE_
+#define OMP_CRITICAL_
+#define OMP_FLUSH_(X)
 #endif
 
 //assert

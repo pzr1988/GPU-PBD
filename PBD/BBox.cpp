@@ -1,5 +1,4 @@
 #include "BBox.h"
-#include "Epsilon.h"
 
 namespace GPUPBD {
 BBox::BBox() {
@@ -151,8 +150,8 @@ bool BBox::intersect(const Vec3T& p,const Vec3T& q) const {
   return intersect(p,q,s,t);
 }
 bool BBox::intersect(const Vec3T& p,const Vec3T& q,T& s,T& t) const {
-  const T lo=1-Epsilon<T>::defaultEps();
-  const T hi=1+Epsilon<T>::defaultEps();
+  const T lo=1-epsDir;
+  const T hi=1+epsDir;
 
   s=0;
   t=1;

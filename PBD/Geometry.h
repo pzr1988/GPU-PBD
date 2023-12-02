@@ -15,8 +15,12 @@ struct Capsule {
   DECL_MAT_VEC_MAP_TYPES_T
   T _len,_radius;
   Mat3X4T _trans;
-  Vec3T minCorner() const {return Vec3T(-_len / 2, 0, 0);};
-  Vec3T maxCorner() const {return Vec3T(_len / 2, 0, 0);};
+  DEVICE_HOST Vec3T minCorner() const {
+    return Vec3T(-_len / 2, 0, 0);
+  };
+  DEVICE_HOST Vec3T maxCorner() const {
+    return Vec3T(_len / 2, 0, 0);
+  };
 };
 
 //This structure represents a collision between a pair of capsules
@@ -32,17 +36,17 @@ struct Collision {
   Vec3T _localPointB;
   Vec3T _globalNormal;
   bool _isValid;
-  __host__ __device__
-  Collision() : _capsuleIdA(-1), _capsuleIdB(-1), _localPointA(Vec3T()), _localPointB(Vec3T()), _globalNormal(Vec3T()), _isValid(false) {}
-  T depth() const { return (_localPointA-_localPointB).dot(_globalNormal);};
+  DEVICE_HOST Collision():_capsuleIdA(-1),_capsuleIdB(-1),_localPointA(Vec3T()),_localPointB(Vec3T()),_globalNormal(Vec3T()),_isValid(false) {}
+  DEVICE_HOST T depth() const {
+    return (_localPointA-_localPointB).dot(_globalNormal);
+  }
 };
 
 //The geometry stores a vector of capsules
 //The vector is over-sized and pre-allocated
 //The number of capsules in use is stored in _nrCapsule
 template <typename T>
-class Geometry {
- public:
+struct Geometry {
   DECL_MAT_VEC_MAP_TYPES_T
   //Set the actual number of capsules used
   void resize(int nrCapsule);
@@ -51,7 +55,7 @@ class Geometry {
   //CPU->GPU transfer: copying the list of capsules to GPU
   void setCapsule(const std::vector<Capsule<T>>& c);
   //Set the id-th capsule
-  void setCapsule(int id,const Capsule<T>& c);
+  void setCapsule(int id, const Capsule<T>& c);
   //Get the id-th capsule
   Capsule<T> operator[](int id) const;
   //Get All Capsules
@@ -60,35 +64,6 @@ class Geometry {
   thrust::device_vector<Capsule<T>> _capsules;
   int _nrCapsule=0;
 };
-
-
-template <typename T>
-void Geometry<T>::resize(int nrCapsule) {
-  _nrCapsule=nrCapsule;
-  if(_nrCapsule<(int)_capsules.size())
-    _capsules.resize(_nrCapsule);
-}
-template <typename T>
-void Geometry<T>::reserve(int nrCapsule) {
-  _capsules.resize(std::max<int>(nrCapsule,_nrCapsule));
-}
-template <typename T>
-void Geometry<T>::setCapsule(const std::vector<Capsule<T>>& c) {
-  // ASSERT_MSG((int)c.size()==_nrCapsule,"Incorrect number of capsules on host!")
-  thrust::copy(c.begin(),c.end(),_capsules.begin());
-}
-template <typename T>
-void Geometry<T>::setCapsule(int id,const Capsule<T>& c) {
-  _capsules[id]=c;
-}
-template <typename T>
-Capsule<T> Geometry<T>::operator[](int id) const {
-  return _capsules[id];
-}
-template <typename T>
-const thrust::device_vector<Capsule<T>>& Geometry<T>::getCapsules() const {
-    return _capsules;
-}
 }
 
 #endif
