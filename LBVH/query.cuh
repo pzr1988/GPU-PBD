@@ -47,12 +47,14 @@ unsigned int query_device(
     }
     if(intersects(q.bbox, bvh.aabbs[R_idx])) { //包围盒是否碰撞
       const auto obj_idx = bvh.nodes[R_idx].object_idx;
-      // 胶囊体碰撞
-      if(obj_idx > q.object_idx && num_found < maxCollisionsPerNode) {
-        int numCollision = narrowPhaseCollision(
-                             q.origin, q.object_idx,
-                             bvh.objects[R_idx], obj_idx,
-                             localMemory, num_found, maxCollisionsPerNode);
+      if(obj_idx != 0xFFFFFFFF) {
+        // 胶囊体碰撞
+        if(obj_idx > q.object_idx && num_found < maxCollisionsPerNode) {
+          int numCollision = narrowPhaseCollision(
+                              q.origin, q.object_idx,
+                              bvh.objects[R_idx], obj_idx,
+                              localMemory, num_found, maxCollisionsPerNode);
+        }
       } else { // the node is not a leaf.
         *stack_ptr++ = R_idx;
       }

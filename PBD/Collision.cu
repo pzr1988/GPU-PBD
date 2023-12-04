@@ -22,11 +22,12 @@ void CollisionDetector<T>::detectCollisions() {
   thrust::for_each(thrust::device,
                    thrust::make_counting_iterator<std::size_t>(0),
                    thrust::make_counting_iterator<std::size_t>(numCapsules),
-  [bvh_dev, maxCollisionsPerNode, collisionsPtr] __device__ (std::size_t idx) {
+  [bvh_dev, maxCollisionsPerNode, numCapsules, collisionsPtr] __device__ (std::size_t idx) {
     Collision<T> localMemory[maxCollisionsPerNode];
     const auto self = bvh_dev.objects[idx];
+    auto self_idx = bvh_dev.nodes[idx + numCapsules - 1].object_idx;
     const auto num_found = lbvh::query_device(
-                             bvh_dev, lbvh::overlaps(self, idx),
+                             bvh_dev, lbvh::overlaps(self, self_idx),
                              maxCollisionsPerNode,
                              localMemory);
     for (size_t i = 0; i < num_found; i++) {
