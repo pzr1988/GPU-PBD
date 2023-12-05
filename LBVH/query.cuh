@@ -38,7 +38,7 @@ unsigned int query_device(
         if(obj_idx > q.object_idx && num_found < maxCollisionsPerNode) {
           int numCollision = narrowPhaseCollision(
                                q.origin, q.object_idx,
-                               bvh.objects[L_idx], obj_idx,
+                               bvh.objects[obj_idx], obj_idx,
                                localMemory, num_found, maxCollisionsPerNode);
         }
       } else { // the node is not a leaf.
@@ -52,7 +52,7 @@ unsigned int query_device(
         if(obj_idx > q.object_idx && num_found < maxCollisionsPerNode) {
           int numCollision = narrowPhaseCollision(
                               q.origin, q.object_idx,
-                              bvh.objects[R_idx], obj_idx,
+                              bvh.objects[obj_idx], obj_idx,
                               localMemory, num_found, maxCollisionsPerNode);
         }
       } else { // the node is not a leaf.
