@@ -234,7 +234,7 @@ __device__ __host__ inline int narrowPhaseCollision(
       T distSqr = (cA - cB).squaredNorm();
       T sumRad = lhs._radius + rhs._radius, sumRadSqr = sumRad * sumRad;
       if (distSqr > sumRadSqr)
-        return true;
+        return numCollision;
       Vec3T nA2B = nA.cross(nB);
       nA2B /= nA2B.template cast<double>().norm();
       if ((cB - cA).dot(nA2B) < 0)
