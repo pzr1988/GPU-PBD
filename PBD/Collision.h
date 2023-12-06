@@ -14,6 +14,7 @@ class CollisionDetector {
   CollisionDetector(std::shared_ptr<Geometry<T>> geometry);
   //The main detection function that fill up the vector _collisions
   void detectCollisions();
+  void detectCollisionsDebug();
   //Fetch the id-th collision
   Collision<T> operator[](int id);
   //Return the number of detected collisions

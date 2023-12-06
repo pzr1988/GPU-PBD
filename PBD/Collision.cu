@@ -1,4 +1,5 @@
 #include "Collision.h"
+#include "LBVH/lbvh.cuh"
 
 namespace GPUPBD {
 template <typename T>
@@ -54,6 +55,29 @@ void CollisionDetector<T>::detectCollisions() {
     return collision._isValid;
   });
 }
+
+template <typename T>
+void CollisionDetector<T>::detectCollisionsDebug() {
+  _collisions.clear();
+  size_t numCapsules = _geometry->getCapsules().size();
+  const int maxCollisionsPerNode = 4;
+  for(int i=0; i<numCapsules; i++){
+    for(int j=i+1; j<numCapsules; j++){
+      size_t num_found = 0;
+      Collision<T> localMemory[maxCollisionsPerNode];
+      const auto lhs = (*_geometry)[i];
+      const auto rhs = (*_geometry)[j];
+      int numCollision = narrowPhaseCollision(
+                      lhs, i,
+                      rhs, j,
+                      localMemory, num_found, maxCollisionsPerNode);
+      for(size_t k = 0; k < numCollision; k++){
+        _collisions.push_back(localMemory[k]);
+      }
+    }
+  }
+}
+
 template <typename T>
 Collision<T> CollisionDetector<T>::operator[](int id) {
   return _collisions[id];

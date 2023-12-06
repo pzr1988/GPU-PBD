@@ -36,45 +36,5 @@ query_overlap<Geometry, Real> overlaps(const Geometry<Real>& region, std::uint32
     return query_overlap<Geometry, Real>(region, idx);
 }
 
-template<typename Real>
-struct query_nearest
-{
-    // float4/double4
-    using vector_type = typename vector_of<Real>::type;
-
-    __device__ __host__
-    query_nearest(const vector_type& tgt): target(tgt) {}
-
-    query_nearest()  = default;
-    ~query_nearest() = default;
-    query_nearest(const query_nearest&) = default;
-    query_nearest(query_nearest&&)      = default;
-    query_nearest& operator=(const query_nearest&) = default;
-    query_nearest& operator=(query_nearest&&)      = default;
-
-    vector_type target;
-};
-
-__device__ __host__
-inline query_nearest<float> nearest(const float4& point) noexcept
-{
-    return query_nearest<float>(point);
-}
-__device__ __host__
-inline query_nearest<float> nearest(const float3& point) noexcept
-{
-    return query_nearest<float>(make_float4(point.x, point.y, point.z, 0.0f));
-}
-__device__ __host__
-inline query_nearest<double> nearest(const double4& point) noexcept
-{
-    return query_nearest<double>(point);
-}
-__device__ __host__
-inline query_nearest<double> nearest(const double3& point) noexcept
-{
-    return query_nearest<double>(make_double4(point.x, point.y, point.z, 0.0));
-}
-
 } // lbvh
 #endif// LBVH_PREDICATOR_CUH
