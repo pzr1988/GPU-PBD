@@ -29,9 +29,8 @@ namespace GPUPBD
                      {
                        Collision<T> localMemory[maxCollisionsPerNode];
                        const auto self = bvh_dev.objects[idx];
-                       auto self_idx = bvh_dev.nodes[idx + numCapsules - 1].object_idx;
                        const auto num_found = lbvh::query_device(
-                           bvh_dev, lbvh::overlaps(self, self_idx),
+                           bvh_dev, lbvh::overlaps(self, idx),
                            maxCollisionsPerNode,
                            localMemory);
                        for (size_t i = 0; i < num_found; i++)
