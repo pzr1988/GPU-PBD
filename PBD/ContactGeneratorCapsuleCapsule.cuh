@@ -1,13 +1,14 @@
-#ifndef CONTACTGENERATOR_CUH
-#define CONTACTGENERATOR_CUH
+#ifndef CONTACTGENERATORCAPSULECAPSULE_CUH
+#define CONTACTGENERATORCAPSULECAPSULE_CUH
 #include "Geometry.h"
+#include "Capsule.h"
 
 // 在胶囊体碰撞中使用的球体球体碰撞
 template <typename T>
 __device__ __host__ inline void generateManifoldSphereSphereInternal(
-    GPUPBD::Collision<T> *localMemory, size_t &offset, int &numCollision,
-    const Eigen::Matrix<T, 3, 1> &cA1, const Eigen::Matrix<T, 3, 1> &cA2, T cARadius, int lhs_idx,
-    const Eigen::Matrix<T, 3, 1> &cB1, const Eigen::Matrix<T, 3, 1> &cB2, T cBRadius, int rhs_idx)
+  GPUPBD::Collision<T> *localMemory, size_t &offset, int &numCollision,
+  const Eigen::Matrix<T, 3, 1> &cA1, const Eigen::Matrix<T, 3, 1> &cA2, T cARadius, int lhs_idx,
+  const Eigen::Matrix<T, 3, 1> &cB1, const Eigen::Matrix<T, 3, 1> &cB2, T cBRadius, int rhs_idx)
 {
 
   typedef Eigen::Matrix<T, 3, 1> Vec3T;
@@ -50,9 +51,9 @@ __device__ __host__ inline void generateManifoldSphereSphereInternal(
 
 template <typename T>
 __device__ __host__ inline void generateManifoldSphereCapsuleInternal(
-    GPUPBD::Collision<T> &originCollision,
-    const Eigen::Matrix<T, 3, 1> &cA, T cARadius, int lhs_idx,
-    const Eigen::Matrix<T, 3, 1> &cB1, const Eigen::Matrix<T, 3, 1> &cB2, T cBRadius, int rhs_idx)
+  GPUPBD::Collision<T> &originCollision,
+  const Eigen::Matrix<T, 3, 1> &cA, T cARadius, int lhs_idx,
+  const Eigen::Matrix<T, 3, 1> &cB1, const Eigen::Matrix<T, 3, 1> &cB2, T cBRadius, int rhs_idx)
 {
 
   typedef Eigen::Matrix<T, 3, 1> Vec3T;
@@ -144,9 +145,9 @@ __device__ __host__ inline void generateManifoldSphereCapsuleInternal(
 // maxCollisionsPerNode是单个胶囊体碰撞的最大数目
 template <typename T>
 __device__ __host__ inline int narrowPhaseCollision(
-    const GPUPBD::Capsule<T> &lhs, int lhs_idx,
-    const GPUPBD::Capsule<T> &rhs, int rhs_idx,
-    GPUPBD::Collision<T> *localMemory, size_t &offset, size_t maxCollisionsPerNode) noexcept
+  const GPUPBD::Capsule<T> &lhs, int lhs_idx,
+  const GPUPBD::Capsule<T> &rhs, int rhs_idx,
+  GPUPBD::Collision<T> *localMemory, size_t &offset, size_t maxCollisionsPerNode) noexcept
 {
   typedef Eigen::Matrix<T, 2, 1> Vec2T;
   typedef Eigen::Matrix<T, 3, 1> Vec3T;

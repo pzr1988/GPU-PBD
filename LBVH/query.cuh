@@ -1,7 +1,7 @@
 #ifndef LBVH_QUERY_CUH
 #define LBVH_QUERY_CUH
 #include "predicator.cuh"
-#include "PBD/ContactGenerator.cuh"
+#include "PBD/ContactGeneratorCapsuleCapsule.cuh"
 
 namespace lbvh {
 // query object indices that potentially overlaps with query aabb.

@@ -1,4 +1,5 @@
 #include <PBD/Utils.h>
+#include <PBD/Capsule.h>
 #include <PBD/Geometry.h>
 #include <PBD/Collision.h>
 #include <random>
@@ -7,6 +8,76 @@
 
 
 using namespace GPUPBD;
+
+template <typename T>
+std::ostream &operator<<(std::ostream &out, const Collision<T> &collision)
+{
+  out << collision._capsuleIdA << " "
+      << collision._capsuleIdB << " ";
+  for (int i = 0; i < collision._localPointA.rows(); ++i)
+  {
+    out << collision._localPointA(i) << " ";
+  }
+  for (int i = 0; i < collision._localPointB.rows(); ++i)
+  {
+    out << collision._localPointB(i) << " ";
+  }
+  for (int i = 0; i < collision._globalNormal.rows(); ++i)
+  {
+    out << collision._globalNormal(i) << " ";
+  }
+  out << collision._isValid;
+  return out;
+}
+
+template <typename T>
+std::istream &operator>>(std::istream &in, Collision<T> &collision)
+{
+  in >> collision._capsuleIdA >> collision._capsuleIdB;
+  for (int i = 0; i < collision._localPointA.rows(); ++i)
+  {
+    in >> collision._localPointA(i);
+  }
+  for (int i = 0; i < collision._localPointB.rows(); ++i)
+  {
+    in >> collision._localPointB(i);
+  }
+  for (int i = 0; i < collision._globalNormal.rows(); ++i)
+  {
+    in >> collision._globalNormal(i);
+  }
+  in >> collision._isValid;
+  return in;
+}
+
+template <typename T>
+std::ostream &operator<<(std::ostream &out, const Capsule<T> &capsule)
+{
+  out << capsule._len << " " << capsule._radius << " ";
+  for (int i = 0; i < capsule._trans.rows(); ++i)
+  {
+    for (int j = 0; j < capsule._trans.cols(); ++j)
+    {
+      out << capsule._trans(i, j) << " ";
+    }
+  }
+  return out;
+}
+
+template <typename T>
+std::istream &operator>>(std::istream &in, Capsule<T> &capsule)
+{
+  in >> capsule._len >> capsule._radius;
+  for (int i = 0; i < capsule._trans.rows(); ++i)
+  {
+    for (int j = 0; j < capsule._trans.cols(); ++j)
+    {
+      in >> capsule._trans(i, j);
+    }
+  }
+  return in;
+}
+
 
 int main() {
   typedef LSCALAR T;

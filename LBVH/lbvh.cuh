@@ -6,6 +6,5 @@
 #include "LBVH/morton_code.cuh"
 #include "LBVH/predicator.cuh"
 #include "LBVH/query.cuh"
-#include "LBVH/utility.cuh"
 
 #endif// LBVH_LBVH_CUH
