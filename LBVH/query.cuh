@@ -1,7 +1,7 @@
 #ifndef LBVH_QUERY_CUH
 #define LBVH_QUERY_CUH
 #include "predicator.cuh"
-#include "PBD/ContactGeneratorCapsuleCapsule.cuh"
+#include "PBD/ContactGenerator.h"
 
 namespace lbvh {
 // query object indices that potentially overlaps with query aabb.
@@ -27,6 +27,8 @@ unsigned int query_device(
   *stack_ptr++ = 0; // root node is always 0
 
   size_t num_found = 0;
+  typename GPUPBD::ContactGenerator<Real>::ContactManifold contactM(&q.origin, q.object_idx, localMemory);
+
   do {
     const index_type node  = *--stack_ptr;
     const index_type L_idx = bvh.nodes[node].left_idx;
@@ -37,10 +39,11 @@ unsigned int query_device(
       if(obj_idx != 0xFFFFFFFF) {
         // 胶囊体碰撞
         if(obj_idx > q.object_idx && num_found < maxCollisionsPerNode) {
-          int numCollision = narrowPhaseCollision(
-                               q.origin, q.object_idx,
-                               bvh.objects[obj_idx], obj_idx,
-                               localMemory, num_found, maxCollisionsPerNode);
+          auto& rhs = bvh.objects[obj_idx]; // TODO yeti
+          contactM.UpdateRhs(&rhs, obj_idx);
+          int numCollision = GPUPBD::ContactGenerator<Real>::narrowPhaseCollision(
+            contactM, maxCollisionsPerNode);
+          num_found += numCollision;
         }
       } else { // the node is not a leaf.
         *stack_ptr++ = L_idx;
@@ -51,10 +54,12 @@ unsigned int query_device(
       if(obj_idx != 0xFFFFFFFF) {
         // 胶囊体碰撞
         if(obj_idx > q.object_idx && num_found < maxCollisionsPerNode) {
-          int numCollision = narrowPhaseCollision(
-                               q.origin, q.object_idx,
-                               bvh.objects[obj_idx], obj_idx,
-                               localMemory, num_found, maxCollisionsPerNode);
+          auto& rhs = bvh.objects[obj_idx];
+          contactM.UpdateRhs(&rhs, obj_idx);
+          int numCollision = GPUPBD::ContactGenerator<Real>::narrowPhaseCollision(
+            contactM, maxCollisionsPerNode);
+          num_found += numCollision;
+          num_found += numCollision;
         }
       } else { // the node is not a leaf.
         *stack_ptr++ = R_idx;

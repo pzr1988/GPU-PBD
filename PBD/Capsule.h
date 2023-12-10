@@ -24,6 +24,14 @@ struct Capsule
   {
     return Vec3T(_len / 2, 0, 0);
   };
+  DEVICE_HOST Vec3T absoluteMinCorner() const
+  {
+    return ROT(_trans) * minCorner() + CTR(_trans);
+  };
+  DEVICE_HOST Vec3T absoluteMaxCorner() const
+  {
+    return ROT(_trans) * maxCorner() + CTR(_trans);
+  };
 };
 }
 #endif

@@ -1,6 +1,7 @@
 #include "Collision.h"
 #include "Capsule.h"
 #include "LBVH/lbvh.cuh"
+#include "ContactGenerator.h"
 
 namespace GPUPBD
 {
@@ -70,20 +71,21 @@ void CollisionDetector<T>::detectCollisionsDebug()
   const int maxCollisionsPerNode = 4;
   for (int i = 0; i < numCapsules; i++)
   {
+    Collision<T> localMemory[maxCollisionsPerNode];
+    auto lhs = (*_geometry)[i];
+    typename ContactGenerator<T>::ContactManifold contactM(&lhs, i, localMemory);
     for (int j = i + 1; j < numCapsules; j++)
     {
-      size_t num_found = 0;
-      Collision<T> localMemory[maxCollisionsPerNode];
-      const auto lhs = (*_geometry)[i];
-      const auto rhs = (*_geometry)[j];
-      int numCollision = narrowPhaseCollision(
-                           lhs, i,
-                           rhs, j,
-                           localMemory, num_found, maxCollisionsPerNode);
-      for (size_t k = 0; k < numCollision; k++)
-      {
-        _collisions.push_back(localMemory[k]);
+      auto rhs = (*_geometry)[j];
+      contactM.UpdateRhs(&rhs, j);
+      if(contactM._numCollision < maxCollisionsPerNode) {
+        int numCollision = ContactGenerator<T>::narrowPhaseCollision(
+                             contactM, maxCollisionsPerNode);
       }
+    }
+    for (size_t k = 0; k < contactM._numCollision; k++)
+    {
+      _collisions.push_back(contactM._localMemory[k]);
     }
   }
 }

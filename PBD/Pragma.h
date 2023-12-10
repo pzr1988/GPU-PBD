@@ -166,8 +166,8 @@ typedef Eigen::Map<Mat3T,Eigen::Unaligned,Eigen::Stride<Eigen::Dynamic,Eigen::Dy
 typedef Eigen::Map<const Mat3T,Eigen::Unaligned,Eigen::Stride<Eigen::Dynamic,Eigen::Dynamic>> Mat3TSCM;\
 \
 typedef Eigen::SparseMatrix<T,0,int> SMatT;\
-typedef Eigen::Triplet<T,int> STrip;\
-typedef ParallelVector<STrip> STrips;
+typedef Eigen::Triplet<T,int> STrip;
+// typedef ParallelVector<STrip> STrips;
 
 #define DECL_MAP_FUNCS  \
 template <typename T2>   \
