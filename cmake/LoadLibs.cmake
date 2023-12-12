@@ -25,3 +25,13 @@ ELSE(CUDA_FOUND)
   MESSAGE(SEND_ERROR "Cannot find CUDA, compiling without it!")
 ENDIF(CUDA_FOUND)
 
+#TinyVisualizer
+FIND_PACKAGE(TinyVisualizer)
+IF(TinyVisualizer_FOUND)
+  MESSAGE(STATUS "Found TinyVisualizer @ ${TinyVisualizer_INCLUDE_DIRS}")
+  INCLUDE_DIRECTORIES(${TinyVisualizer_INCLUDE_DIRS})
+  LIST(APPEND ALL_LIBRARIES ${TinyVisualizer_LIBRARIES})
+ELSE(TinyVisualizer_FOUND)
+  MESSAGE(SEND_ERROR "Cannot find TinyVisualizer!")
+ENDIF(TinyVisualizer_FOUND)
+

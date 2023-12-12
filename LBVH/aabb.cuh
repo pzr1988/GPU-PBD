@@ -1,7 +1,7 @@
 #ifndef LBVH_AABB_CUH
 #define LBVH_AABB_CUH
 #include <vector_types.h>
-#include <PBD/Capsule.h>
+#include <PBD/Geometry.h>
 #include <thrust/swap.h>
 #include <cmath>
 
