@@ -1,6 +1,7 @@
 #ifndef GEOMETRY_CUH
 #define GEOMETRY_CUH
 #include "Utils.h"
+#include "LBVH/aabb.cuh"
 #include <thrust/device_vector.h>
 
 namespace GPUPBD {
@@ -72,4 +73,32 @@ struct Geometry {
 };
 }
 
+
+namespace lbvh{
+  // 获得胶囊体的bounding box
+  template<>
+  struct lbvh::aabb_getter<GPUPBD::Capsule, float> {
+    __device__
+    lbvh::aabb<float> operator()(const GPUPBD::Capsule<float> &c) const noexcept {
+      lbvh::aabb<float> retval;
+      Eigen::Matrix<float, 4, 1> end1(static_cast<float>(c._len)/2.0, 0, 0, 1); // 第一个端点
+      Eigen::Matrix<float, 4, 1> end2(-static_cast<float>(c._len)/2.0, 0, 0, 1); // 第二个端点
+
+      Eigen::Matrix<float, 3, 1> transformedEnd1 = c._trans * end1;
+      Eigen::Matrix<float, 3, 1> transformedEnd2 = c._trans * end2;
+
+      Eigen::Matrix<float, 3, 1> upper = transformedEnd1.head<3>().cwiseMax(transformedEnd2.head<3>());
+      float radius = static_cast<float>(c._radius);
+      retval.upper.x = upper.x() + radius;
+      retval.upper.y = upper.y() + radius;
+      retval.upper.z = upper.z() + radius;
+      Eigen::Matrix<float, 3, 1> lower = transformedEnd1.head<3>().cwiseMin(transformedEnd2.head<3>()) ;
+      retval.lower.x = lower.x() - radius;
+      retval.lower.y = lower.y() - radius;
+      retval.lower.z = lower.z() - radius;
+      return retval;
+    }
+  };
+
+}
 #endif
