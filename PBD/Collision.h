@@ -23,9 +23,6 @@ class CollisionDetector {
  protected:
   std::shared_ptr<Geometry<T>> _geometry;
   thrust::device_vector<Collision<T>> _collisions;
- private:
-  //Intermediary data structure to temporarily store collisions
-  thrust::device_vector<Collision<T>> _globalMemory;
 };
 
 }
