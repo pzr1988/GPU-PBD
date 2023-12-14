@@ -19,12 +19,9 @@
 #include <thrust/execution_policy.h>
 #include <thrust/unique.h>
 
-namespace lbvh
-{
-namespace detail
-{
-struct node
-{
+namespace lbvh {
+namespace detail {
+struct node {
   std::uint32_t parent_idx; // parent node
   std::uint32_t left_idx;   // index of left  child node
   std::uint32_t right_idx;  // index of right child node
@@ -35,8 +32,7 @@ struct node
 template<typename Real, typename Object, bool IsConst>
 struct basic_device_bvh;
 template<typename Real, typename Object>
-struct basic_device_bvh<Real, Object, false>
-{
+struct basic_device_bvh<Real, Object, false> {
   using real_type  = Real;
   using aabb_type  = aabb<real_type>;
   using node_type  = detail::node;
@@ -51,8 +47,7 @@ struct basic_device_bvh<Real, Object, false>
   object_type* objects;
 };
 template<typename Real, typename Object>
-struct basic_device_bvh<Real, Object, true>
-{
+struct basic_device_bvh<Real, Object, true> {
   using real_type  = Real;
   using aabb_type  = aabb<real_type>;
   using node_type  = detail::node;
@@ -70,10 +65,8 @@ struct basic_device_bvh<Real, Object, true>
 template<typename UInt>
 __device__
 inline uint2 determine_range(UInt const* node_code,
-                             const unsigned int num_leaves, unsigned int idx)
-{
-  if(idx == 0)
-  {
+                             const unsigned int num_leaves, unsigned int idx) {
+  if(idx == 0) {
     return make_uint2(0, num_leaves-1);
   }
 
@@ -89,17 +82,14 @@ inline uint2 determine_range(UInt const* node_code,
   int l_max = 2;
   int delta = -1;
   int i_tmp = idx + d * l_max;
-  if(0 <= i_tmp && i_tmp < num_leaves)
-  {
+  if(0 <= i_tmp && i_tmp < num_leaves) {
     delta = common_upper_bits(self_code, node_code[i_tmp]);
   }
-  while(delta > delta_min)
-  {
+  while(delta > delta_min) {
     l_max <<= 1;
     i_tmp = idx + d * l_max;
     delta = -1;
-    if(0 <= i_tmp && i_tmp < num_leaves)
-    {
+    if(0 <= i_tmp && i_tmp < num_leaves) {
       delta = common_upper_bits(self_code, node_code[i_tmp]);
     }
   }
@@ -107,23 +97,19 @@ inline uint2 determine_range(UInt const* node_code,
   // Find the other end by binary search
   int l = 0;
   int t = l_max >> 1;
-  while(t > 0)
-  {
+  while(t > 0) {
     i_tmp = idx + (l + t) * d;
     delta = -1;
-    if(0 <= i_tmp && i_tmp < num_leaves)
-    {
+    if(0 <= i_tmp && i_tmp < num_leaves) {
       delta = common_upper_bits(self_code, node_code[i_tmp]);
     }
-    if(delta > delta_min)
-    {
+    if(delta > delta_min) {
       l += t;
     }
     t >>= 1;
   }
   unsigned int jdx = idx + l * d;
-  if(d < 0)
-  {
+  if(d < 0) {
     thrust::swap(idx, jdx); // make it sure that idx < jdx
   }
   return make_uint2(idx, jdx);
@@ -132,12 +118,10 @@ inline uint2 determine_range(UInt const* node_code,
 template<typename UInt>
 __device__
 inline unsigned int find_split(UInt const* node_code, const unsigned int num_leaves,
-                               const unsigned int first, const unsigned int last) noexcept
-{
+                               const unsigned int first, const unsigned int last) noexcept {
   const UInt first_code = node_code[first];
   const UInt last_code  = node_code[last];
-  if (first_code == last_code)
-  {
+  if (first_code == last_code) {
     return (first + last) >> 1;
   }
   const int delta_node = common_upper_bits(first_code, last_code);
@@ -145,32 +129,26 @@ inline unsigned int find_split(UInt const* node_code, const unsigned int num_lea
   // binary search...
   int split  = first;
   int stride = last - first;
-  do
-  {
+  do {
     stride = (stride + 1) >> 1;
     const int middle = split + stride;
-    if (middle < last)
-    {
+    if (middle < last) {
       const int delta = common_upper_bits(first_code, node_code[middle]);
-      if (delta > delta_node)
-      {
+      if (delta > delta_node) {
         split = middle;
       }
     }
-  }
-  while(stride > 1);
+  } while(stride > 1);
 
   return split;
 }
 template<typename Real, typename Object, bool IsConst, typename UInt>
 void construct_internal_nodes(const basic_device_bvh<Real, Object, IsConst>& self,
-                              UInt const* node_code, const unsigned int num_objects)
-{
+                              UInt const* node_code, const unsigned int num_objects) {
   thrust::for_each(thrust::device,
                    thrust::make_counting_iterator<unsigned int>(0),
                    thrust::make_counting_iterator<unsigned int>(num_objects - 1),
-                   [self, node_code, num_objects] __device__ (const unsigned int idx)
-  {
+  [self, node_code, num_objects] __device__ (const unsigned int idx) {
     self.nodes[idx].object_idx = 0xFFFFFFFF; //  internal nodes
 
     const uint2 ij  = determine_range(node_code, num_objects, idx);
@@ -178,12 +156,10 @@ void construct_internal_nodes(const basic_device_bvh<Real, Object, IsConst>& sel
 
     self.nodes[idx].left_idx  = gamma;
     self.nodes[idx].right_idx = gamma + 1;
-    if(thrust::min(ij.x, ij.y) == gamma)
-    {
+    if(thrust::min(ij.x, ij.y) == gamma) {
       self.nodes[idx].left_idx += num_objects - 1;
     }
-    if(thrust::max(ij.x, ij.y) == gamma + 1)
-    {
+    if(thrust::max(ij.x, ij.y) == gamma + 1) {
       self.nodes[idx].right_idx += num_objects - 1;
     }
     self.nodes[self.nodes[idx].left_idx].parent_idx  = idx;
@@ -196,8 +172,7 @@ void construct_internal_nodes(const basic_device_bvh<Real, Object, IsConst>& sel
 } // detail
 
 template<typename Real, typename Object>
-struct default_morton_code_calculator
-{
+struct default_morton_code_calculator {
   default_morton_code_calculator(aabb<Real> w): whole(w) {}
   default_morton_code_calculator()  = default;
   ~default_morton_code_calculator() = default;
@@ -207,8 +182,7 @@ struct default_morton_code_calculator
   default_morton_code_calculator& operator=(default_morton_code_calculator&&)      = default;
 
   __device__ __host__
-  inline unsigned int operator()(const Object&, const aabb<Real>& box) noexcept
-  {
+  inline unsigned int operator()(const Object&, const aabb<Real>& box) noexcept {
     auto p = centroid(box);
     p.x -= whole.lower.x;
     p.y -= whole.lower.y;
@@ -228,8 +202,7 @@ using cbvh_device = detail::basic_device_bvh<Real, Object, true>;
 
 template<typename Real, typename Object, typename AABBGetter,
          typename MortonCodeCalculator = default_morton_code_calculator<Real, Object>>
-class bvh
-{
+class bvh {
  public:
   using real_type   = Real;
   using index_type = std::uint32_t;
@@ -244,8 +217,7 @@ class bvh
   template<typename InputIterator>
   bvh(InputIterator first, InputIterator last, bool query_host_enabled = false)
     : objects_h_(first, last), objects_d_(objects_h_),
-      query_host_enabled_(query_host_enabled)
-  {
+      query_host_enabled_(query_host_enabled) {
     this->construct();
   }
 
@@ -263,8 +235,7 @@ class bvh
     return query_host_enabled_;
   }
 
-  void clear()
-  {
+  void clear() {
     this->objects_h_.clear();
     this->objects_d_.clear();
     this->aabbs_h_.clear();
@@ -275,24 +246,21 @@ class bvh
   }
 
   template<typename InputIterator>
-  void assign(InputIterator first, InputIterator last)
-  {
+  void assign(InputIterator first, InputIterator last) {
     this->objects_h_.assign(first, last);
     this->objects_d_ = this->objects_h_;
     this->construct();
     return;
   }
 
-  bvh_device<real_type, object_type> get_device_repr()       noexcept
-  {
+  bvh_device<real_type, object_type> get_device_repr()       noexcept {
     return bvh_device<real_type, object_type> {
       static_cast<unsigned int>(nodes_.size()),
       static_cast<unsigned int>(objects_d_.size()),
       nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get()
     };
   }
-  cbvh_device<real_type, object_type> get_device_repr() const noexcept
-  {
+  cbvh_device<real_type, object_type> get_device_repr() const noexcept {
     return cbvh_device<real_type, object_type> {
       static_cast<unsigned int>(nodes_.size()),
       static_cast<unsigned int>(objects_d_.size()),
@@ -300,8 +268,7 @@ class bvh
     };
   }
 
-  void construct()
-  {
+  void construct() {
     assert(objects_h_.size() == objects_d_.size());
     if(objects_h_.size() == 0u) {
       return;
@@ -360,12 +327,10 @@ class bvh
                          morton64.begin());
 
     const bool morton_code_is_unique = (morton64.end() == uniqued);
-    if(!morton_code_is_unique)
-    {
+    if(!morton_code_is_unique) {
       thrust::transform(morton.begin(), morton.end(), indices.begin(),
                         morton64.begin(),
-                        [] __device__ (const unsigned int m, const unsigned int idx)
-      {
+      [] __device__ (const unsigned int m, const unsigned int idx) {
         unsigned long long int m64 = m;
         m64 <<= 32;
         m64 |= idx;
@@ -385,8 +350,7 @@ class bvh
 
     thrust::transform(indices.begin(), indices.end(),
                       this->nodes_.begin() + num_internal_nodes,
-                      [] __device__ (const index_type idx)
-    {
+    [] __device__ (const index_type idx) {
       node_type n;
       n.parent_idx = 0xFFFFFFFF;
       n.left_idx   = 0xFFFFFFFF;
@@ -399,13 +363,10 @@ class bvh
     // construct internal nodes
 
     const auto self = this->get_device_repr();
-    if(morton_code_is_unique)
-    {
+    if(morton_code_is_unique) {
       const unsigned int* node_code = morton.data().get();
       detail::construct_internal_nodes(self, node_code, num_objects);
-    }
-    else // 64bit version
-    {
+    } else { // 64bit version
       const unsigned long long int* node_code = morton64.data().get();
       detail::construct_internal_nodes(self, node_code, num_objects);
     }
@@ -419,14 +380,11 @@ class bvh
     thrust::for_each(thrust::device,
                      thrust::make_counting_iterator<index_type>(num_internal_nodes),
                      thrust::make_counting_iterator<index_type>(num_nodes),
-                     [self, flags] __device__ (index_type idx)
-    {
+    [self, flags] __device__ (index_type idx) {
       unsigned int parent = self.nodes[idx].parent_idx;
-      while(parent != 0xFFFFFFFF) // means idx == 0
-      {
+      while(parent != 0xFFFFFFFF) { // means idx == 0
         const int old = atomicCAS(flags + parent, 0, 1);
-        if(old == 0)
-        {
+        if(old == 0) {
           // this is the first thread entered here.
           // wait the other thread from the other child node.
           return;
@@ -447,8 +405,7 @@ class bvh
       return;
     });
 
-    if(this->query_host_enabled_)
-    {
+    if(this->query_host_enabled_) {
       aabbs_h_ = aabbs_;
       nodes_h_ = nodes_;
     }

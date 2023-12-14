@@ -75,6 +75,15 @@ struct Geometry {
 
 
 namespace lbvh{
+  // 获得物体的bounding box
+  template<template<typename> class Geometry, typename T>
+  struct aabb_getter {
+    __device__
+    lbvh::aabb<float> operator()(const Geometry<T>& c) const noexcept {
+      lbvh::aabb<float> retval;
+      return retval;
+    }
+  };
   // 获得胶囊体的bounding box
   template<>
   struct lbvh::aabb_getter<GPUPBD::Capsule, float> {

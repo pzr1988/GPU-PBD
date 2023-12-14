@@ -1,4 +1,5 @@
 #include "Collision.h"
+#include "ContactGenerator.h"
 
 namespace GPUPBD {
 template <typename T>
@@ -11,47 +12,77 @@ void CollisionDetector<T>::detectCollisions() {
   // TODO yeti, lbvh里的host和device中的capsule是没必要创建的。
   lbvh::bvh<float, GPUPBD::Capsule<T>, lbvh::aabb_getter<GPUPBD::Capsule, T>> bvh(bIter, eIter, true);
   const auto bvh_dev = bvh.get_device_repr();
-  std::cout << "testing query_device:overlap ...\n";
-  const int maxCollisionsPerNode = 4;
+  const int maxCollisionsPerNode = 10;
   std::size_t numCapsules = _geometry->getCapsules().size();
-  std::size_t maxCollisions = maxCollisionsPerNode * numCapsules;
-  _globalMemory.clear();
-  _globalMemory.resize(maxCollisions);
-  thrust::fill(thrust::device, _globalMemory.begin(), _globalMemory.end(), Collision<T>());
-  Collision<T>* collisionsPtr = thrust::raw_pointer_cast(_globalMemory.data());
+  thrust::device_vector<unsigned int> numCollisionPerNode(numCapsules+1, 0);
+  unsigned int* d_numCollisionPerNode = thrust::raw_pointer_cast(numCollisionPerNode.data());
+
+  // First compute the number of total collision, to resize the globalMemory
   thrust::for_each(thrust::device,
                    thrust::make_counting_iterator<std::size_t>(0),
                    thrust::make_counting_iterator<std::size_t>(numCapsules),
-  [bvh_dev, maxCollisionsPerNode, collisionsPtr] __device__ (std::size_t idx) {
-    Collision<T> localMemory[maxCollisionsPerNode];
+  [bvh_dev, maxCollisionsPerNode, d_numCollisionPerNode] __device__ (std::size_t idx) {
+    unsigned int buffer[maxCollisionsPerNode];
     const auto self = bvh_dev.objects[idx];
+    // broad phase
     const auto num_found = lbvh::query_device(
-                             bvh_dev, lbvh::overlaps(self, idx),
-                             maxCollisionsPerNode,
-                             localMemory);
+                             bvh_dev, lbvh::overlaps(lbvh::aabb_getter<GPUPBD::Capsule, T>()(self)),
+                             buffer, maxCollisionsPerNode);
+
+    // narrow phase
+    Collision<T> localMemory[maxCollisionsPerNode];
+    typename ContactGenerator<T>::ContactManifold contactM(&self, idx, localMemory);
     for (size_t i = 0; i < num_found; i++) {
-      size_t globalIndex = idx * maxCollisionsPerNode + i;
-      collisionsPtr[globalIndex] = localMemory[i];
+      if(idx < buffer[i]) {
+        auto rhs = bvh_dev.objects[buffer[i]];
+        contactM.UpdateRhs(&rhs, buffer[i]);
+        if(contactM._numCollision < maxCollisionsPerNode) {
+          int numCollision = ContactGenerator<T>::narrowPhaseCollision(
+                               contactM, maxCollisionsPerNode);
+        }
+      }
+    }
+    d_numCollisionPerNode[idx] = contactM._numCollision;
+    return;
+  });
+
+  cudaError_t cudaStatus = cudaDeviceSynchronize();
+  thrust::exclusive_scan(numCollisionPerNode.begin(), numCollisionPerNode.end(), numCollisionPerNode.begin());
+  _collisions.resize(numCollisionPerNode[numCapsules]);
+
+  // Second fill collisions to the correct position
+  Collision<T>* d_collisions = thrust::raw_pointer_cast(_collisions.data());
+  thrust::for_each(thrust::device,
+                   thrust::make_counting_iterator<std::size_t>(0),
+                   thrust::make_counting_iterator<std::size_t>(numCapsules),
+  [bvh_dev, maxCollisionsPerNode, d_numCollisionPerNode, d_collisions] __device__ (std::size_t idx) {
+    unsigned int buffer[maxCollisionsPerNode];
+    const auto self = bvh_dev.objects[idx];
+    // broad phase
+    const auto num_found = lbvh::query_device(
+                             bvh_dev, lbvh::overlaps(lbvh::aabb_getter<GPUPBD::Capsule, T>()(self)),
+                             buffer, maxCollisionsPerNode);
+
+    // narrow phase
+    Collision<T> localMemory[maxCollisionsPerNode];
+    typename ContactGenerator<T>::ContactManifold contactM(&self, idx, localMemory);
+    for (size_t i = 0; i < num_found; i++) {
+      if(idx < buffer[i]) {
+        auto rhs = bvh_dev.objects[buffer[i]];
+        contactM.UpdateRhs(&rhs, buffer[i]);
+        if(contactM._numCollision < maxCollisionsPerNode) {
+          int numCollision = ContactGenerator<T>::narrowPhaseCollision(
+                               contactM, maxCollisionsPerNode);
+        }
+      }
+    }
+    // fill
+    for (size_t i = 0; i < contactM._numCollision; i++) {
+      d_collisions[d_numCollisionPerNode[idx]+i] = contactM._localMemory[i];
     }
     return;
   });
-  // 等待设备上所有先前的 kernel 完成
-  // TODO yeti 耗时问题
-  cudaError_t cudaStatus = cudaDeviceSynchronize();
-  if (cudaStatus != cudaSuccess) {
-    // TODO yeti 处理错误
-    std::cerr << "CUDA Synchronization error: " << cudaGetErrorString(cudaStatus) << std::endl;
-  }
-  size_t numValidCollisions = thrust::count_if(thrust::device, _globalMemory.begin(), _globalMemory.end(),
-  [] __device__ (const Collision<T>& collision) {
-    return collision._isValid;
-  });
-  _collisions.resize(numValidCollisions);
-  thrust::copy_if(thrust::device, _globalMemory.begin(), _globalMemory.end(),
-                  _collisions.begin(),
-  [] __device__ (const Collision<T>& collision) {
-    return collision._isValid;
-  });
+  cudaStatus = cudaDeviceSynchronize();
 }
 template <typename T>
 Collision<T> CollisionDetector<T>::operator[](int id) {
