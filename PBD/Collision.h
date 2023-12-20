@@ -1,5 +1,5 @@
-#ifndef COLLISION_CUH
-#define COLLISION_CUH
+#ifndef COLLISION_H
+#define COLLISION_H
 #include "Geometry.h"
 #include <LBVH/lbvh.cuh>
 
