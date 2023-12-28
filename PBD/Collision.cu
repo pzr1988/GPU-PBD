@@ -23,7 +23,7 @@ void CollisionDetector<T>::detectCollisions() {
                    thrust::make_counting_iterator<std::size_t>(numCapsules),
   [bvh_dev, maxCollisionsPerNode, d_numCollisionPerNode] __device__ (std::size_t idx) {
     unsigned int buffer[maxCollisionsPerNode];
-    const auto self = bvh_dev.objects[idx];
+    const auto & self = bvh_dev.objects[idx];
     // broad phase
     const auto num_found = lbvh::query_device(
                              bvh_dev, lbvh::overlaps(lbvh::aabb_getter<GPUPBD::Capsule, T>()(self)),
@@ -34,11 +34,11 @@ void CollisionDetector<T>::detectCollisions() {
     typename ContactGenerator<T>::ContactManifold contactM(&self, idx, localMemory);
     for (size_t i = 0; i < num_found; i++) {
       if(idx < buffer[i]) {
-        auto rhs = bvh_dev.objects[buffer[i]];
+        const auto &rhs = bvh_dev.objects[buffer[i]];
         contactM.UpdateRhs(&rhs, buffer[i]);
         if(contactM._numCollision < maxCollisionsPerNode) {
-          int numCollision = ContactGenerator<T>::narrowPhaseCollision(
-                               contactM, maxCollisionsPerNode);
+          ContactGenerator<T>::narrowPhaseCollision(
+            contactM, maxCollisionsPerNode);
         }
       }
     }
@@ -57,7 +57,7 @@ void CollisionDetector<T>::detectCollisions() {
                    thrust::make_counting_iterator<std::size_t>(numCapsules),
   [bvh_dev, maxCollisionsPerNode, d_numCollisionPerNode, d_collisions] __device__ (std::size_t idx) {
     unsigned int buffer[maxCollisionsPerNode];
-    const auto self = bvh_dev.objects[idx];
+    const auto & self = bvh_dev.objects[idx];
     // broad phase
     const auto num_found = lbvh::query_device(
                              bvh_dev, lbvh::overlaps(lbvh::aabb_getter<GPUPBD::Capsule, T>()(self)),
@@ -68,11 +68,11 @@ void CollisionDetector<T>::detectCollisions() {
     typename ContactGenerator<T>::ContactManifold contactM(&self, idx, localMemory);
     for (size_t i = 0; i < num_found; i++) {
       if(idx < buffer[i]) {
-        auto rhs = bvh_dev.objects[buffer[i]];
+        const auto & rhs = bvh_dev.objects[buffer[i]];
         contactM.UpdateRhs(&rhs, buffer[i]);
         if(contactM._numCollision < maxCollisionsPerNode) {
-          int numCollision = ContactGenerator<T>::narrowPhaseCollision(
-                               contactM, maxCollisionsPerNode);
+          ContactGenerator<T>::narrowPhaseCollision(
+            contactM, maxCollisionsPerNode);
         }
       }
     }
