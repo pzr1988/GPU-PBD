@@ -3,12 +3,12 @@
 namespace GPUPBD {
 template <typename T>
 XPBD<T>::XPBD(std::shared_ptr<Geometry<T>> geometry,T dt,int nRelax)
-    :_geometry(geometry),_detector(new CollisionDetector<T>(geometry)),_dt(dt),_nRelax(nRelax) {}
+  :_geometry(geometry),_detector(new CollisionDetector<T>(geometry)),_dt(dt),_nRelax(nRelax) {}
 template <typename T>
 void XPBD<T>::step() {
   _detector->detectCollisions();
   integrate();
-  for(int i=0;i<_nRelax;i++)
+  for(int i=0; i<_nRelax; i++)
     relaxConstraint();
   updateVelocity();
 }

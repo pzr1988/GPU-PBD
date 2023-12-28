@@ -24,10 +24,10 @@ int main(int argc,char** argv) {
     p._radius=uni(mt)/3.0;
     Eigen::Quaternion<T> q(uni(mt),uni(mt),uni(mt),uni(mt));
     q.normalize();
-    Eigen::Matrix<T,3,3> rot=q.toRotationMatrix();
+    p._q = q;
     Eigen::Matrix<T,3,1> trans;
     trans.setRandom();
-    p._trans << rot,trans;
+    p._x = trans;
   }
 
   std::shared_ptr<GPUPBD::Geometry<T>> geometry(new GPUPBD::Geometry<T>);

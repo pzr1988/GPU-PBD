@@ -27,8 +27,8 @@ std::shared_ptr<DRAWER::CompositeShape> visualizeOrUpdateGeometry(const Geometry
   //visualize
   for(int i=0; i<(int)cpuGeometry.size(); i++) {
     auto c=std::dynamic_pointer_cast<DRAWER::Bullet3DShape>(ret->getChild(i));
-    c->setLocalRotate(cpuGeometry[i]._trans.template block<3,3>(0,0).template cast<GLfloat>());
-    c->setLocalTranslate(cpuGeometry[i]._trans.template block<3,1>(0,3).template cast<GLfloat>());
+    c->setLocalRotate(cpuGeometry[i]._q.toRotationMatrix());
+    c->setLocalTranslate(cpuGeometry[i]._x);
   }
   return ret;
 }

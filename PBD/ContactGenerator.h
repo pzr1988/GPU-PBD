@@ -19,25 +19,25 @@ class ContactGenerator {
     DEVICE_HOST ContactManifold(const Capsule<T> *lhs, const Capsule<T> *rhs, uint32_t lhsId, uint32_t rhsId, Collision<T> *localMemory):
       _lhsId(lhsId), _rhsId(rhsId), _lhs(lhs), _rhs(rhs), _lhsRadius(lhs->_radius), _rhsRadius(rhs->_radius),
       _localMemory(localMemory), _numCollision(0) {
-      _lhsMinCorner = _lhs->absoluteMinCorner().template cast<T>();
-      _lhsMaxCorner = _lhs->absoluteMaxCorner().template cast<T>();
-      _rhsMinCorner = _rhs->absoluteMinCorner().template cast<T>();
-      _rhsMaxCorner = _rhs->absoluteMaxCorner().template cast<T>();
+      _lhsMinCorner = _lhs->globalMinCorner().template cast<T>();
+      _lhsMaxCorner = _lhs->globalMaxCorner().template cast<T>();
+      _rhsMinCorner = _rhs->globalMinCorner().template cast<T>();
+      _rhsMaxCorner = _rhs->globalMaxCorner().template cast<T>();
     }
     DEVICE_HOST ContactManifold(const Capsule<T> *lhs,  uint32_t lhsId, Collision<T> *localMemory):
       _lhsId(lhsId), _lhs(lhs), _lhsRadius(lhs->_radius),
       _localMemory(localMemory), _numCollision(0) {
       _numCollision = 0;
       _lhsRadius = _lhs->_radius;
-      _lhsMinCorner = _lhs->absoluteMinCorner().template cast<T>();
-      _lhsMaxCorner = _lhs->absoluteMaxCorner().template cast<T>();
+      _lhsMinCorner = _lhs->globalMinCorner().template cast<T>();
+      _lhsMaxCorner = _lhs->globalMaxCorner().template cast<T>();
     }
     void DEVICE_HOST UpdateRhs(const Capsule<T> *rhs, uint32_t rhsId) {
       _rhsId = rhsId;
       _rhs = rhs;
       _rhsRadius = _rhs->_radius;
-      _rhsMinCorner = _rhs->absoluteMinCorner().template cast<T>();
-      _rhsMaxCorner = _rhs->absoluteMaxCorner().template cast<T>();
+      _rhsMinCorner = _rhs->globalMinCorner().template cast<T>();
+      _rhsMaxCorner = _rhs->globalMaxCorner().template cast<T>();
     }
   };
   // 胶囊体碰撞

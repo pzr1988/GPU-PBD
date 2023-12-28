@@ -8,28 +8,41 @@ namespace GPUPBD {
 //This struct represents a capsule-shaped object
 //The capsule's centerline extends from (-_len/2,0,0) to (_len/2,0,0)
 //The radius of the capsule is stored in _radius
-//The local to global transformation is stored in _trans
-//The 3x3 rotational matrix is: _trans.template block<3,3>(0,0) (you can also use macro: ROT(_trans))
-//The 3x1 translational vector is: _trans.template block<3,1>(0,3) (you can also use macro: CTR(_trans))
+//The local to global transformation is stored in _x and _q
+//The 3x3 rotational matrix is: _q.toRotationMatrix()
+//The 3x1 translational vector is: _x
 template <typename T>
 struct Capsule {
   DECL_MAT_VEC_MAP_TYPES_T
+  /* Constant quantities */
   T _len,_radius;
-  Mat3X4T _trans;
-  Mat3X4T _transNext;   //Tentative transformation at the next timestep
-  Vec3T _v; //linear velocity
-  Vec3T _w; //angular velocity
+  T _mass;
+  Mat3T _Ibody, _Ibodyinv; //body space intertia tensor
+  /* State variables */
+  Vec3T _x;
+  Eigen::Quaternion<T> _q;
+  Vec3T _xNext; //Tentative transformation at the next timestep
+  Eigen::Quaternion<T> _qNext;
+  /* Derived quantities (auxiliary variables) */
+  // Mat3T _Iinv; // inverse of intertia tensor
+  // Mat3T _R; //rotation matrix
+  // Vec3T _v; //linear velocity
+  // Vec3T _w; //angular velocity
+  /* Computed quantities */
+  // Vec3T _force;
+  // Vec3T _torque;
+
   DEVICE_HOST Vec3T minCorner() const {
     return Vec3T(-_len / 2, 0, 0);
   }
   DEVICE_HOST Vec3T maxCorner() const {
     return Vec3T(_len / 2, 0, 0);
   }
-  DEVICE_HOST Vec3T absoluteMinCorner() const {
-    return ROT(_trans)*minCorner()+CTR(_trans);
+  DEVICE_HOST Vec3T globalMinCorner() const {
+    return _q.toRotationMatrix()*minCorner()+_x;
   }
-  DEVICE_HOST Vec3T absoluteMaxCorner() const {
-    return ROT(_trans)*maxCorner()+CTR(_trans);
+  DEVICE_HOST Vec3T globalMaxCorner() const {
+    return _q.toRotationMatrix()*maxCorner()+_x;
   }
 };
 
@@ -93,18 +106,14 @@ struct lbvh::aabb_getter<GPUPBD::Capsule, float> {
   __device__
   lbvh::aabb<float> operator()(const GPUPBD::Capsule<float> &c) const noexcept {
     lbvh::aabb<float> retval;
-    Eigen::Matrix<float, 4, 1> end1(static_cast<float>(c._len)/2.0, 0, 0, 1); // 第一个端点
-    Eigen::Matrix<float, 4, 1> end2(-static_cast<float>(c._len)/2.0, 0, 0, 1); // 第二个端点
-
-    Eigen::Matrix<float, 3, 1> transformedEnd1 = c._trans * end1;
-    Eigen::Matrix<float, 3, 1> transformedEnd2 = c._trans * end2;
-
-    Eigen::Matrix<float, 3, 1> upper = transformedEnd1.head<3>().cwiseMax(transformedEnd2.head<3>());
+    auto transformedEnd1 = c.globalMaxCorner();
+    auto transformedEnd2 = c.globalMinCorner();
+    auto upper = transformedEnd1.cwiseMax(transformedEnd2);
     float radius = static_cast<float>(c._radius);
     retval.upper.x = upper.x() + radius;
     retval.upper.y = upper.y() + radius;
     retval.upper.z = upper.z() + radius;
-    Eigen::Matrix<float, 3, 1> lower = transformedEnd1.head<3>().cwiseMin(transformedEnd2.head<3>()) ;
+    auto lower = transformedEnd1.cwiseMin(transformedEnd2);
     retval.lower.x = lower.x() - radius;
     retval.lower.y = lower.y() - radius;
     retval.lower.z = lower.z() - radius;
