@@ -17,21 +17,20 @@ struct Capsule {
   /* Constant quantities */
   T _len,_radius;
   T _mass;
-  Mat3T _Ibody, _Ibodyinv; //body space intertia tensor
+  Mat3T _Ibody, _Ibodyinv; //body space inertia tensor
   /* State variables */
   Vec3T _x;
   Eigen::Quaternion<T> _q;
   Vec3T _xNext; //Tentative transformation at the next timestep
   Eigen::Quaternion<T> _qNext;
   /* Derived quantities (auxiliary variables) */
-  // Mat3T _Iinv; // inverse of intertia tensor
+  // Mat3T _Iinv; // inverse of inertia tensor
   // Mat3T _R; //rotation matrix
   // Vec3T _v; //linear velocity
   // Vec3T _w; //angular velocity
   /* Computed quantities */
   // Vec3T _force;
   // Vec3T _torque;
-
   DEVICE_HOST Vec3T minCorner() const {
     return Vec3T(-_len / 2, 0, 0);
   }
@@ -43,6 +42,21 @@ struct Capsule {
   }
   DEVICE_HOST Vec3T globalMaxCorner() const {
     return _q.toRotationMatrix()*maxCorner()+_x;
+  }
+  DEVICE_HOST void initInertiaTensor() {
+    //https://gamedev.net/tutorials/programming/math-and-physics/capsule-inertia-tensor-r3856/
+    T mCy = _mass * (_radius*_radius*_len)/(_radius*_radius*_len + (4./3.)*_radius*_radius*_radius);
+    T mHSph = _mass * ((2./3.)*_radius*_radius*_radius)/(_radius*_radius*_len + (4./3.)*_radius*_radius*_radius);
+    T Ixx = mCy*(_radius*_radius/2.)
+            + 2.*mHSph*(2.*_radius*_radius/5.);
+    T Iyy = mCy*(_radius*_radius/4. + _len*_len/12.)
+            + 2.*mHSph*(2.*_radius*_radius/5.+_len*_len/2.+3.*_len*_radius/8);
+    _Ibody << Ixx, 0, 0,
+           0, Iyy, 0,
+           0, 0, Iyy;
+    _Ibodyinv << 1./Ixx, 0, 0,
+              0, 1./Iyy, 0,
+              0, 0, 1./Iyy;
   }
 };
 

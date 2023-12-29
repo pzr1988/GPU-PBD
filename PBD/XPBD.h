@@ -20,6 +20,8 @@ class XPBD {
   //We first compute Capsule._v and Capsule._w from Capsule._trans(Next)
   //We then set Capsule._trans=Capsule._transNext;
   void updateVelocity();
+  // Use detector to visulize collisions
+  const CollisionDetector<T>& getDetector() const;
  protected:
   std::shared_ptr<Geometry<T>> _geometry;
   std::shared_ptr<CollisionDetector<T>> _detector;

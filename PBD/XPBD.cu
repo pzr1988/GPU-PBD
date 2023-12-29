@@ -24,7 +24,13 @@ template <typename T>
 void XPBD<T>::updateVelocity() {
   //to be implemeneted
 }
-
+template <typename T>
+const CollisionDetector<T>& XPBD<T>::getDetector() const {
+  if (!_detector) {
+    throw std::runtime_error("Detector is not initialized");
+  }
+  return *_detector;
+}
 //declare instance
 template struct XPBD<LSCALAR>;
 }

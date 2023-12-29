@@ -1,6 +1,7 @@
 #include <PBD/Utils.h>
 #include <PBD/Geometry.h>
 #include <PBD/Collision.h>
+#include <PBD/XPBD.h>
 #include <PBD/Visualizer.h>
 #include <TinyVisualizer/FirstPersonCameraManipulator.h>
 #include <TinyVisualizer/CameraExportPlugin.h>
@@ -20,14 +21,16 @@ int main(int argc,char** argv) {
   std::uniform_real_distribution<T> uni(0.0, 1.0);
 
   for(auto& p:ps) {
+    p._mass = 1.;
     p._len=uni(mt);
-    p._radius=uni(mt)/3.0;
+    p._radius=uni(mt)/3.;
     Eigen::Quaternion<T> q(uni(mt),uni(mt),uni(mt),uni(mt));
     q.normalize();
     p._q = q;
     Eigen::Matrix<T,3,1> trans;
     trans.setRandom();
     p._x = trans;
+    p.initInertiaTensor();
   }
 
   std::shared_ptr<GPUPBD::Geometry<T>> geometry(new GPUPBD::Geometry<T>);
@@ -35,14 +38,16 @@ int main(int argc,char** argv) {
   geometry->resize(ps.size());
   geometry->setCapsule(ps);
 
-  GPUPBD::CollisionDetector<T> detector(geometry);
-  detector.detectCollisions();
+  // GPUPBD::CollisionDetector<T> detector(geometry);
+  // detector.detectCollisions();
+  GPUPBD::XPBD<T> xpbd(geometry, 0.1);
+  xpbd.step();
 
   DRAWER::Drawer drawer(argc,argv);
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CaptureGIFPlugin(GLFW_KEY_1,"record.gif",drawer.FPS())));
   auto shapeGeometry=visualizeOrUpdateGeometry(*geometry);
-  auto shapeCollision=visualizeOrUpdateCollision(*geometry,detector);
+  auto shapeCollision=visualizeOrUpdateCollision(*geometry,xpbd.getDetector());
   drawer.addShape(shapeGeometry);
   drawer.addShape(shapeCollision);
   drawer.addCamera3D(90,Eigen::Matrix<GLfloat,3,1>(0,1,0));
