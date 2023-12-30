@@ -23,14 +23,14 @@ struct Capsule {
   Eigen::Quaternion<T> _q;
   Vec3T _xNext; //Tentative transformation at the next timestep
   Eigen::Quaternion<T> _qNext;
+  Vec3T _v; //linear velocity
+  Vec3T _w; //angular velocity
   /* Derived quantities (auxiliary variables) */
-  // Mat3T _Iinv; // inverse of inertia tensor
-  // Mat3T _R; //rotation matrix
-  // Vec3T _v; //linear velocity
-  // Vec3T _w; //angular velocity
+  Mat3T _Iinv; // inverse of inertia tensor
+  Mat3T _R; //rotation matrix
   /* Computed quantities */
-  // Vec3T _force;
-  // Vec3T _torque;
+  Vec3T _force;
+  Vec3T _torque;
   DEVICE_HOST Vec3T minCorner() const {
     return Vec3T(-_len / 2, 0, 0);
   }
@@ -97,6 +97,8 @@ struct Geometry {
   Capsule<T> operator[](int id) const;
   //Get All Capsules
   const thrust::device_vector<Capsule<T>>& getCapsules() const;
+  // Get mutable capsules for integration, don't change the number of capsuels.
+  thrust::device_vector<Capsule<T>>& getMutableCapsules();
  protected:
   thrust::device_vector<Capsule<T>> _capsules;
   int _nrCapsule=0;

@@ -28,7 +28,10 @@ template <typename T>
 const thrust::device_vector<Capsule<T>>& Geometry<T>::getCapsules() const {
   return _capsules;
 }
-
+template <typename T>
+thrust::device_vector<Capsule<T>>& Geometry<T>::getMutableCapsules() {
+  return _capsules;
+}
 //declare instance
 template struct Geometry<LSCALAR>;
 }
