@@ -29,7 +29,7 @@ void XPBD<T>::integrate() {
     capsule._qNext = Eigen::Quaternion<T>(capsule._q.coeffs() + updatedQuat.coeffs());
     capsule._qNext.normalize();
   });
-  cudaError_t cudaStatus = cudaDeviceSynchronize();
+  cudaDeviceSynchronize();
 }
 template <typename T>
 void XPBD<T>::relaxConstraint() {
@@ -48,7 +48,7 @@ void XPBD<T>::updateVelocity() {
     capsule._w = deltaQ.w() >=0 ? capsule._w : -capsule._w;
     capsule._q = capsule._qNext;
   });
-  cudaError_t cudaStatus = cudaDeviceSynchronize();
+  cudaDeviceSynchronize();
 }
 template <typename T>
 const CollisionDetector<T>& XPBD<T>::getDetector() const {

@@ -21,7 +21,7 @@ void CollisionDetector<T>::detectCollisions() {
   thrust::for_each(thrust::device,
                    thrust::make_counting_iterator<std::size_t>(0),
                    thrust::make_counting_iterator<std::size_t>(numCapsules),
-  [bvh_dev, maxCollisionsPerNode, d_numCollisionPerNode] __device__ (std::size_t idx) {
+  [bvh_dev, d_numCollisionPerNode] __device__ (std::size_t idx) {
     unsigned int buffer[maxCollisionsPerNode];
     const auto & self = bvh_dev.objects[idx];
     // broad phase
@@ -46,7 +46,7 @@ void CollisionDetector<T>::detectCollisions() {
     return;
   });
 
-  cudaError_t cudaStatus = cudaDeviceSynchronize();
+  cudaDeviceSynchronize();
   thrust::exclusive_scan(numCollisionPerNode.begin(), numCollisionPerNode.end(), numCollisionPerNode.begin());
   _collisions.resize(numCollisionPerNode[numCapsules]);
 
@@ -55,7 +55,7 @@ void CollisionDetector<T>::detectCollisions() {
   thrust::for_each(thrust::device,
                    thrust::make_counting_iterator<std::size_t>(0),
                    thrust::make_counting_iterator<std::size_t>(numCapsules),
-  [bvh_dev, maxCollisionsPerNode, d_numCollisionPerNode, d_collisions] __device__ (std::size_t idx) {
+  [bvh_dev, d_numCollisionPerNode, d_collisions] __device__ (std::size_t idx) {
     unsigned int buffer[maxCollisionsPerNode];
     const auto & self = bvh_dev.objects[idx];
     // broad phase
@@ -82,7 +82,7 @@ void CollisionDetector<T>::detectCollisions() {
     }
     return;
   });
-  cudaStatus = cudaDeviceSynchronize();
+  cudaDeviceSynchronize();
 }
 template <typename T>
 Collision<T> CollisionDetector<T>::operator[](int id) {
