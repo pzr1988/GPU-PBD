@@ -90,8 +90,12 @@ class ContactGenerator {
         for (const T &r : range) {
           contactM._localMemory[contactM._numCollision]._capsuleIdA = contactM._lhsId;
           contactM._localMemory[contactM._numCollision]._capsuleIdB = contactM._rhsId;
-          contactM._localMemory[contactM._numCollision]._gobalPointA = cA1 + nA * r + nA2B * contactM._lhsRadius;
-          contactM._localMemory[contactM._numCollision]._gobalPointB = cA1 + nA * r + dir - nA2B * contactM._rhsRadius;
+          auto globalPointA = cA1 + nA * r + nA2B * contactM._lhsRadius;
+          auto globalPointB = cA1 + nA * r + dir - nA2B * contactM._rhsRadius;
+          contactM._localMemory[contactM._numCollision]._localPointA = 
+            contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
+          contactM._localMemory[contactM._numCollision]._localPointB = 
+            contactM._rhs->_q.conjugate().toRotationMatrix()*(globalPointB-contactM._rhs->_x);
           contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
           contactM._localMemory[contactM._numCollision]._isValid = true;
           contactM._numCollision++;
@@ -117,31 +121,36 @@ class ContactGenerator {
           nA2B *= -1;
         contactM._localMemory[contactM._numCollision]._capsuleIdA = contactM._lhsId;
         contactM._localMemory[contactM._numCollision]._capsuleIdB = contactM._rhsId;
-        contactM._localMemory[contactM._numCollision]._gobalPointA = cA + nA2B * contactM._lhsRadius;
-        contactM._localMemory[contactM._numCollision]._gobalPointB = cB - nA2B * contactM._rhsRadius;
+        auto globalPointA = cA + nA2B * contactM._lhsRadius;
+        auto globalPointB = cB - nA2B * contactM._rhsRadius;
+        contactM._localMemory[contactM._numCollision]._localPointA = 
+            contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
+        contactM._localMemory[contactM._numCollision]._localPointB = 
+            contactM._rhs->_q.conjugate().toRotationMatrix()*(globalPointB-contactM._rhs->_x);
         contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
         contactM._localMemory[contactM._numCollision]._isValid = true;
         contactM._numCollision++;
         numCollision++;
       } else {
         GPUPBD::Collision<T> collision;
-        generateManifoldSphereCapsuleInternal(collision,
-                                              cA1, contactM._lhsRadius, contactM._lhsId,
-                                              cB1, cB2, contactM._rhsRadius, contactM._rhsId);
-        generateManifoldSphereCapsuleInternal(collision,
-                                              cA2, contactM._lhsRadius, contactM._lhsId,
-                                              cB1, cB2, contactM._rhsRadius, contactM._rhsId);
-        generateManifoldSphereCapsuleInternal(collision,
-                                              cB1, contactM._rhsRadius, contactM._rhsId,
-                                              cA1, cA2, contactM._lhsRadius, contactM._lhsId);
-        generateManifoldSphereCapsuleInternal(collision,
-                                              cB2, contactM._rhsRadius, contactM._rhsId,
-                                              cA1, cA2, contactM._lhsRadius, contactM._lhsId);
+        T collisionDepth = 0;
+        generateManifoldSphereCapsuleInternal(collision, collisionDepth,
+                                              cA1, contactM._lhs, contactM._lhsId,
+                                              contactM._rhs, contactM._rhsId);
+        generateManifoldSphereCapsuleInternal(collision,collisionDepth,
+                                              cA2, contactM._lhs, contactM._lhsId,
+                                              contactM._rhs, contactM._rhsId);
+        generateManifoldSphereCapsuleInternal(collision, collisionDepth,
+                                              cB1, contactM._rhs, contactM._rhsId,
+                                              contactM._lhs, contactM._lhsId);
+        generateManifoldSphereCapsuleInternal(collision, collisionDepth,
+                                              cB2, contactM._rhs, contactM._rhsId,
+                                              contactM._lhs, contactM._lhsId);
         if (collision._isValid) {
           contactM._localMemory[contactM._numCollision]._capsuleIdA = collision._capsuleIdA;
           contactM._localMemory[contactM._numCollision]._capsuleIdB = collision._capsuleIdB;
-          contactM._localMemory[contactM._numCollision]._gobalPointA = collision._gobalPointA;
-          contactM._localMemory[contactM._numCollision]._gobalPointB = collision._gobalPointB;
+          contactM._localMemory[contactM._numCollision]._localPointA = collision._localPointA;
+          contactM._localMemory[contactM._numCollision]._localPointB = collision._localPointB;
           contactM._localMemory[contactM._numCollision]._globalNormal = collision._globalNormal;
           contactM._localMemory[contactM._numCollision]._isValid = true;
           contactM._numCollision++;
@@ -185,24 +194,35 @@ class ContactGenerator {
     }
     contactM._localMemory[contactM._numCollision]._capsuleIdA = contactM._lhsId;
     contactM._localMemory[contactM._numCollision]._capsuleIdB = contactM._rhsId;
-    contactM._localMemory[contactM._numCollision]._gobalPointA = cA + nA2B * contactM._lhsRadius;
-    contactM._localMemory[contactM._numCollision]._gobalPointB = cB - nA2B * contactM._rhsRadius;
+    auto globalPointA = cA + nA2B * contactM._lhsRadius;
+    auto globalPointB = cB - nA2B * contactM._rhsRadius;
+    contactM._localMemory[contactM._numCollision]._localPointA = 
+        contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
+    contactM._localMemory[contactM._numCollision]._localPointB = 
+        contactM._rhs->_q.conjugate().toRotationMatrix()*(globalPointB-contactM._rhs->_x);
     contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
     contactM._localMemory[contactM._numCollision]._isValid = true;
     contactM._numCollision++;
     return 1;
   }
-  static DEVICE_HOST void generateManifoldSphereCapsuleInternal(GPUPBD::Collision<T>& originCollision,
-      const Vec3T &cA,T cARadius,int lhs_idx,
-      const Vec3T &cB1,const Vec3T &cB2,T cBRadius,int rhs_idx) {
+  static DEVICE_HOST void generateManifoldSphereCapsuleInternal(
+      GPUPBD::Collision<T>& originCollision, T& originCollisionDepth,
+      const Vec3T &cA,const Capsule<T>* lhs,int lhs_idx,
+      const Capsule<T>* rhs,int rhs_idx) {
 
     GPUPBD::Collision<T> collision;
+    auto cB1 = rhs->globalMinCorner().template cast<T>();
+    auto cB2 = rhs->globalMaxCorner().template cast<T>();
+    auto cARadius = lhs->_radius;
+    auto cBRadius = rhs->_radius;
     Vec3T n = cB2 - cB1;
     T nLenSqr = n.squaredNorm(), nLen = sqrt((double)nLenSqr);
     n /= nLen;
     T d = (cA - cB1).dot(n);
     T sumRad = cARadius + cBRadius, sumRadSqr = sumRad * sumRad;
     // three cases
+    Vec3T globalPointA;
+    Vec3T globalPointB;
     if (d <= 0) {
       T distSqr = (cA - cB1).squaredNorm(), dist = 0;
       // not in contact
@@ -216,8 +236,8 @@ class ContactGenerator {
       } else {
         collision._globalNormal = n;
       }
-      collision._gobalPointA = cA + collision._globalNormal * cARadius;
-      collision._gobalPointB = cB1 - collision._globalNormal * cBRadius;
+      globalPointA = cA + collision._globalNormal * cARadius;
+      globalPointB = cB1 - collision._globalNormal * cBRadius;
     } else if (d >= nLen) {
       T distSqr = (cA - cB2).squaredNorm(), dist = 0;
       // not in contact
@@ -231,8 +251,8 @@ class ContactGenerator {
       } else {
         collision._globalNormal = -n;
       }
-      collision._gobalPointA = cA + collision._globalNormal * cARadius;
-      collision._gobalPointB = cB2 - collision._globalNormal * cBRadius;
+      globalPointA = cA + collision._globalNormal * cARadius;
+      globalPointB = cB2 - collision._globalNormal * cBRadius;
     } else if (d > 0 && d < nLen) {
       Vec3T dir = cA - cB1 - n * d;
       T distSqr = dir.squaredNorm(), dist = 0;
@@ -249,14 +269,20 @@ class ContactGenerator {
         collision._globalNormal = n.cross(Vec3T::Unit(id));
         collision._globalNormal /= collision._globalNormal.template cast<double>().norm();
       }
-      collision._gobalPointA = cA + collision._globalNormal * cARadius;
-      collision._gobalPointB = cA - dir - collision._globalNormal * cBRadius;
+      globalPointA = cA + collision._globalNormal * cARadius;
+      globalPointB = cA - dir - collision._globalNormal * cBRadius;
     }
-    if (!originCollision._isValid || originCollision.depth() < collision.depth()) {
+    collision._localPointA = 
+        lhs->_q.conjugate().toRotationMatrix()*(globalPointA-lhs->_x);
+    collision._localPointB = 
+        rhs->_q.conjugate().toRotationMatrix()*(globalPointB-rhs->_x);
+    auto collisionDepth = (globalPointA-globalPointB).dot(collision._globalNormal);
+    if (!originCollision._isValid || originCollisionDepth < collisionDepth) {
+      originCollisionDepth = collisionDepth;
       originCollision._capsuleIdA = lhs_idx;
       originCollision._capsuleIdB = rhs_idx;
-      originCollision._gobalPointA = collision._gobalPointA;
-      originCollision._gobalPointB = collision._gobalPointB;
+      originCollision._localPointA = collision._localPointA;
+      originCollision._localPointB = collision._localPointB;
       originCollision._globalNormal = collision._globalNormal;
       originCollision._isValid = true;
     }

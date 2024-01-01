@@ -43,8 +43,12 @@ std::shared_ptr<DRAWER::MeshShape> visualizeOrUpdateCollision(const Geometry<T>&
   //visualize
   std::shared_ptr<DRAWER::MeshShape> ret(new DRAWER::MeshShape);
   for(int i=0; i<(int)cpuCollision.size(); i++) {
-    ret->addVertex(cpuCollision[i]._gobalPointA);
-    ret->addVertex(cpuCollision[i]._gobalPointB);
+    const auto& xA=cpuGeometry[cpuCollision[i]._capsuleIdA]._x;
+    const auto& pA=cpuGeometry[cpuCollision[i]._capsuleIdA]._q;
+    const auto& xB=cpuGeometry[cpuCollision[i]._capsuleIdB]._x;
+    const auto& pB=cpuGeometry[cpuCollision[i]._capsuleIdB]._q;
+    ret->addVertex(pA.toRotationMatrix()*cpuCollision[i]._localPointA+xA);
+    ret->addVertex(pB.toRotationMatrix()*cpuCollision[i]._localPointB+xB);
     ret->addIndexSingle(i*2+0);
     ret->addIndexSingle(i*2+1);
   }

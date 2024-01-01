@@ -62,24 +62,21 @@ struct Capsule {
 
 //This structure represents a collision between a pair of capsules
 //The index of first/second capsule is store in _capsuleIdA/_capsuleIdB
-//The points of contact in global coordinates are stored in _gobalPointA/_gobalPointB
+//The points of contact in local coordinates are stored in _localPointA/_localPointB
 //The separating direction of contact is stored in _globalNormal, extending from A to B and having unit norm
 template <typename T>
 struct Collision {
   DECL_MAT_VEC_MAP_TYPES_T
   int _capsuleIdA;
   int _capsuleIdB;
-  Vec3T _gobalPointA;
-  Vec3T _gobalPointB;
+  Vec3T _localPointA;
+  Vec3T _localPointB;
   Vec3T _globalNormal;
   T _alpha; // compliance of the constraint
   bool _isValid;
   DEVICE_HOST Collision():_capsuleIdA(-1),_capsuleIdB(-1),
-    _gobalPointA(Vec3T()),_gobalPointB(Vec3T()),_globalNormal(Vec3T()),
+    _localPointA(Vec3T()),_localPointB(Vec3T()),_globalNormal(Vec3T()),
     _alpha(.0001), _isValid(false) {}
-  DEVICE_HOST T depth() const {
-    return (_gobalPointA-_gobalPointB).dot(_globalNormal);
-  }
 };
 
 //The geometry stores a vector of capsules
