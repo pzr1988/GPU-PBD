@@ -92,9 +92,9 @@ class ContactGenerator {
           contactM._localMemory[contactM._numCollision]._capsuleIdB = contactM._rhsId;
           auto globalPointA = cA1 + nA * r + nA2B * contactM._lhsRadius;
           auto globalPointB = cA1 + nA * r + dir - nA2B * contactM._rhsRadius;
-          contactM._localMemory[contactM._numCollision]._localPointA = 
+          contactM._localMemory[contactM._numCollision]._localPointA =
             contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
-          contactM._localMemory[contactM._numCollision]._localPointB = 
+          contactM._localMemory[contactM._numCollision]._localPointB =
             contactM._rhs->_q.conjugate().toRotationMatrix()*(globalPointB-contactM._rhs->_x);
           contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
           contactM._localMemory[contactM._numCollision]._isValid = true;
@@ -123,10 +123,10 @@ class ContactGenerator {
         contactM._localMemory[contactM._numCollision]._capsuleIdB = contactM._rhsId;
         auto globalPointA = cA + nA2B * contactM._lhsRadius;
         auto globalPointB = cB - nA2B * contactM._rhsRadius;
-        contactM._localMemory[contactM._numCollision]._localPointA = 
-            contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
-        contactM._localMemory[contactM._numCollision]._localPointB = 
-            contactM._rhs->_q.conjugate().toRotationMatrix()*(globalPointB-contactM._rhs->_x);
+        contactM._localMemory[contactM._numCollision]._localPointA =
+          contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
+        contactM._localMemory[contactM._numCollision]._localPointB =
+          contactM._rhs->_q.conjugate().toRotationMatrix()*(globalPointB-contactM._rhs->_x);
         contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
         contactM._localMemory[contactM._numCollision]._isValid = true;
         contactM._numCollision++;
@@ -196,19 +196,19 @@ class ContactGenerator {
     contactM._localMemory[contactM._numCollision]._capsuleIdB = contactM._rhsId;
     auto globalPointA = cA + nA2B * contactM._lhsRadius;
     auto globalPointB = cB - nA2B * contactM._rhsRadius;
-    contactM._localMemory[contactM._numCollision]._localPointA = 
-        contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
-    contactM._localMemory[contactM._numCollision]._localPointB = 
-        contactM._rhs->_q.conjugate().toRotationMatrix()*(globalPointB-contactM._rhs->_x);
+    contactM._localMemory[contactM._numCollision]._localPointA =
+      contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
+    contactM._localMemory[contactM._numCollision]._localPointB =
+      contactM._rhs->_q.conjugate().toRotationMatrix()*(globalPointB-contactM._rhs->_x);
     contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
     contactM._localMemory[contactM._numCollision]._isValid = true;
     contactM._numCollision++;
     return 1;
   }
   static DEVICE_HOST void generateManifoldSphereCapsuleInternal(
-      GPUPBD::Collision<T>& originCollision, T& originCollisionDepth,
-      const Vec3T &cA,const Capsule<T>* lhs,int lhs_idx,
-      const Capsule<T>* rhs,int rhs_idx) {
+    GPUPBD::Collision<T>& originCollision, T& originCollisionDepth,
+    const Vec3T &cA,const Capsule<T>* lhs,int lhs_idx,
+    const Capsule<T>* rhs,int rhs_idx) {
 
     GPUPBD::Collision<T> collision;
     auto cB1 = rhs->globalMinCorner().template cast<T>();
@@ -272,10 +272,10 @@ class ContactGenerator {
       globalPointA = cA + collision._globalNormal * cARadius;
       globalPointB = cA - dir - collision._globalNormal * cBRadius;
     }
-    collision._localPointA = 
-        lhs->_q.conjugate().toRotationMatrix()*(globalPointA-lhs->_x);
-    collision._localPointB = 
-        rhs->_q.conjugate().toRotationMatrix()*(globalPointB-rhs->_x);
+    collision._localPointA =
+      lhs->_q.conjugate().toRotationMatrix()*(globalPointA-lhs->_x);
+    collision._localPointB =
+      rhs->_q.conjugate().toRotationMatrix()*(globalPointB-rhs->_x);
     auto collisionDepth = (globalPointA-globalPointB).dot(collision._globalNormal);
     if (!originCollision._isValid || originCollisionDepth < collisionDepth) {
       originCollisionDepth = collisionDepth;
