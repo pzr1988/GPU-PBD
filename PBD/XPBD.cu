@@ -19,16 +19,19 @@ void XPBD<T>::integrate() {
   auto bIter = _geometry->getMutableCapsules().begin();
   auto eIter = _geometry->getMutableCapsules().end();
   thrust::for_each(thrust::device, bIter, eIter, [=] __host__ __device__ (Capsule<T>& capsule) {
+    capsule._xPrev = capsule._x;
     capsule._v += capsule._force*dt/capsule._mass;
-    capsule._xNext = capsule._x+capsule._v*dt;
+    capsule._x += capsule._v*dt;
+
+    capsule._qPrev = capsule._q;
     capsule._R = capsule._q.toRotationMatrix();
     capsule._Iinv = capsule._R*capsule._Ibodyinv*capsule._R.transpose();
     capsule._w += capsule._Iinv*(capsule._torque
                                  - capsule._w.cross(capsule._R*capsule._Ibody*capsule._R.transpose()*capsule._w))*dt;
     Eigen::Quaternion<T> wQuat(0,capsule._w.x(),capsule._w.y(),capsule._w.z());
     Eigen::Quaternion<T> updatedQuat = Eigen::Quaternion<T>(0.5*dt,0,0,0)*wQuat*capsule._q;
-    capsule._qNext = Eigen::Quaternion<T>(capsule._q.coeffs() + updatedQuat.coeffs());
-    capsule._qNext.normalize();
+    capsule._q = Eigen::Quaternion<T>(capsule._q.coeffs() + updatedQuat.coeffs());
+    capsule._q.normalize();
   });
   cudaDeviceSynchronize();
 }
@@ -65,12 +68,10 @@ void XPBD<T>::updateVelocity() {
   auto bIter = _geometry->getMutableCapsules().begin();
   auto eIter = _geometry->getMutableCapsules().end();
   thrust::for_each(thrust::device, bIter, eIter, [=] __host__ __device__ (Capsule<T>& capsule) {
-    capsule._v = (capsule._xNext-capsule._x)/dt;
-    capsule._x = capsule._xNext;
-    auto deltaQ = capsule._qNext*capsule._q.inverse();
+    capsule._v = (capsule._x-capsule._xPrev)/dt;
+    auto deltaQ = capsule._q*capsule._qPrev.inverse();
     capsule._w = 2*deltaQ.vec()/dt;
     capsule._w = deltaQ.w() >=0 ? capsule._w : -capsule._w;
-    capsule._q = capsule._qNext;
   });
   cudaDeviceSynchronize();
 }

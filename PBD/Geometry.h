@@ -21,8 +21,8 @@ struct Capsule {
   /* State variables */
   Vec3T _x;
   Eigen::Quaternion<T> _q;
-  Vec3T _xNext; //Tentative transformation at the next timestep
-  Eigen::Quaternion<T> _qNext;
+  Vec3T _xPrev; //Auxilliary variable for XPBD
+  Eigen::Quaternion<T> _qPrev;
   Vec3T _v; //linear velocity
   Vec3T _w; //angular velocity
   /* Derived quantities (auxiliary variables) */
