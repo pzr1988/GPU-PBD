@@ -8,6 +8,7 @@ template <typename T>
 void XPBD<T>::step() {
   integrate();
   _detector->detectCollisions();
+  initRelaxConstraint();
   for(int i=0; i<_nRelax; i++)
     relaxConstraint();
   updateVelocity();
@@ -32,8 +33,31 @@ void XPBD<T>::integrate() {
   cudaDeviceSynchronize();
 }
 template <typename T>
+void XPBD<T>::initRelaxConstraint() {
+  if(_detector->size() == 0) {
+    return;
+  }
+  _lambda.clear();
+  _lambda.resize(_detector->size());
+}
+template <typename T>
 void XPBD<T>::relaxConstraint() {
-  //to be implemeneted
+  if(_detector->size() == 0) {
+    return;
+  }
+  const auto& collisions = _detector->getCollisions();
+  auto& capsules = _geometry->getMutableCapsules();
+  Capsule<T>* d_capsules = thrust::raw_pointer_cast(capsules.data());
+  auto bIter = collisions.begin();
+  auto eIter = collisions.end();
+
+  thrust::for_each(thrust::device, bIter, eIter, [d_capsules] __host__ __device__ (const Collision<T>& collision) {
+    // TODO
+    int idA = collision._capsuleIdA;
+    int idB = collision._capsuleIdB;
+
+  });
+
 }
 template <typename T>
 void XPBD<T>::updateVelocity() {

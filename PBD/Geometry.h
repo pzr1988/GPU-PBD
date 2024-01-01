@@ -72,8 +72,11 @@ struct Collision {
   Vec3T _gobalPointA;
   Vec3T _gobalPointB;
   Vec3T _globalNormal;
+  T _alpha; // compliance of the constraint
   bool _isValid;
-  DEVICE_HOST Collision():_capsuleIdA(-1),_capsuleIdB(-1),_gobalPointA(Vec3T()),_gobalPointB(Vec3T()),_globalNormal(Vec3T()),_isValid(false) {}
+  DEVICE_HOST Collision():_capsuleIdA(-1),_capsuleIdB(-1),
+    _gobalPointA(Vec3T()),_gobalPointB(Vec3T()),_globalNormal(Vec3T()),
+    _alpha(.0001), _isValid(false) {}
   DEVICE_HOST T depth() const {
     return (_gobalPointA-_gobalPointB).dot(_globalNormal);
   }

@@ -20,13 +20,17 @@ class XPBD {
   //We first compute Capsule._v and Capsule._w from Capsule._trans(Next)
   //We then set Capsule._trans=Capsule._transNext;
   void updateVelocity();
-  // Use detector to visulize collisions
+  //Use detector to visulize collisions
   const CollisionDetector<T>& getDetector() const;
  protected:
   std::shared_ptr<Geometry<T>> _geometry;
   std::shared_ptr<CollisionDetector<T>> _detector;
   T _dt;
   int _nRelax;
+  thrust::device_vector<T> _lambda;
+ private:
+  //Init for relax all the constraints process
+  void initRelaxConstraint();
 };
 
 }
