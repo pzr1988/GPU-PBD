@@ -21,9 +21,9 @@ int main(int argc,char** argv) {
   std::uniform_real_distribution<T> uni(0.0, 1.0);
 
   for(auto& p:ps) {
-    p._mass = 1.;
     p._len=uni(mt);
     p._radius=uni(mt)/3.;
+    p._mass = 3.14*p._radius*p._radius*p._len+3.14*4.0/3.0*p._radius*p._radius*p._radius;
     Eigen::Quaternion<T> q(uni(mt),uni(mt),uni(mt),uni(mt));
     q.normalize();
     p._q = q;

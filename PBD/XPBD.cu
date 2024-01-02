@@ -83,10 +83,12 @@ void XPBD<T>::relaxConstraint() {
     Eigen::Quaternion<T> cAIinvRCrossPQuat(0,cAIinvRCrossP.x(),cAIinvRCrossP.y(),cAIinvRCrossP.z());
     Eigen::Quaternion<T> cAQUpdated = Eigen::Quaternion<T>(0.5,0,0,0)*cAIinvRCrossPQuat*cA._q;
     cA._q = Eigen::Quaternion<T>(cA._q.coeffs() + cAQUpdated.coeffs());
+    cA._q.normalize();
     Vec3T cBIinvRCrossP = cBIinv * (globalPointB.cross(p)); // I^{-1}(r x p)
     Eigen::Quaternion<T> cBIinvRCrossPQuat(0,cBIinvRCrossP.x(),cBIinvRCrossP.y(),cBIinvRCrossP.z());
     Eigen::Quaternion<T> cBQUpdated = Eigen::Quaternion<T>(0.5,0,0,0)*cBIinvRCrossPQuat*cB._q;
     cB._q = Eigen::Quaternion<T>(cB._q.coeffs() - cBQUpdated.coeffs());
+    cB._q.normalize();
   });
 }
 template <typename T>
