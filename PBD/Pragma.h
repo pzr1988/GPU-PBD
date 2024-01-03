@@ -112,6 +112,7 @@ CTR(IA)=-(ROT(IA)*CTR(A)).eval();
 #define DECL_MAT_VEC_MAP_TYPES_T \
 typedef Eigen::Matrix<T,2,1> Vec2T;\
 typedef Eigen::Matrix<T,3,1> Vec3T;\
+typedef Eigen::Matrix<T,4,1> Vec4T;\
 typedef Eigen::Matrix<int,3,1> Vec3i;\
 typedef Eigen::Matrix<T,6,1> Vec6T;\
 typedef Eigen::Matrix<int,9,1> Vec9i;\

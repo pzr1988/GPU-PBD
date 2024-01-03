@@ -28,12 +28,20 @@ class XPBD {
   std::shared_ptr<CollisionDetector<T>> _detector;
   T _dt;
   int _nRelax;
-  thrust::device_vector<T> _lambda;
  private:
   //Init for relax all the constraints process
   void initRelaxConstraint();
   DEVICE_HOST static T computeGeneralizedInversMass(const Capsule<T>& capsule, const Vec3T& normal, const Vec3T& placementPoint);
   DEVICE_HOST static Eigen::Quaternion<T> getDeltaRot(const Capsule<T>& capsule, const Vec3T& placementPoint, const Vec3T& pulse);
+ private:
+  thrust::device_vector<T> _lambda;
+  //Cache deltaX and deltaQ during relaxConstraint to avoid multi write problem
+  thrust::device_vector<int> _collisionCapsuleId;
+  thrust::device_vector<Vec3T> _deltaX;
+  thrust::device_vector<Vec4T> _deltaQ;
+  thrust::device_vector<int> _reduceCapsuleId;
+  thrust::device_vector<Vec3T> _reduceDeltaX;
+  thrust::device_vector<Vec4T> _reduceDeltaQ;
 };
 
 }
