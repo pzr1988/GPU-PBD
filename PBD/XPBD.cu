@@ -93,32 +93,7 @@ void XPBD<T>::relaxConstraint() {
     d_deltaQ[2*idx+1] = -getDeltaRot(cB, placementPointB, pulse).coeffs();
   });
 
-  //Reduce multi collisions of one capsule, then write
-  auto endX = thrust::reduce_by_key(_collisionCapsuleId.begin(), _collisionCapsuleId.end(),
-                                    _deltaX.begin(), _reduceCapsuleId.begin(), _reduceDeltaX.begin());
-  _reduceCapsuleId.erase(endX.first, _reduceCapsuleId.end());
-  int * d_reduceCapsuleId = thrust::raw_pointer_cast(_reduceCapsuleId.data());
-  Vec3T* d_reduceDeltaX = thrust::raw_pointer_cast(_reduceDeltaX.data());
-  thrust::for_each(thrust::device,
-                   thrust::make_counting_iterator(0),
-                   thrust::make_counting_iterator(static_cast<int>(_reduceCapsuleId.size())),
-  [=] __host__ __device__ (int idx) {
-    d_capsules[d_reduceCapsuleId[idx]]._x = d_capsules[d_reduceCapsuleId[idx]]._x + d_reduceDeltaX[idx];
-  });
-
-  auto endQ = thrust::reduce_by_key(_collisionCapsuleId.begin(), _collisionCapsuleId.end(),
-                                    _deltaQ.begin(), _reduceCapsuleId.begin(), _reduceDeltaQ.begin());
-  _reduceCapsuleId.erase(endQ.first, _reduceCapsuleId.end());
-  d_reduceCapsuleId = thrust::raw_pointer_cast(_reduceCapsuleId.data());
-  Vec4T* d_reduceDeltaQ = thrust::raw_pointer_cast(_reduceDeltaQ.data());
-  thrust::for_each(thrust::device,
-                   thrust::make_counting_iterator(0),
-                   thrust::make_counting_iterator(static_cast<int>(_reduceCapsuleId.size())),
-  [=] __host__ __device__ (int idx) {
-    d_capsules[d_reduceCapsuleId[idx]]._q = Eigen::Quaternion<T>(d_capsules[d_reduceCapsuleId[idx]]._q.coeffs()
-                                            + d_reduceDeltaQ[idx]);
-    d_capsules[d_reduceCapsuleId[idx]]._q.normalize();
-  });
+  updateCapsuleState();
 }
 template <typename T>
 void XPBD<T>::updateVelocity() {
@@ -154,6 +129,37 @@ DEVICE_HOST Eigen::Quaternion<T> XPBD<T>::getDeltaRot(const Capsule<T>& c, const
   Eigen::Quaternion<T> cIinvRCrossPQuat(0,cIinvRCrossP.x(),cIinvRCrossP.y(),cIinvRCrossP.z());
   auto qUpdated = Eigen::Quaternion<T>(0.5,0,0,0)*cIinvRCrossPQuat*c._q;
   return qUpdated;
+}
+template <typename T>
+void XPBD<T>::updateCapsuleState() {
+  auto& capsules = _geometry->getMutableCapsules();
+  Capsule<T>* d_capsules = thrust::raw_pointer_cast(capsules.data());
+  //Reduce multi collisions of one capsule, then write
+  auto endX = thrust::reduce_by_key(_collisionCapsuleId.begin(), _collisionCapsuleId.end(),
+                                    _deltaX.begin(), _reduceCapsuleId.begin(), _reduceDeltaX.begin());
+  _reduceCapsuleId.erase(endX.first, _reduceCapsuleId.end());
+  int * d_reduceCapsuleId = thrust::raw_pointer_cast(_reduceCapsuleId.data());
+  Vec3T* d_reduceDeltaX = thrust::raw_pointer_cast(_reduceDeltaX.data());
+  thrust::for_each(thrust::device,
+                   thrust::make_counting_iterator(0),
+                   thrust::make_counting_iterator(static_cast<int>(_reduceCapsuleId.size())),
+  [=] __host__ __device__ (int idx) {
+    d_capsules[d_reduceCapsuleId[idx]]._x = d_capsules[d_reduceCapsuleId[idx]]._x + d_reduceDeltaX[idx];
+  });
+
+  auto endQ = thrust::reduce_by_key(_collisionCapsuleId.begin(), _collisionCapsuleId.end(),
+                                    _deltaQ.begin(), _reduceCapsuleId.begin(), _reduceDeltaQ.begin());
+  _reduceCapsuleId.erase(endQ.first, _reduceCapsuleId.end());
+  d_reduceCapsuleId = thrust::raw_pointer_cast(_reduceCapsuleId.data());
+  Vec4T* d_reduceDeltaQ = thrust::raw_pointer_cast(_reduceDeltaQ.data());
+  thrust::for_each(thrust::device,
+                   thrust::make_counting_iterator(0),
+                   thrust::make_counting_iterator(static_cast<int>(_reduceCapsuleId.size())),
+  [=] __host__ __device__ (int idx) {
+    d_capsules[d_reduceCapsuleId[idx]]._q = Eigen::Quaternion<T>(d_capsules[d_reduceCapsuleId[idx]]._q.coeffs()
+                                            + d_reduceDeltaQ[idx]);
+    d_capsules[d_reduceCapsuleId[idx]]._q.normalize();
+  });
 }
 //declare instance
 template struct XPBD<LSCALAR>;

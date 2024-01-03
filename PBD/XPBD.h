@@ -18,6 +18,9 @@ class XPBD {
   void integrate();
   //Relax all the constraints
   void relaxConstraint();
+  //During relaxConstraints, the state's update will be cached.
+  //Then we update state in this function.
+  void updateCapsuleState();
   //We first compute Capsule._v and Capsule._w from Capsule._trans(Next)
   //We then set Capsule._trans=Capsule._transNext;
   void updateVelocity();
