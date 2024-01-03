@@ -58,6 +58,10 @@ struct Capsule {
               0, 1./Iyy, 0,
               0, 0, 1./Iyy;
   }
+  DEVICE_HOST Mat3T getInertiaTensorInv() const {
+    auto R = _q.toRotationMatrix();
+    return R*_Ibodyinv*R.transpose();
+  }
 };
 
 //This structure represents a collision between a pair of capsules

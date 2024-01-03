@@ -1,6 +1,7 @@
 #ifndef XPBD_H
 #define XPBD_H
 #include "Collision.h"
+#include "PBD/Geometry.h"
 
 namespace GPUPBD {
 //The collisionDetector has the capability of detecting all pairs of collisions between all pairs of capsules
@@ -31,6 +32,8 @@ class XPBD {
  private:
   //Init for relax all the constraints process
   void initRelaxConstraint();
+  DEVICE_HOST static T computeGeneralizedInversMass(const Capsule<T>& capsule, const Vec3T& normal, const Vec3T& placementPoint);
+  DEVICE_HOST static Eigen::Quaternion<T> getDeltaRot(const Capsule<T>& capsule, const Vec3T& placementPoint, const Vec3T& pulse);
 };
 
 }

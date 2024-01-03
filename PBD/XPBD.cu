@@ -63,33 +63,25 @@ void XPBD<T>::relaxConstraint() {
     auto& cB = d_capsules[collision._capsuleIdB];
     auto placementPointA = cA._q.toRotationMatrix()*collision._localPointA;
     auto placementPointB = cB._q.toRotationMatrix()*collision._localPointB;
-    auto cARCrossN = placementPointA.cross(collision._globalNormal); //r_1 x n
-    auto cAR = cA._q.toRotationMatrix();
-    auto cAIinv = cAR*cA._Ibodyinv*cAR.transpose(); //inverse of interia tensor
-    auto cBRCrossN = placementPointB.cross(collision._globalNormal); //r_2 x n
-    auto cBR = cB._q.toRotationMatrix();
-    auto cBIinv = cBR*cB._Ibodyinv*cBR.transpose(); //inverse of interia tensor
-    T wA = 1.0/cA._mass+cARCrossN.transpose()*cAIinv*cARCrossN;
-    T wB = 1.0/cB._mass+cBRCrossN.transpose()*cBIinv*cBRCrossN;
     auto globalPointA = placementPointA+cA._x;
     auto globalPointB = placementPointB+cB._x;
-    T c = (globalPointA-globalPointB).dot(collision._globalNormal);
-    T alpha= collision._alpha / (dt*dt);
-    T deltaLambda = (-c-d_lambda[idx]*alpha)/(wA + wB + alpha);
+    auto wA = computeGeneralizedInversMass(cA, placementPointA,
+                                           collision._globalNormal);
+    auto wB = computeGeneralizedInversMass(cB, placementPointB,
+                                           collision._globalNormal);
+    auto collisionDepth = (globalPointA-globalPointB).dot(collision._globalNormal);
+    auto alpha = collision._alpha/(dt*dt);
+    auto deltaLambda = (-collisionDepth-d_lambda[idx]*alpha)/(wA+wB+alpha);
     d_lambda[idx] += deltaLambda;
-    Vec3T p = deltaLambda*collision._globalNormal;
+    auto pulse = deltaLambda*collision._globalNormal;
     // TODO 原子
-    cA._x += p/cA._mass;
-    cB._x -= p/cB._mass;
-    Vec3T cAIinvRCrossP = cAIinv * (placementPointA.cross(p)); // I^{-1}(r x p)
-    Eigen::Quaternion<T> cAIinvRCrossPQuat(0,cAIinvRCrossP.x(),cAIinvRCrossP.y(),cAIinvRCrossP.z());
-    Eigen::Quaternion<T> cAQUpdated = Eigen::Quaternion<T>(0.5,0,0,0)*cAIinvRCrossPQuat*cA._q;
-    cA._q = Eigen::Quaternion<T>(cA._q.coeffs() + cAQUpdated.coeffs());
+    cA._x += pulse/cA._mass;
+    cB._x -= pulse/cB._mass;
+    auto cAQUpdated = getDeltaRot(cA, placementPointA, pulse);
+    cA._q = Eigen::Quaternion<T>(cA._q.coeffs()+cAQUpdated.coeffs());
     cA._q.normalize();
-    Vec3T cBIinvRCrossP = cBIinv * (placementPointB.cross(p)); // I^{-1}(r x p)
-    Eigen::Quaternion<T> cBIinvRCrossPQuat(0,cBIinvRCrossP.x(),cBIinvRCrossP.y(),cBIinvRCrossP.z());
-    Eigen::Quaternion<T> cBQUpdated = Eigen::Quaternion<T>(0.5,0,0,0)*cBIinvRCrossPQuat*cB._q;
-    cB._q = Eigen::Quaternion<T>(cB._q.coeffs() - cBQUpdated.coeffs());
+    auto cBQUpdated = getDeltaRot(cB, placementPointB, pulse);
+    cB._q = Eigen::Quaternion<T>(cB._q.coeffs()-cBQUpdated.coeffs());
     cB._q.normalize();
   });
 }
@@ -112,6 +104,21 @@ const CollisionDetector<T>& XPBD<T>::getDetector() const {
     throw std::runtime_error("Detector is not initialized");
   }
   return *_detector;
+}
+template <typename T>
+DEVICE_HOST T XPBD<T>::computeGeneralizedInversMass(const Capsule<T>& c, const Vec3T& n, const Vec3T& r) {
+  auto Iinv = c.getInertiaTensorInv();
+  auto rCrossN = r.cross(n);
+  auto w = 1.0/c._mass+rCrossN.transpose()*Iinv*rCrossN;
+  return w;
+}
+template <typename T>
+DEVICE_HOST Eigen::Quaternion<T> XPBD<T>::getDeltaRot(const Capsule<T>& c, const Vec3T& r, const Vec3T& pulse) {
+  auto cIinv = c.getInertiaTensorInv();
+  auto cIinvRCrossP = cIinv * (r.cross(pulse)); // I^{-1}(r x p)
+  Eigen::Quaternion<T> cIinvRCrossPQuat(0,cIinvRCrossP.x(),cIinvRCrossP.y(),cIinvRCrossP.z());
+  auto qUpdated = Eigen::Quaternion<T>(0.5,0,0,0)*cIinvRCrossPQuat*c._q;
+  return qUpdated;
 }
 //declare instance
 template struct XPBD<LSCALAR>;
