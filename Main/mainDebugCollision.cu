@@ -31,6 +31,7 @@ int main(int argc,char** argv) {
     trans.setRandom();
     p._x = trans;
     p.initInertiaTensor();
+    p._isDynamic = true;
   }
 
   std::shared_ptr<GPUPBD::Geometry<T>> geometry(new GPUPBD::Geometry<T>);

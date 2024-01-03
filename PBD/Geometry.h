@@ -18,6 +18,7 @@ struct Capsule {
   T _len,_radius;
   T _mass;
   Mat3T _Ibody, _Ibodyinv; //body space inertia tensor
+  bool _isDynamic;
   /* State variables */
   Vec3T _x;
   Eigen::Quaternion<T> _q;

@@ -20,18 +20,19 @@ void XPBD<T>::integrate() {
   auto eIter = _geometry->getMutableCapsules().end();
   thrust::for_each(thrust::device, bIter, eIter, [=] __host__ __device__ (Capsule<T>& capsule) {
     capsule._xPrev = capsule._x;
-    capsule._v += capsule._force*dt/capsule._mass;
-    capsule._x += capsule._v*dt;
-
     capsule._qPrev = capsule._q;
-    capsule._R = capsule._q.toRotationMatrix();
-    capsule._Iinv = capsule._R*capsule._Ibodyinv*capsule._R.transpose();
-    capsule._w += capsule._Iinv*(capsule._torque
-                                 - capsule._w.cross(capsule._R*capsule._Ibody*capsule._R.transpose()*capsule._w))*dt;
-    Eigen::Quaternion<T> wQuat(0,capsule._w.x(),capsule._w.y(),capsule._w.z());
-    Eigen::Quaternion<T> updatedQuat = Eigen::Quaternion<T>(0.5*dt,0,0,0)*wQuat*capsule._q;
-    capsule._q = Eigen::Quaternion<T>(capsule._q.coeffs() + updatedQuat.coeffs());
-    capsule._q.normalize();
+    if(capsule._isDynamic) {
+      capsule._v += capsule._force*dt/capsule._mass;
+      capsule._x += capsule._v*dt;
+      capsule._R = capsule._q.toRotationMatrix();
+      capsule._Iinv = capsule._R*capsule._Ibodyinv*capsule._R.transpose();
+      capsule._w += capsule._Iinv*(capsule._torque
+                                   - capsule._w.cross(capsule._R*capsule._Ibody*capsule._R.transpose()*capsule._w))*dt;
+      Eigen::Quaternion<T> wQuat(0,capsule._w.x(),capsule._w.y(),capsule._w.z());
+      Eigen::Quaternion<T> updatedQuat = Eigen::Quaternion<T>(0.5*dt,0,0,0)*wQuat*capsule._q;
+      capsule._q = Eigen::Quaternion<T>(capsule._q.coeffs() + updatedQuat.coeffs());
+      capsule._q.normalize();
+    }
   });
   cudaDeviceSynchronize();
 }
@@ -101,10 +102,12 @@ void XPBD<T>::updateVelocity() {
   auto bIter = _geometry->getMutableCapsules().begin();
   auto eIter = _geometry->getMutableCapsules().end();
   thrust::for_each(thrust::device, bIter, eIter, [=] __host__ __device__ (Capsule<T>& capsule) {
-    capsule._v = (capsule._x-capsule._xPrev)/dt;
-    auto deltaQ = capsule._q*capsule._qPrev.inverse();
-    capsule._w = 2*deltaQ.vec()/dt;
-    capsule._w = deltaQ.w() >=0 ? capsule._w : -capsule._w;
+    if(capsule._isDynamic) {
+      capsule._v = (capsule._x-capsule._xPrev)/dt;
+      auto deltaQ = capsule._q*capsule._qPrev.inverse();
+      capsule._w = 2*deltaQ.vec()/dt;
+      capsule._w = deltaQ.w() >=0 ? capsule._w : -capsule._w;
+    }
   });
   cudaDeviceSynchronize();
 }
@@ -117,6 +120,9 @@ const CollisionDetector<T>& XPBD<T>::getDetector() const {
 }
 template <typename T>
 DEVICE_HOST T XPBD<T>::computeGeneralizedInversMass(const Capsule<T>& c, const Vec3T& n, const Vec3T& r) {
+  if(!c._isDynamic) {
+    return .0;
+  }
   auto Iinv = c.getInertiaTensorInv();
   auto rCrossN = r.cross(n);
   auto w = 1.0/c._mass+rCrossN.transpose()*Iinv*rCrossN;
@@ -144,7 +150,9 @@ void XPBD<T>::updateCapsuleState() {
                    thrust::make_counting_iterator(0),
                    thrust::make_counting_iterator(static_cast<int>(_reduceCapsuleId.size())),
   [=] __host__ __device__ (int idx) {
-    d_capsules[d_reduceCapsuleId[idx]]._x = d_capsules[d_reduceCapsuleId[idx]]._x + d_reduceDeltaX[idx];
+    if(d_capsules[d_reduceCapsuleId[idx]]._isDynamic) {
+      d_capsules[d_reduceCapsuleId[idx]]._x = d_capsules[d_reduceCapsuleId[idx]]._x + d_reduceDeltaX[idx];
+    }
   });
 
   auto endQ = thrust::reduce_by_key(_collisionCapsuleId.begin(), _collisionCapsuleId.end(),
@@ -156,9 +164,11 @@ void XPBD<T>::updateCapsuleState() {
                    thrust::make_counting_iterator(0),
                    thrust::make_counting_iterator(static_cast<int>(_reduceCapsuleId.size())),
   [=] __host__ __device__ (int idx) {
-    d_capsules[d_reduceCapsuleId[idx]]._q = Eigen::Quaternion<T>(d_capsules[d_reduceCapsuleId[idx]]._q.coeffs()
-                                            + d_reduceDeltaQ[idx]);
-    d_capsules[d_reduceCapsuleId[idx]]._q.normalize();
+    if(d_capsules[d_reduceCapsuleId[idx]]._isDynamic) {
+      d_capsules[d_reduceCapsuleId[idx]]._q = Eigen::Quaternion<T>(d_capsules[d_reduceCapsuleId[idx]]._q.coeffs()
+                                              + d_reduceDeltaQ[idx]);
+      d_capsules[d_reduceCapsuleId[idx]]._q.normalize();
+    }
   });
 }
 //declare instance
