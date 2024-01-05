@@ -24,15 +24,54 @@ int main(int argc,char** argv) {
     p._len=uni(mt);
     p._radius=uni(mt)/3.;
     p._mass = 3.14*p._radius*p._radius*p._len+3.14*4.0/3.0*p._radius*p._radius*p._radius;
+    p._force = Eigen::Matrix<T,3,1>(0, 1*p._mass,0);
     Eigen::Quaternion<T> q(uni(mt),uni(mt),uni(mt),uni(mt));
+    q.normalize();
+    Eigen::AngleAxis<T> euler(q);
+    euler.axis().x()=0;
+    euler.axis().y()=0;
+    euler.axis().normalize();
+    q = Eigen::Quaternion<T>(euler);
     q.normalize();
     p._q = q;
     Eigen::Matrix<T,3,1> trans;
     trans.setRandom();
     p._x = trans;
+    p._x.z() = 0;
     p.initInertiaTensor();
     p._isDynamic = true;
   }
+
+  // boundary
+  Capsule<T> b_1;
+  b_1._len = 10.;
+  b_1._radius = 0.1;
+  b_1._mass = 1.0;
+  b_1._x = Eigen::Matrix<T,3,1>(0,-4,0);
+  b_1._q = Eigen::Quaternion<T>(1,0,0,0);
+  b_1.initInertiaTensor();
+  b_1._isDynamic = false;
+  ps.push_back(b_1);
+
+  Capsule<T> b_2;
+  b_2._len = 8.;
+  b_2._radius = 0.1;
+  b_2._mass = 1.0;
+  b_2._x = Eigen::Matrix<T,3,1>(5,0,0);
+  b_2._q = Eigen::Quaternion<T>(0.7071,0,0,0.7071);
+  b_2.initInertiaTensor();
+  b_2._isDynamic = false;
+  ps.push_back(b_2);
+
+  Capsule<T> b_3;
+  b_3._len = 8;
+  b_3._radius = 0.1;
+  b_3._mass = 1.0;
+  b_3._x = Eigen::Matrix<T,3,1>(-5,0,0);
+  b_3._q = Eigen::Quaternion<T>(0.7071,0,0,0.7071);
+  b_3.initInertiaTensor();
+  b_3._isDynamic = false;
+  ps.push_back(b_3);
 
   std::shared_ptr<GPUPBD::Geometry<T>> geometry(new GPUPBD::Geometry<T>);
   geometry->reserve(ps.size());
@@ -51,7 +90,9 @@ int main(int argc,char** argv) {
   auto shapeCollision=visualizeOrUpdateCollision(*geometry,xpbd.getDetector());
   drawer.addShape(shapeGeometry);
   drawer.addShape(shapeCollision);
-  drawer.addCamera3D(90,Eigen::Matrix<GLfloat,3,1>(0,1,0));
+  drawer.addCamera3D(90,Eigen::Matrix<GLfloat,3,1>(0,1,0),
+    Eigen::Matrix<GLfloat,3,1>(0,0,5),
+    Eigen::Matrix<GLfloat,3,1>(0,0,-1));
   drawer.getCamera3D()->setManipulator(std::shared_ptr<DRAWER::CameraManipulator>(new DRAWER::FirstPersonCameraManipulator(drawer.getCamera3D())));
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::ImGuiPlugin([&]() {
     drawer.getCamera3D()->getManipulator()->imGuiCallback();
