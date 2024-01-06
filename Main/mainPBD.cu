@@ -24,7 +24,7 @@ int main(int argc,char** argv) {
     p._len=uni(mt);
     p._radius=uni(mt)/3.;
     p._mass = 3.14*p._radius*p._radius*p._len+3.14*4.0/3.0*p._radius*p._radius*p._radius;
-    p._force = Eigen::Matrix<T,3,1>(0, 1*p._mass,0);
+    p._force = Eigen::Matrix<T,3,1>(0, -9.8*p._mass,0);
     Eigen::Quaternion<T> q(uni(mt),uni(mt),uni(mt),uni(mt));
     q.normalize();
     Eigen::AngleAxis<T> euler(q);
@@ -45,7 +45,7 @@ int main(int argc,char** argv) {
   // boundary
   Capsule<T> b_1;
   b_1._len = 10.;
-  b_1._radius = 0.1;
+  b_1._radius = 1.0;
   b_1._mass = 1.0;
   b_1._x = Eigen::Matrix<T,3,1>(0,-4,0);
   b_1._q = Eigen::Quaternion<T>(1,0,0,0);
@@ -55,7 +55,7 @@ int main(int argc,char** argv) {
 
   Capsule<T> b_2;
   b_2._len = 8.;
-  b_2._radius = 0.1;
+  b_2._radius = 1.0;
   b_2._mass = 1.0;
   b_2._x = Eigen::Matrix<T,3,1>(5,0,0);
   b_2._q = Eigen::Quaternion<T>(0.7071,0,0,0.7071);
@@ -65,7 +65,7 @@ int main(int argc,char** argv) {
 
   Capsule<T> b_3;
   b_3._len = 8;
-  b_3._radius = 0.1;
+  b_3._radius = 1.0;
   b_3._mass = 1.0;
   b_3._x = Eigen::Matrix<T,3,1>(-5,0,0);
   b_3._q = Eigen::Quaternion<T>(0.7071,0,0,0.7071);
@@ -80,9 +80,8 @@ int main(int argc,char** argv) {
 
   // GPUPBD::CollisionDetector<T> detector(geometry);
   // detector.detectCollisions();
-  GPUPBD::XPBD<T> xpbd(geometry, 0.1);
-
   DRAWER::Drawer drawer(argc,argv);
+  GPUPBD::XPBD<T> xpbd(geometry, 1.0/drawer.FPS());
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CaptureGIFPlugin(GLFW_KEY_1,"record.gif",drawer.FPS())));
   auto shapeGeometry=visualizeOrUpdateGeometry(*geometry);
