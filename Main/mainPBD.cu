@@ -81,7 +81,6 @@ int main(int argc,char** argv) {
   // GPUPBD::CollisionDetector<T> detector(geometry);
   // detector.detectCollisions();
   GPUPBD::XPBD<T> xpbd(geometry, 0.1);
-  xpbd.step();
 
   DRAWER::Drawer drawer(argc,argv);
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));
@@ -97,6 +96,21 @@ int main(int argc,char** argv) {
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::ImGuiPlugin([&]() {
     drawer.getCamera3D()->getManipulator()->imGuiCallback();
   })));
+  bool sim=false;
+  drawer.setFrameFunc([&](std::shared_ptr<DRAWER::SceneNode>& root) {
+    if(sim) {
+      xpbd.step();
+      visualizeOrUpdateGeometry(*geometry,shapeGeometry);
+      visualizeOrUpdateCollision(*geometry,xpbd.getDetector(),shapeCollision);
+    }
+  });
+  //press R to run simulation
+  drawer.setKeyFunc([&](GLFWwindow* wnd,int key,int scan,int action,int mods,bool captured) {
+    if(captured)
+      return;
+    else if(key==GLFW_KEY_R && action==GLFW_PRESS)
+      sim=!sim;
+  });
   drawer.mainLoop();
   return 0;
 }

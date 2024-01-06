@@ -33,7 +33,7 @@ std::shared_ptr<DRAWER::CompositeShape> visualizeOrUpdateGeometry(const Geometry
   return ret;
 }
 template <typename T>
-std::shared_ptr<DRAWER::MeshShape> visualizeOrUpdateCollision(const Geometry<T>& g,const CollisionDetector<T>& cd,int width=5) {
+std::shared_ptr<DRAWER::MeshShape> visualizeOrUpdateCollision(const Geometry<T>& g,const CollisionDetector<T>& cd,std::shared_ptr<DRAWER::MeshShape> s=NULL,int width=5) {
   //geometry
   std::vector<Capsule<T>> cpuGeometry(g.getCapsules().size());
   thrust::copy(g.getCapsules().begin(),g.getCapsules().end(),cpuGeometry.begin());
@@ -41,7 +41,10 @@ std::shared_ptr<DRAWER::MeshShape> visualizeOrUpdateCollision(const Geometry<T>&
   std::vector<Collision<T>> cpuCollision(cd.getCollisions().size());
   thrust::copy(cd.getCollisions().begin(),cd.getCollisions().end(),cpuCollision.begin());
   //visualize
-  std::shared_ptr<DRAWER::MeshShape> ret(new DRAWER::MeshShape);
+  std::shared_ptr<DRAWER::MeshShape> ret=s;
+  if(!ret)
+    ret.reset(new DRAWER::MeshShape);
+  else ret->clear();
   for(int i=0; i<(int)cpuCollision.size(); i++) {
     const auto& xA=cpuGeometry[cpuCollision[i]._capsuleIdA]._x;
     const auto& pA=cpuGeometry[cpuCollision[i]._capsuleIdA]._q;

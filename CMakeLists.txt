@@ -56,4 +56,4 @@ MACRO(ADD_EXE NAME)
 ENDMACRO(ADD_EXE)
 
 #DEBUG
-ADD_EXE(mainDebugCollision)
+ADD_EXE(mainPBD)

@@ -81,6 +81,8 @@ void XPBD<T>::relaxConstraint() {
     auto wB = computeGeneralizedInversMass(cB, placementPointB,
                                            collision._globalNormal);
     auto collisionDepth = (globalPointA-globalPointB).dot(collision._globalNormal);
+    if(collisionDepth<=0)
+      return;
     auto alpha = collision._alpha/(dt*dt);
     auto deltaLambda = (-collisionDepth-d_lambda[idx]*alpha)/(wA+wB+alpha);
     d_lambda[idx] += deltaLambda;
