@@ -1,7 +1,7 @@
 #ifndef CONTACT_GENERATOR_H
 #define CONTACT_GENERATOR_H
 #include "Pragma.h"
-#include "Geometry.h"
+#include "Collision.h"
 
 namespace GPUPBD {
 
@@ -86,8 +86,9 @@ class ContactGenerator {
           nA2B /= nA2B.template cast<double>().norm();
         }
         // two contacts
-        Vec2T range(std::max<T>(0, std::min(dB1, dB2)), std::min(nLenA, std::max(dB1, dB2)));
-        for (const T &r : range) {
+        T range[2] = {std::max<T>(0, std::min(dB1, dB2)), std::min(nLenA, std::max(dB1, dB2))};
+        for (int i=0; i < 2; i++) {
+          T r = range[i];
           contactM._localMemory[contactM._numCollision]._capsuleIdA = contactM._lhsId;
           contactM._localMemory[contactM._numCollision]._capsuleIdB = contactM._rhsId;
           auto globalPointA = cA1 + nA * r + nA2B * contactM._lhsRadius;
