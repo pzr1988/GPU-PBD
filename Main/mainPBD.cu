@@ -81,9 +81,9 @@ int main(int argc,char** argv) {
   // GPUPBD::CollisionDetector<T> detector(geometry);
   // detector.detectCollisions();
   DRAWER::Drawer drawer(argc,argv);
-  GPUPBD::XPBD<T> xpbd(geometry, 1.0/drawer.FPS());
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CaptureGIFPlugin(GLFW_KEY_1,"record.gif",drawer.FPS())));
+  GPUPBD::XPBD<T> xpbd(geometry, 1.0/drawer.FPS());
   auto shapeGeometry=visualizeOrUpdateGeometry(*geometry);
   auto shapeCollision=visualizeOrUpdateCollision(*geometry,xpbd.getDetector());
   drawer.addShape(shapeGeometry);
