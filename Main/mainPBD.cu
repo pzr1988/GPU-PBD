@@ -14,15 +14,17 @@ using namespace GPUPBD;
 
 int main(int argc,char** argv) {
   typedef LSCALAR T;
-  constexpr std::size_t N=10;
+  constexpr std::size_t N=5;
   std::vector<Capsule<T>> ps(N);
 
   std::mt19937 mt(123456789);
   std::uniform_real_distribution<T> uni(0.0, 1.0);
 
+  T len = uni(mt);
+  T radius = uni(mt)/3.;
   for(auto& p:ps) {
-    p._len=uni(mt);
-    p._radius=uni(mt)/3.;
+    p._len=len;
+    p._radius=radius;
     p._mass = 3.14*p._radius*p._radius*p._len+3.14*4.0/3.0*p._radius*p._radius*p._radius;
     p._force = Eigen::Matrix<T,3,1>(0, -9.8*p._mass,0);
     Eigen::Quaternion<T> q(uni(mt),uni(mt),uni(mt),uni(mt));
@@ -36,7 +38,7 @@ int main(int argc,char** argv) {
     p._q = q;
     Eigen::Matrix<T,3,1> trans;
     trans.setRandom();
-    p._x = trans;
+    p._x = trans*3;
     p._x.z() = 0;
     p.initInertiaTensor();
     p._isDynamic = true;
@@ -44,7 +46,7 @@ int main(int argc,char** argv) {
 
   // boundary
   Capsule<T> b_1;
-  b_1._len = 10.;
+  b_1._len = 20.;
   b_1._radius = 1.0;
   b_1._mass = 1.0;
   b_1._x = Eigen::Matrix<T,3,1>(0,-4,0);
@@ -54,7 +56,7 @@ int main(int argc,char** argv) {
   ps.push_back(b_1);
 
   Capsule<T> b_2;
-  b_2._len = 8.;
+  b_2._len = 18.;
   b_2._radius = 1.0;
   b_2._mass = 1.0;
   b_2._x = Eigen::Matrix<T,3,1>(5,0,0);
@@ -64,7 +66,7 @@ int main(int argc,char** argv) {
   ps.push_back(b_2);
 
   Capsule<T> b_3;
-  b_3._len = 8;
+  b_3._len = 18;
   b_3._radius = 1.0;
   b_3._mass = 1.0;
   b_3._x = Eigen::Matrix<T,3,1>(-5,0,0);

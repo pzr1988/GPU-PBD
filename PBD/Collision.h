@@ -21,7 +21,7 @@ struct Collision {
   bool _isValid;
   DEVICE_HOST Collision():_capsuleIdA(-1),_capsuleIdB(-1),
     _localPointA(Vec3T()),_localPointB(Vec3T()),_globalNormal(Vec3T()),
-    _alpha(.01), _isValid(false) {}
+    _alpha(.0001), _isValid(false) {}
 };
 
 //The collisionDetector has the capability of detecting all pairs of collisions between all pairs of capsules
