@@ -89,19 +89,22 @@ class ContactGenerator {
         T range[2] = {std::max<T>(0, std::min(dB1, dB2)), std::min(nLenB, std::max(dB1, dB2))};
         for (int i=0; i < 2; i++) {
           T r = range[i];
-          contactM._localMemory[contactM._numCollision]._capsuleIdA = contactM._lhsId;
-          contactM._localMemory[contactM._numCollision]._capsuleIdB = contactM._rhsId;
           T f = dB1 > dB2 ? 1.0 : -1.0;
           Vec3T globalPointA = cA1 + nA * (dB1 -r) * f + nA2B * contactM._lhsRadius;
           Vec3T globalPointB = cB1 + nB * r - nA2B * contactM._rhsRadius;
-          contactM._localMemory[contactM._numCollision]._localPointA =
-            contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
-          contactM._localMemory[contactM._numCollision]._localPointB =
-            contactM._rhs->_q.conjugate().toRotationMatrix()*(globalPointB-contactM._rhs->_x);
-          contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
-          contactM._localMemory[contactM._numCollision]._isValid = true;
-          contactM._numCollision++;
-          numCollision++;
+          T depth = (globalPointA-globalPointB).dot(nA2B);
+          if(depth > 0) {
+            contactM._localMemory[contactM._numCollision]._capsuleIdA = contactM._lhsId;
+            contactM._localMemory[contactM._numCollision]._capsuleIdB = contactM._rhsId;
+            contactM._localMemory[contactM._numCollision]._localPointA =
+              contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
+            contactM._localMemory[contactM._numCollision]._localPointB =
+              contactM._rhs->_q.conjugate().toRotationMatrix()*(globalPointB-contactM._rhs->_x);
+            contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
+            contactM._localMemory[contactM._numCollision]._isValid = true;
+            contactM._numCollision++;
+            numCollision++;
+          }
         }
       }
     } else {
