@@ -40,9 +40,11 @@ class XPBD {
   thrust::device_vector<T> _lambda;
   //Cache deltaX and deltaQ during relaxConstraint to avoid multi write problem
   thrust::device_vector<int> _collisionCapsuleId;
+  thrust::device_vector<int> _number;
   thrust::device_vector<Vec3T> _deltaX;
   thrust::device_vector<Vec4T> _deltaQ;
   thrust::device_vector<int> _reduceCapsuleId;
+  thrust::device_vector<int> _reduceNumber;
   thrust::device_vector<Vec3T> _reduceDeltaX;
   thrust::device_vector<Vec4T> _reduceDeltaQ;
 };
