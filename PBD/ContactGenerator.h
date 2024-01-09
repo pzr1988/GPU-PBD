@@ -57,18 +57,18 @@ class ContactGenerator {
 
     if (abs(nA.dot(nB)) > 1 - epsDir) {
       // nearly parallel 产生1~2个碰撞点
-      T dB1 = (cB1 - cA1).dot(nA);
-      T dB2 = (cB2 - cA1).dot(nA);
+      T dB1 = (cA1 - cB1).dot(nB);
+      T dB2 = (cA2 - cB1).dot(nB);
       if (dB1 <= 0 && dB2 <= 0) {
         // sphere-sphere 产生0/1个碰撞点
         generateManifoldSphereSphereInternal(contactM, maxCollisionsPerNode);
-      } else if (dB1 >= nLenA && dB2 >= nLenA) {
+      } else if (dB1 >= nLenB && dB2 >= nLenB) {
         // sphere-sphere 产生0/1个碰撞点
         generateManifoldSphereSphereInternal(contactM, maxCollisionsPerNode);
       } else if (maxCollisionsPerNode - contactM._numCollision > 2) {
         // 假如localMemory不夠就忽略了
         // range 产生0/2个碰撞点
-        Vec3T dir = cB1 - cA1 - dB1 * nA;
+        Vec3T dir = cB1 - cA1 + dB1 * nB;
         T distSqr = dir.squaredNorm(), dist = 0;
         T sumRad = contactM._lhsRadius + contactM._rhsRadius, sumRadSqr = sumRad * sumRad;
         // not in contact
@@ -86,13 +86,14 @@ class ContactGenerator {
           nA2B /= nA2B.template cast<double>().norm();
         }
         // two contacts
-        T range[2] = {std::max<T>(0, std::min(dB1, dB2)), std::min(nLenA, std::max(dB1, dB2))};
+        T range[2] = {std::max<T>(0, std::min(dB1, dB2)), std::min(nLenB, std::max(dB1, dB2))};
         for (int i=0; i < 2; i++) {
           T r = range[i];
           contactM._localMemory[contactM._numCollision]._capsuleIdA = contactM._lhsId;
           contactM._localMemory[contactM._numCollision]._capsuleIdB = contactM._rhsId;
-          auto globalPointA = cA1 + nA * r + nA2B * contactM._lhsRadius;
-          auto globalPointB = cA1 + nA * r + dir - nA2B * contactM._rhsRadius;
+          T f = dB1 > dB2 ? 1.0 : -1.0;
+          Vec3T globalPointA = cA1 + nA * (dB1 -r) * f + nA2B * contactM._lhsRadius;
+          Vec3T globalPointB = cB1 + nB * r - nA2B * contactM._rhsRadius;
           contactM._localMemory[contactM._numCollision]._localPointA =
             contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
           contactM._localMemory[contactM._numCollision]._localPointB =
