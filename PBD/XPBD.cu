@@ -1,4 +1,5 @@
 #include "XPBD.h"
+#include <thrust/sort.h>
 
 namespace GPUPBD {
 template <typename T>
@@ -149,7 +150,9 @@ void XPBD<T>::updateCapsuleState() {
   thrust::reduce_by_key(_collisionCapsuleId.begin(), _collisionCapsuleId.end(),
                         _number.begin(), _number.begin(), _reduceNumber.begin());
   int * d_reduceNumber = thrust::raw_pointer_cast(_reduceNumber.data());
-
+  thrust::device_vector<int> _collisionCapsuleId2(_collisionCapsuleId);
+  thrust::sort_by_key(_collisionCapsuleId.begin(), _collisionCapsuleId.end(),
+                      _deltaX.begin(), thrust::greater<int>());
   auto endX = thrust::reduce_by_key(_collisionCapsuleId.begin(), _collisionCapsuleId.end(),
                                     _deltaX.begin(), _reduceCapsuleId.begin(), _reduceDeltaX.begin());
   _reduceCapsuleId.erase(endX.first, _reduceCapsuleId.end());
@@ -165,7 +168,10 @@ void XPBD<T>::updateCapsuleState() {
     }
   });
 
-  auto endQ = thrust::reduce_by_key(_collisionCapsuleId.begin(), _collisionCapsuleId.end(),
+  thrust::sort_by_key(_collisionCapsuleId2.begin(), _collisionCapsuleId2.end(),
+                      _deltaQ.begin(), thrust::greater<int>());
+  _reduceCapsuleId.resize(_collisionCapsuleId2.size());
+  auto endQ = thrust::reduce_by_key(_collisionCapsuleId2.begin(), _collisionCapsuleId2.end(),
                                     _deltaQ.begin(), _reduceCapsuleId.begin(), _reduceDeltaQ.begin());
   _reduceCapsuleId.erase(endQ.first, _reduceCapsuleId.end());
   d_reduceCapsuleId = thrust::raw_pointer_cast(_reduceCapsuleId.data());
