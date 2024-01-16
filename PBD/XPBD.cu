@@ -39,15 +39,16 @@ void XPBD<T>::integrate() {
 }
 template <typename T>
 void XPBD<T>::initRelaxConstraint() {
-  if(_detector->size() == 0) {
+  int numCollision = _detector->size();
+  if(numCollision == 0) {
     return;
   }
   _lambda.clear();
-  _lambda.resize(_detector->size());
-  _collisionCapsuleId.resize(_detector->size()*2); //each collision contains 2 capsules
-  _update.resize(_detector->size()*2);
-  _reduceCapsuleId.resize(_detector->size()*2);
-  _reduceUpdate.resize(_detector->size()*2);
+  _lambda.resize(numCollision);
+  _collisionCapsuleId.resize(numCollision*2); //each collision contains 2 capsules
+  _update.resize(numCollision*2);
+  _reduceCapsuleId.resize(numCollision*2);
+  _reduceUpdate.resize(numCollision*2);
 }
 template <typename T>
 void XPBD<T>::relaxConstraint() {
@@ -93,7 +94,6 @@ void XPBD<T>::relaxConstraint() {
     d_update[2*idx]._q = getDeltaRot(cA, placementPointA, pulse).coeffs();
     d_update[2*idx+1]._q = -getDeltaRot(cB, placementPointB, pulse).coeffs();
   });
-
   updateCapsuleState();
 }
 template <typename T>
