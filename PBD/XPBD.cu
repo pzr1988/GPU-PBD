@@ -45,11 +45,9 @@ void XPBD<T>::initRelaxConstraint() {
   _lambda.clear();
   _lambda.resize(_detector->size());
   _collisionCapsuleId.resize(_detector->size()*2); //each collision contains 2 capsules
-  _number.resize(_detector->size()*2);
   _deltaX.resize(_detector->size()*2);
   _deltaQ.resize(_detector->size()*2);
   _reduceCapsuleId.resize(_detector->size()*2);
-  _reduceNumber.resize(_detector->size()*2);
   _reduceDeltaX.resize(_detector->size()*2);
   _reduceDeltaQ.resize(_detector->size()*2);
 
@@ -84,12 +82,13 @@ void XPBD<T>::relaxConstraint() {
     auto wB = computeGeneralizedInversMass(cB, placementPointB,
                                            collision._globalNormal);
     auto collisionDepth = (globalPointA-globalPointB).dot(collision._globalNormal);
-    if(collisionDepth<=0)
-      return;
     auto alpha = collision._alpha/(dt*dt);
     auto deltaLambda = (-collisionDepth-d_lambda[idx]*alpha)/(wA+wB+alpha);
     d_lambda[idx] += deltaLambda;
-    auto pulse = deltaLambda*collision._globalNormal;
+    Vec3T pulse = deltaLambda*collision._globalNormal;
+    if(collisionDepth<=0) {
+      pulse = Vec3T(0,0,0);
+    }
     // To avoid multi write problem, first cache update
     d_collisionCapsuleId[2*idx] = collision._capsuleIdA;
     d_collisionCapsuleId[2*idx+1] = collision._capsuleIdB;
@@ -146,10 +145,6 @@ void XPBD<T>::updateCapsuleState() {
   auto& capsules = _geometry->getMutableCapsules();
   Capsule<T>* d_capsules = thrust::raw_pointer_cast(capsules.data());
   //Reduce multi collisions of one capsule, then write
-  thrust::fill(_number.begin(), _number.end(), 1);
-  thrust::reduce_by_key(_collisionCapsuleId.begin(), _collisionCapsuleId.end(),
-                        _number.begin(), _number.begin(), _reduceNumber.begin());
-  int * d_reduceNumber = thrust::raw_pointer_cast(_reduceNumber.data());
   thrust::device_vector<int> _collisionCapsuleId2(_collisionCapsuleId);
   thrust::sort_by_key(_collisionCapsuleId.begin(), _collisionCapsuleId.end(),
                       _deltaX.begin(), thrust::greater<int>());
@@ -164,7 +159,7 @@ void XPBD<T>::updateCapsuleState() {
   [=] __host__ __device__ (int idx) {
     if(d_capsules[d_reduceCapsuleId[idx]]._isDynamic) {
       d_capsules[d_reduceCapsuleId[idx]]._x = d_capsules[d_reduceCapsuleId[idx]]._x
-                                              + d_reduceDeltaX[idx]/static_cast<float>(d_reduceNumber[idx]);
+                                              + d_reduceDeltaX[idx];
     }
   });
 
@@ -182,7 +177,7 @@ void XPBD<T>::updateCapsuleState() {
   [=] __host__ __device__ (int idx) {
     if(d_capsules[d_reduceCapsuleId[idx]]._isDynamic) {
       d_capsules[d_reduceCapsuleId[idx]]._q = Eigen::Quaternion<T>(d_capsules[d_reduceCapsuleId[idx]]._q.coeffs()
-                                              + d_reduceDeltaQ[idx]/static_cast<float>(d_reduceNumber[idx]));
+                                              + d_reduceDeltaQ[idx]);
       d_capsules[d_reduceCapsuleId[idx]]._q.normalize();
     }
   });
