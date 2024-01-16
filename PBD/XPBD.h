@@ -39,12 +39,25 @@ class XPBD {
  private:
   thrust::device_vector<T> _lambda;
   //Cache deltaX and deltaQ during relaxConstraint to avoid multi write problem
+ public:
+  struct update {
+    Vec3T _x;
+    Vec4T _q;
+  };
+  struct UpdateAdd {
+    __host__ __device__
+    update operator()(const update& a, const update& b) const {
+      update result;
+      result._x = a._x + b._x;
+      result._q = a._q + b._q;
+      return result;
+    }
+  };
+ private:
   thrust::device_vector<int> _collisionCapsuleId;
-  thrust::device_vector<Vec3T> _deltaX;
-  thrust::device_vector<Vec4T> _deltaQ;
+  thrust::device_vector<update> _update;
   thrust::device_vector<int> _reduceCapsuleId;
-  thrust::device_vector<Vec3T> _reduceDeltaX;
-  thrust::device_vector<Vec4T> _reduceDeltaQ;
+  thrust::device_vector<update> _reduceUpdate;
 };
 
 }
