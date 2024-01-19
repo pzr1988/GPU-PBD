@@ -10,8 +10,8 @@ namespace GPUPBD {
 template <typename T>
 std::shared_ptr<DRAWER::CompositeShape> visualizeOrUpdateGeometry(const Geometry<T>& g,std::shared_ptr<DRAWER::CompositeShape> s=NULL,int RES=8,bool fill=false) {
   //geometry
-  std::vector<Capsule<T>> cpuGeometry(g.getCapsules().size());
-  thrust::copy(g.getCapsules().begin(),g.getCapsules().end(),cpuGeometry.begin());
+  std::vector<Capsule<T>> cpuGeometry(g.size());
+  thrust::copy(g.begin(),g.end(),cpuGeometry.begin());
   //update
   std::shared_ptr<DRAWER::CompositeShape> ret=s;
   if(!ret) {
@@ -35,8 +35,8 @@ std::shared_ptr<DRAWER::CompositeShape> visualizeOrUpdateGeometry(const Geometry
 template <typename T>
 std::shared_ptr<DRAWER::MeshShape> visualizeOrUpdateCollision(const Geometry<T>& g,const CollisionDetector<T>& cd,std::shared_ptr<DRAWER::MeshShape> s=NULL,int width=5) {
   //geometry
-  std::vector<Capsule<T>> cpuGeometry(g.getCapsules().size());
-  thrust::copy(g.getCapsules().begin(),g.getCapsules().end(),cpuGeometry.begin());
+  std::vector<Capsule<T>> cpuGeometry(g.size());
+  thrust::copy(g.begin(),g.end(),cpuGeometry.begin());
   //collision
   std::vector<Collision<T>> cpuCollision(cd.size());
   thrust::copy(cd.begin(),cd.end(),cpuCollision.begin());

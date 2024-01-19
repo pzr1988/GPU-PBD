@@ -17,9 +17,7 @@ void XPBD<T>::step() {
 template <typename T>
 void XPBD<T>::integrate() {
   T dt = _dt;
-  auto bIter = _geometry->getMutableCapsules().begin();
-  auto eIter = _geometry->getMutableCapsules().end();
-  thrust::for_each(thrust::device, bIter, eIter, [=] __host__ __device__ (Capsule<T>& capsule) {
+  thrust::for_each(thrust::device, _geometry->begin(), _geometry->end(), [=] __host__ __device__ (Capsule<T>& capsule) {
     capsule._xPrev = capsule._x;
     capsule._qPrev = capsule._q;
     if(capsule._isDynamic) {
@@ -54,8 +52,7 @@ void XPBD<T>::relaxConstraint() {
     return;
   const auto& collisions = _detector->getCollisions();
   const Collision<T>* d_collisions = thrust::raw_pointer_cast(collisions);
-  auto& capsules = _geometry->getMutableCapsules();
-  Capsule<T>* d_capsules = thrust::raw_pointer_cast(capsules.data());
+  Capsule<T>* d_capsules = thrust::raw_pointer_cast(_geometry->getCapsules());
   T* d_lambda = thrust::raw_pointer_cast(_lambda.data());
   int* d_collisionCapsuleId = thrust::raw_pointer_cast(_collisionCapsuleId.data());
   auto d_update = thrust::raw_pointer_cast(_update.data());
@@ -95,9 +92,7 @@ void XPBD<T>::relaxConstraint() {
 template <typename T>
 void XPBD<T>::updateVelocity() {
   T dt = _dt;
-  auto bIter = _geometry->getMutableCapsules().begin();
-  auto eIter = _geometry->getMutableCapsules().end();
-  thrust::for_each(thrust::device, bIter, eIter, [=] __host__ __device__ (Capsule<T>& capsule) {
+  thrust::for_each(thrust::device, _geometry->begin(), _geometry->end(), [=] __host__ __device__ (Capsule<T>& capsule) {
     if(capsule._isDynamic) {
       capsule._v = (capsule._x-capsule._xPrev)/dt;
       auto deltaQ = capsule._q*capsule._qPrev.inverse();
@@ -132,8 +127,7 @@ DEVICE_HOST typename XPBD<T>::QuatT XPBD<T>::getDeltaRot(const Capsule<T>& c, co
 }
 template <typename T>
 void XPBD<T>::updateCapsuleState() {
-  auto& capsules = _geometry->getMutableCapsules();
-  Capsule<T>* d_capsules = thrust::raw_pointer_cast(capsules.data());
+  Capsule<T>* d_capsules = thrust::raw_pointer_cast(_geometry->getCapsules());
   //Reduce multi collisions of one capsule, then write
   thrust::sort_by_key(_collisionCapsuleId.begin(), _collisionCapsuleId.end(),
                       _update.begin(), thrust::greater<int>());

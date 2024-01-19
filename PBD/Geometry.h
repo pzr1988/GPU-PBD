@@ -32,6 +32,7 @@ struct Capsule {
   /* Computed quantities */
   Vec3T _force;
   Vec3T _torque;
+  void initInertiaTensor(T rho=1);
   DEVICE_HOST Vec3T minCorner() const {
     return Vec3T(-_len / 2, 0, 0);
   }
@@ -43,20 +44,6 @@ struct Capsule {
   }
   DEVICE_HOST Vec3T globalMaxCorner() const {
     return _q.toRotationMatrix()*maxCorner()+_x;
-  }
-  DEVICE_HOST void initInertiaTensor(T rho=1) {
-    //https://gamedev.net/tutorials/programming/math-and-physics/capsule-inertia-tensor-r3856/
-    _mass = 3.14f * (_radius*_radius*_len) + 3.14f * (4.f/3.f)*_radius*_radius*_radius;
-    _mass *= rho;
-    T mCy = _mass * (_radius*_radius*_len)/(_radius*_radius*_len + (4.f/3.f)*_radius*_radius*_radius);
-    T mHSph = _mass * ((2.f/3.f)*_radius*_radius*_radius)/(_radius*_radius*_len + (4.f/3.f)*_radius*_radius*_radius);
-    T Ixx = mCy*(_radius*_radius/2.f)
-            + 2.f*mHSph*(2.f*_radius*_radius/5.f);
-    T Iyy = mCy*(_radius*_radius/4.f + _len*_len/12.f)
-            + 2.f*mHSph*(2.f*_radius*_radius/5.f+_len*_len/2.f+3.f*_len*_radius/8);
-    _Ibody.setIdentity();
-    _Ibody.diagonal()=Vec3T(Ixx,Iyy,Iyy);
-    _Ibodyinv=_Ibody.inverse();
   }
   DEVICE_HOST Mat3T getInertiaTensorInv() const {
     auto R = _q.toRotationMatrix();
@@ -70,7 +57,8 @@ struct Capsule {
 template <typename T>
 struct Geometry {
   DECL_MAT_VEC_MAP_TYPES_T
-  //Set the actual number of capsules used
+  //Get/Set the actual number of capsules used
+  size_t size() const;
   void resize(size_t nrCapsule);
   //Set the pre-allocated capsule list
   void reserve(size_t nrCapsule);
@@ -81,18 +69,21 @@ struct Geometry {
   //Get the id-th capsule
   Capsule<T> operator[](size_t id) const;
   //Get All Capsules
-  const thrust::device_vector<Capsule<T>>& getCapsules() const;
-  // Get mutable capsules for integration, don't change the number of capsuels.
-  thrust::device_vector<Capsule<T>>& getMutableCapsules();
+  typename thrust::device_vector<Capsule<T>>::iterator begin();
+  typename thrust::device_vector<Capsule<T>>::iterator end();
+  typename thrust::device_vector<Capsule<T>>::const_iterator begin() const;
+  typename thrust::device_vector<Capsule<T>>::const_iterator end() const;
+  typename thrust::device_ptr<const Capsule<T>> getCapsules() const;
+  typename thrust::device_ptr<Capsule<T>> getCapsules();
  protected:
   thrust::device_vector<Capsule<T>> _capsules;
   size_t _nrCapsule=0;
 };
 
-// 获得物体的bounding box
+// General function to get AABB
 template <template<typename> class Geometry, typename T>
 struct AABBGetter;
-// 获得胶囊体的bounding box
+// AABBGetter for Capsule<T>
 template <typename T>
 struct AABBGetter<Capsule, T> {
   DEVICE_HOST lbvh::aabb<T> operator()(const Capsule<T> &c) const noexcept {

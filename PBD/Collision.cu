@@ -8,9 +8,9 @@ CollisionDetector<T>::CollisionDetector(std::shared_ptr<Geometry<T>> geometry)
 template <typename T>
 void CollisionDetector<T>::detectCollisions() {
   // TODO yeti, no need to create Capsule in lbvh
-  lbvh::bvh<float, Capsule<T>, AABBGetter<Capsule, T>> bvh(_geometry->getCapsules().cbegin(), _geometry->getCapsules().cend(), true);
+  lbvh::bvh<float, Capsule<T>, AABBGetter<Capsule, T>> bvh(_geometry->begin(), _geometry->end(), true);
   const auto bvh_dev = bvh.get_device_repr();
-  std::size_t numCapsules = _geometry->getCapsules().size();
+  std::size_t numCapsules = _geometry->size();
   if(_collisionsTemporary.size() < numCapsules * maxCollisionPerObject)
     _collisionsTemporary.resize(numCapsules * maxCollisionPerObject);
   Collision<T>* d_collisionsTemporary = thrust::raw_pointer_cast(_collisionsTemporary.data());
