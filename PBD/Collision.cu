@@ -7,7 +7,7 @@ CollisionDetector<T>::CollisionDetector(std::shared_ptr<Geometry<T>> geometry)
   :_geometry(geometry) {}
 template <typename T>
 void CollisionDetector<T>::detectCollisions() {
-  // TODO yeti, lbvh里的host和device中的capsule是没必要创建的。
+  // TODO yeti, no need to create Capsule in lbvh
   lbvh::bvh<float, Capsule<T>, AABBGetter<Capsule, T>> bvh(_geometry->getCapsules().cbegin(), _geometry->getCapsules().cend(), true);
   const auto bvh_dev = bvh.get_device_repr();
   std::size_t numCapsules = _geometry->getCapsules().size();
@@ -41,15 +41,10 @@ void CollisionDetector<T>::detectCollisions() {
   });
   cudaDeviceSynchronize();
 
-  // Then remove invalid ones
+  // Second remove invalid ones
   if(_collisions.size() < numCapsules * maxCollisionPerObject)
     _collisions.resize(numCapsules * maxCollisionPerObject);
-  auto ret = thrust::copy_if(_collisionsTemporary.begin(),
-                  _collisionsTemporary.end(),
-                  _collisions.begin(),
-                  [] __device__(const Collision<T>& c) {
-    return c._isValid;
-  });
+  auto ret = thrust::copy_if(_collisionsTemporary.begin(), _collisionsTemporary.end(), _collisions.begin(), [] __device__(const Collision<T>& c) {return c._isValid;});
   int nCollision = std::distance(_collisions.begin(), ret);
   _collisions.resize(nCollision);
 }

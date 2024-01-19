@@ -52,9 +52,8 @@ void XPBD<T>::initRelaxConstraint() {
 }
 template <typename T>
 void XPBD<T>::relaxConstraint() {
-  if(_detector->size() == 0) {
+  if(_detector->size() == 0)
     return;
-  }
   const auto& collisions = _detector->getCollisions();
   const Collision<T>* d_collisions = thrust::raw_pointer_cast(collisions.data());
   auto& capsules = _geometry->getMutableCapsules();
@@ -113,16 +112,14 @@ void XPBD<T>::updateVelocity() {
 }
 template <typename T>
 const CollisionDetector<T>& XPBD<T>::getDetector() const {
-  if (!_detector) {
+  if (!_detector)
     throw std::runtime_error("Detector is not initialized");
-  }
   return *_detector;
 }
 template <typename T>
 DEVICE_HOST T XPBD<T>::computeGeneralizedInversMass(const Capsule<T>& c, const Vec3T& n, const Vec3T& r) {
-  if(!c._isDynamic) {
-    return .0;
-  }
+  if(!c._isDynamic)
+    return 0;
   auto Iinv = c.getInertiaTensorInv();
   auto rCrossN = r.cross(n);
   auto w = 1.0/c._mass+rCrossN.transpose()*Iinv*rCrossN;
