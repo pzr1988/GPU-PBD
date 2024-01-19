@@ -89,29 +89,19 @@ struct Geometry {
   thrust::device_vector<Capsule<T>> _capsules;
   int _nrCapsule=0;
 };
-}
 
-
-namespace lbvh {
 // 获得物体的bounding box
-template<template<typename> class Geometry, typename T>
-struct aabb_getter {
-  __device__
-  lbvh::aabb<float> operator()(const Geometry<T>& c) const noexcept {
-    lbvh::aabb<float> retval;
-    return retval;
-  }
-};
+template <template<typename> class Geometry, typename T>
+struct AABBGetter;
 // 获得胶囊体的bounding box
-template<>
-struct lbvh::aabb_getter<GPUPBD::Capsule, float> {
-  __device__
-  lbvh::aabb<float> operator()(const GPUPBD::Capsule<float> &c) const noexcept {
-    lbvh::aabb<float> retval;
+template <typename T>
+struct AABBGetter<Capsule, T> {
+  DEVICE_HOST lbvh::aabb<T> operator()(const Capsule<T> &c) const noexcept {
+    lbvh::aabb<T> retval;
     auto transformedEnd1 = c.globalMaxCorner();
     auto transformedEnd2 = c.globalMinCorner();
     auto upper = transformedEnd1.cwiseMax(transformedEnd2);
-    float radius = static_cast<float>(c._radius);
+    T radius = static_cast<T>(c._radius);
     retval.upper.x = upper.x() + radius;
     retval.upper.y = upper.y() + radius;
     retval.upper.z = upper.z() + radius;
@@ -122,6 +112,5 @@ struct lbvh::aabb_getter<GPUPBD::Capsule, float> {
     return retval;
   }
 };
-
 }
 #endif

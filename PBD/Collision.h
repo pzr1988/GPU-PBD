@@ -20,9 +20,37 @@ struct Collision {
   Vec3T _localPointB;
   Vec3T _globalNormal;
   T _alpha; // compliance of the constraint
-  DEVICE_HOST Collision():_capsuleIdA(-1),_capsuleIdB(-1),
-    _localPointA(Vec3T()),_localPointB(Vec3T()),_globalNormal(Vec3T()),
-    _alpha(.0001), _isValid(false) {}
+  DEVICE_HOST Collision():_capsuleIdA(-1),_capsuleIdB(-1), _localPointA(Vec3T()),_localPointB(Vec3T()),_globalNormal(Vec3T()), _alpha(.0001), _isValid(false) {}
+};
+
+template <typename T>
+struct ContactManifold {
+  DECL_MAT_VEC_MAP_TYPES_T
+  uint32_t _lhsId, _rhsId;
+  const Capsule<T> *_lhs,*_rhs;
+  Vec3T _lhsMinCorner,_lhsMaxCorner;
+  Vec3T _rhsMinCorner,_rhsMaxCorner;
+  Collision<T> *_localMemory;
+  size_t _numCollision;
+  DEVICE_HOST ContactManifold(const Capsule<T> *lhs, const Capsule<T> *rhs, uint32_t lhsId, uint32_t rhsId, Collision<T> *localMemory)
+    :_lhsId(lhsId), _rhsId(rhsId), _lhs(lhs), _rhs(rhs), _localMemory(localMemory), _numCollision(0) {
+    _lhsMinCorner = _lhs->globalMinCorner().template cast<T>();
+    _lhsMaxCorner = _lhs->globalMaxCorner().template cast<T>();
+    _rhsMinCorner = _rhs->globalMinCorner().template cast<T>();
+    _rhsMaxCorner = _rhs->globalMaxCorner().template cast<T>();
+  }
+  DEVICE_HOST ContactManifold(const Capsule<T> *lhs, uint32_t lhsId, Collision<T> *localMemory)
+    :_lhsId(lhsId), _lhs(lhs), _localMemory(localMemory), _numCollision(0) {
+    _numCollision = 0;
+    _lhsMinCorner = _lhs->globalMinCorner().template cast<T>();
+    _lhsMaxCorner = _lhs->globalMaxCorner().template cast<T>();
+  }
+  DEVICE_HOST void UpdateRhs(const Capsule<T> *rhs, uint32_t rhsId) {
+    _rhsId = rhsId;
+    _rhs = rhs;
+    _rhsMinCorner = _rhs->globalMinCorner().template cast<T>();
+    _rhsMaxCorner = _rhs->globalMaxCorner().template cast<T>();
+  }
 };
 
 //The collisionDetector has the capability of detecting all pairs of collisions between all pairs of capsules
