@@ -11,20 +11,21 @@ void CollisionDetector<T>::detectCollisions() {
   lbvh::bvh<float, Capsule<T>, AABBGetter<Capsule, T>> bvh(_geometry->getCapsules().cbegin(), _geometry->getCapsules().cend(), true);
   const auto bvh_dev = bvh.get_device_repr();
   std::size_t numCapsules = _geometry->getCapsules().size();
-  thrust::device_vector<unsigned int> numCollisionPerNode(numCapsules+1, 0);
-  unsigned int* d_numCollisionPerNode = thrust::raw_pointer_cast(numCollisionPerNode.data());
+  if(_collisionsTemporary.size() < numCapsules * maxCollisionPerObject)
+    _collisionsTemporary.resize(numCapsules * maxCollisionPerObject);
+  Collision<T>* d_collisionsTemporary = thrust::raw_pointer_cast(_collisionsTemporary.data());
 
-  // First compute the number of total collision, to resize the globalMemory
+  // First fill all the collisions, including invalid ones
   thrust::for_each(thrust::device,
                    thrust::make_counting_iterator<std::size_t>(0),
                    thrust::make_counting_iterator<std::size_t>(numCapsules),
-  [bvh_dev, d_numCollisionPerNode] __device__ (std::size_t idx) {
+  [bvh_dev, d_collisionsTemporary] __device__ (std::size_t idx) {
     unsigned int buffer[maxCollisionPerObject];
     const auto& self = bvh_dev.objects[idx];
     // broad phase
     const auto num_found = lbvh::query_device(bvh_dev, lbvh::overlaps(AABBGetter<Capsule, T>()(self)), buffer, maxCollisionPerObject);
     // narrow phase
-    Collision<T> localMemory[maxCollisionPerObject];
+    Collision<T>* localMemory = d_collisionsTemporary + idx * maxCollisionPerObject;
     ContactManifold<T> contactM(&self, idx, localMemory);
     for (size_t i = 0; i < num_found; i++)
       if(idx < buffer[i]) {
@@ -33,38 +34,24 @@ void CollisionDetector<T>::detectCollisions() {
         if(contactM._numCollision < maxCollisionPerObject)
           NarrowPhase<T>::narrowPhaseCollision(contactM, maxCollisionPerObject);
       }
-    d_numCollisionPerNode[idx] = contactM._numCollision;
-  });
-
-  cudaDeviceSynchronize();
-  thrust::exclusive_scan(numCollisionPerNode.begin(), numCollisionPerNode.end(), numCollisionPerNode.begin());
-  _collisions.resize(numCollisionPerNode[numCapsules]);
-
-  // Second fill collisions to the correct position
-  Collision<T>* d_collisions = thrust::raw_pointer_cast(_collisions.data());
-  thrust::for_each(thrust::device,
-                   thrust::make_counting_iterator<std::size_t>(0),
-                   thrust::make_counting_iterator<std::size_t>(numCapsules),
-  [bvh_dev, d_numCollisionPerNode, d_collisions] __device__ (std::size_t idx) {
-    unsigned int buffer[maxCollisionPerObject];
-    const auto & self = bvh_dev.objects[idx];
-    // broad phase
-    const auto num_found = lbvh::query_device(bvh_dev, lbvh::overlaps(AABBGetter<Capsule, T>()(self)), buffer, maxCollisionPerObject);
-    // narrow phase
-    Collision<T> localMemory[maxCollisionPerObject];
-    ContactManifold<T> contactM(&self, idx, localMemory);
-    for(size_t i = 0; i < num_found; i++)
-      if(idx < buffer[i]) {
-        const auto & rhs = bvh_dev.objects[buffer[i]];
-        contactM.UpdateRhs(&rhs, buffer[i]);
-        if(contactM._numCollision < maxCollisionPerObject)
-          NarrowPhase<T>::narrowPhaseCollision(contactM, maxCollisionPerObject);
-      }
-    // fill
-    for(size_t i = 0; i < contactM._numCollision; i++)
-      d_collisions[d_numCollisionPerNode[idx]+i] = contactM._localMemory[i];
+    // fill invalid
+    assert(contactM._numCollision < maxCollisionPerObject);
+    for(size_t i = contactM._numCollision; i < maxCollisionPerObject; i++)
+      localMemory[i]._isValid = false;
   });
   cudaDeviceSynchronize();
+
+  // Then remove invalid ones
+  if(_collisions.size() < numCapsules * maxCollisionPerObject)
+    _collisions.resize(numCapsules * maxCollisionPerObject);
+  auto ret = thrust::copy_if(_collisionsTemporary.begin(),
+                  _collisionsTemporary.end(),
+                  _collisions.begin(),
+                  [] __device__(const Collision<T>& c) {
+    return c._isValid;
+  });
+  int nCollision = std::distance(_collisions.begin(), ret);
+  _collisions.resize(nCollision);
 }
 template <typename T>
 Collision<T> CollisionDetector<T>::operator[](int id) {
