@@ -27,8 +27,7 @@ void XPBD<T>::integrate() {
       capsule._x += capsule._v*dt;
       capsule._R = capsule._q.toRotationMatrix();
       capsule._Iinv = capsule._R*capsule._Ibodyinv*capsule._R.transpose();
-      capsule._w += capsule._Iinv*(capsule._torque
-                                   - capsule._w.cross(capsule._R*capsule._Ibody*capsule._R.transpose()*capsule._w))*dt;
+      capsule._w += capsule._Iinv*(capsule._torque - capsule._w.cross(capsule._R*capsule._Ibody*capsule._R.transpose()*capsule._w))*dt;
       QuatT wQuat(0,capsule._w.x(),capsule._w.y(),capsule._w.z());
       QuatT updatedQuat = QuatT(0.5*dt,0,0,0)*wQuat*capsule._q;
       capsule._q = QuatT(capsule._q.coeffs() + updatedQuat.coeffs());

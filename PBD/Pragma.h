@@ -21,11 +21,30 @@
 
 //precision
 #define LSCALAR float
-const LSCALAR epsDir=1e-3f;
-const LSCALAR epsDist=1e-3f;
+#define epsDir 1e-3f
+#define epsDist 1e-3f
 const unsigned int maxCollisionPerObject=8;
 
 #include <Eigen/Dense>
+
+template <typename T>
+class CopyableQuaternion : public Eigen::Quaternion<T>
+{
+public:
+	CopyableQuaternion():Eigen::Quaternion<T>(1,0,0,0){}
+	CopyableQuaternion(const Eigen::AngleAxis<T>& aa):Eigen::Quaternion<T>(aa){}
+	CopyableQuaternion(T w, T x, T y, T z):Eigen::Quaternion<T>(w,x,y,z){}
+	CopyableQuaternion(const typename Eigen::Quaternion<T>::Coefficients& coeffs):Eigen::Quaternion<T>(coeffs){}
+	CopyableQuaternion(const CopyableQuaternion& other):Eigen::Quaternion<T>(other.w(),other.x(),other.y(),other.z()){}
+	CopyableQuaternion(const Eigen::Quaternion<T>& other):Eigen::Quaternion<T>(other.w(),other.x(),other.y(),other.z()){}
+	DEVICE_HOST CopyableQuaternion& operator=(const CopyableQuaternion& other) {
+		w() = other.w();
+		x() = other.x();
+		y() = other.y();
+		z() = other.z();
+		return *this;
+	}
+};
 
 #define DECL_MAT_VEC_MAP_TYPES_T \
 typedef Eigen::Matrix<T,2,1> Vec2T;\
@@ -33,6 +52,6 @@ typedef Eigen::Matrix<T,3,1> Vec3T;\
 typedef Eigen::Matrix<T,4,1> Vec4T;\
 typedef Eigen::Matrix<T,3,3> Mat3T;\
 typedef Eigen::Matrix<T,3,2> Mat3X2T;\
-typedef Eigen::Quaternion<T> QuatT;
+typedef CopyableQuaternion<T> QuatT;
 
 #endif

@@ -27,13 +27,7 @@ int main(int argc,char** argv) {
     p._radius=radius;
     p._mass = 3.14*p._radius*p._radius*p._len+3.14*4.0/3.0*p._radius*p._radius*p._radius;
     p._force = Vec3T(0, -9.8*p._mass,0);
-    QuatT q(uni(mt),uni(mt),uni(mt),uni(mt));
-    q.normalize();
-    Eigen::AngleAxis<T> euler(q);
-    euler.axis().x()=0;
-    euler.axis().y()=0;
-    euler.axis().normalize();
-    q = Eigen::Quaternion<T>(euler);
+    QuatT q(uni(mt),0,0,uni(mt));
     q.normalize();
     p._q = q;
     Vec3T trans;
