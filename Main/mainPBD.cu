@@ -1,4 +1,3 @@
-#include <PBD/Utils.h>
 #include <PBD/Geometry.h>
 #include <PBD/Collision.h>
 #include <PBD/XPBD.h>
@@ -14,6 +13,7 @@ using namespace GPUPBD;
 
 int main(int argc,char** argv) {
   typedef LSCALAR T;
+  DECL_MAT_VEC_MAP_TYPES_T
   constexpr std::size_t N=5;
   std::vector<Capsule<T>> ps(N);
 
@@ -26,8 +26,8 @@ int main(int argc,char** argv) {
     p._len=len;
     p._radius=radius;
     p._mass = 3.14*p._radius*p._radius*p._len+3.14*4.0/3.0*p._radius*p._radius*p._radius;
-    p._force = Eigen::Matrix<T,3,1>(0, -9.8*p._mass,0);
-    Eigen::Quaternion<T> q(uni(mt),uni(mt),uni(mt),uni(mt));
+    p._force = Vec3T(0, -9.8*p._mass,0);
+    QuatT q(uni(mt),uni(mt),uni(mt),uni(mt));
     q.normalize();
     Eigen::AngleAxis<T> euler(q);
     euler.axis().x()=0;
@@ -36,7 +36,7 @@ int main(int argc,char** argv) {
     q = Eigen::Quaternion<T>(euler);
     q.normalize();
     p._q = q;
-    Eigen::Matrix<T,3,1> trans;
+    Vec3T trans;
     trans.setRandom();
     p._x = trans*3;
     p._x.z() = 0;
@@ -49,8 +49,8 @@ int main(int argc,char** argv) {
   b_1._len = 20.;
   b_1._radius = 1.0;
   b_1._mass = 1.0;
-  b_1._x = Eigen::Matrix<T,3,1>(0,-4,0);
-  b_1._q = Eigen::Quaternion<T>(1,0,0,0);
+  b_1._x = Vec3T(0,-4,0);
+  b_1._q = QuatT(1,0,0,0);
   b_1.initInertiaTensor();
   b_1._isDynamic = false;
   ps.push_back(b_1);
@@ -59,8 +59,8 @@ int main(int argc,char** argv) {
   b_2._len = 18.;
   b_2._radius = 1.0;
   b_2._mass = 1.0;
-  b_2._x = Eigen::Matrix<T,3,1>(5,0,0);
-  b_2._q = Eigen::Quaternion<T>(0.7071,0,0,0.7071);
+  b_2._x = Vec3T(5,0,0);
+  b_2._q = QuatT(0.7071,0,0,0.7071);
   b_2.initInertiaTensor();
   b_2._isDynamic = false;
   ps.push_back(b_2);
@@ -69,8 +69,8 @@ int main(int argc,char** argv) {
   b_3._len = 18;
   b_3._radius = 1.0;
   b_3._mass = 1.0;
-  b_3._x = Eigen::Matrix<T,3,1>(-5,0,0);
-  b_3._q = Eigen::Quaternion<T>(0.7071,0,0,0.7071);
+  b_3._x = Vec3T(-5,0,0);
+  b_3._q = QuatT(0.7071,0,0,0.7071);
   b_3.initInertiaTensor();
   b_3._isDynamic = false;
   ps.push_back(b_3);
@@ -90,9 +90,7 @@ int main(int argc,char** argv) {
   auto shapeCollision=visualizeOrUpdateCollision(*geometry,xpbd.getDetector());
   drawer.addShape(shapeGeometry);
   drawer.addShape(shapeCollision);
-  drawer.addCamera3D(90,Eigen::Matrix<GLfloat,3,1>(0,1,0),
-    Eigen::Matrix<GLfloat,3,1>(0,0,5),
-    Eigen::Matrix<GLfloat,3,1>(0,0,-1));
+  drawer.addCamera3D(90,Eigen::Matrix<GLfloat,3,1>(0,1,0),Eigen::Matrix<GLfloat,3,1>(0,0,5),Eigen::Matrix<GLfloat,3,1>(0,0,-1));
   drawer.getCamera3D()->setManipulator(std::shared_ptr<DRAWER::CameraManipulator>(new DRAWER::FirstPersonCameraManipulator(drawer.getCamera3D())));
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::ImGuiPlugin([&]() {
     drawer.getCamera3D()->getManipulator()->imGuiCallback();

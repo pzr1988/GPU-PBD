@@ -29,9 +29,9 @@ void XPBD<T>::integrate() {
       capsule._Iinv = capsule._R*capsule._Ibodyinv*capsule._R.transpose();
       capsule._w += capsule._Iinv*(capsule._torque
                                    - capsule._w.cross(capsule._R*capsule._Ibody*capsule._R.transpose()*capsule._w))*dt;
-      Eigen::Quaternion<T> wQuat(0,capsule._w.x(),capsule._w.y(),capsule._w.z());
-      Eigen::Quaternion<T> updatedQuat = Eigen::Quaternion<T>(0.5*dt,0,0,0)*wQuat*capsule._q;
-      capsule._q = Eigen::Quaternion<T>(capsule._q.coeffs() + updatedQuat.coeffs());
+      QuatT wQuat(0,capsule._w.x(),capsule._w.y(),capsule._w.z());
+      QuatT updatedQuat = QuatT(0.5*dt,0,0,0)*wQuat*capsule._q;
+      capsule._q = QuatT(capsule._q.coeffs() + updatedQuat.coeffs());
       capsule._q.normalize();
     }
   });
@@ -129,11 +129,11 @@ DEVICE_HOST T XPBD<T>::computeGeneralizedInversMass(const Capsule<T>& c, const V
   return w;
 }
 template <typename T>
-DEVICE_HOST Eigen::Quaternion<T> XPBD<T>::getDeltaRot(const Capsule<T>& c, const Vec3T& r, const Vec3T& pulse) {
+DEVICE_HOST typename XPBD<T>::QuatT XPBD<T>::getDeltaRot(const Capsule<T>& c, const Vec3T& r, const Vec3T& pulse) {
   auto cIinv = c.getInertiaTensorInv();
   auto cIinvRCrossP = cIinv * (r.cross(pulse)); // I^{-1}(r x p)
-  Eigen::Quaternion<T> cIinvRCrossPQuat(0,cIinvRCrossP.x(),cIinvRCrossP.y(),cIinvRCrossP.z());
-  auto qUpdated = Eigen::Quaternion<T>(0.5,0,0,0)*cIinvRCrossPQuat*c._q;
+  QuatT cIinvRCrossPQuat(0,cIinvRCrossP.x(),cIinvRCrossP.y(),cIinvRCrossP.z());
+  auto qUpdated = QuatT(0.5,0,0,0)*cIinvRCrossPQuat*c._q;
   return qUpdated;
 }
 template <typename T>
@@ -154,14 +154,13 @@ void XPBD<T>::updateCapsuleState() {
                    thrust::make_counting_iterator(static_cast<int>(_reduceCapsuleId.size())),
   [=] __host__ __device__ (int idx) {
     if(d_capsules[d_reduceCapsuleId[idx]]._isDynamic) {
-      d_capsules[d_reduceCapsuleId[idx]]._x = d_capsules[d_reduceCapsuleId[idx]]._x
-                                              + d_reduceUpdate[idx]._x;
-      d_capsules[d_reduceCapsuleId[idx]]._q = Eigen::Quaternion<T>(d_capsules[d_reduceCapsuleId[idx]]._q.coeffs()
-                                              + d_reduceUpdate[idx]._q);
+      d_capsules[d_reduceCapsuleId[idx]]._x = d_capsules[d_reduceCapsuleId[idx]]._x + d_reduceUpdate[idx]._x;
+      d_capsules[d_reduceCapsuleId[idx]]._q = QuatT(d_capsules[d_reduceCapsuleId[idx]]._q.coeffs() + d_reduceUpdate[idx]._q);
       d_capsules[d_reduceCapsuleId[idx]]._q.normalize();
     }
   });
 }
+
 //declare instance
 template struct XPBD<LSCALAR>;
 }

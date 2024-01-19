@@ -1,5 +1,6 @@
 #ifndef COLLISION_H
 #define COLLISION_H
+
 #include "Geometry.h"
 #include <LBVH/lbvh.cuh>
 
@@ -12,13 +13,13 @@ namespace GPUPBD {
 template <typename T>
 struct Collision {
   DECL_MAT_VEC_MAP_TYPES_T
+  bool _isValid;
   int _capsuleIdA;
   int _capsuleIdB;
   Vec3T _localPointA;
   Vec3T _localPointB;
   Vec3T _globalNormal;
   T _alpha; // compliance of the constraint
-  bool _isValid;
   DEVICE_HOST Collision():_capsuleIdA(-1),_capsuleIdB(-1),
     _localPointA(Vec3T()),_localPointB(Vec3T()),_globalNormal(Vec3T()),
     _alpha(.0001), _isValid(false) {}

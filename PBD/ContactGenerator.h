@@ -1,5 +1,6 @@
 #ifndef CONTACT_GENERATOR_H
 #define CONTACT_GENERATOR_H
+
 #include "Pragma.h"
 #include "Collision.h"
 
@@ -43,7 +44,6 @@ class ContactGenerator {
   // 胶囊体碰撞
   // maxCollisionsPerNode是单个胶囊体碰撞的最大数目
   static DEVICE_HOST int narrowPhaseCollision(ContactManifold& contactM,size_t maxCollisionsPerNode) noexcept {
-    typedef Eigen::Matrix<T, 3, 2> Mat3X2T;
     int numCollision = 0;
     Vec3T &cA1 = contactM._lhsMinCorner;
     Vec3T &cA2 = contactM._lhsMaxCorner;
@@ -172,8 +172,6 @@ class ContactGenerator {
     Vec3T &cA2 = contactM._lhsMaxCorner;
     Vec3T &cB1 = contactM._rhsMinCorner;
     Vec3T &cB2 = contactM._rhsMaxCorner;
-
-    typedef Eigen::Matrix<T, 4, 1> Vec4T;
     Vec4T distSqrs((cA1 - cB1).squaredNorm(), (cA2 - cB1).squaredNorm(), (cA1 - cB2).squaredNorm(), (cA2 - cB2).squaredNorm());
     typename Vec4T::Index id;
     T distSqr = distSqrs.minCoeff(&id), dist = 0;

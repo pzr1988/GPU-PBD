@@ -1,6 +1,6 @@
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
-#include "Utils.h"
+#include "Pragma.h"
 #include "LBVH/aabb.cuh"
 #include <thrust/device_vector.h>
 
@@ -21,9 +21,9 @@ struct Capsule {
   bool _isDynamic;
   /* State variables */
   Vec3T _x;
-  Eigen::Quaternion<T> _q;
+  QuatT _q;
   Vec3T _xPrev; //Auxilliary variable for XPBD
-  Eigen::Quaternion<T> _qPrev;
+  QuatT _qPrev;
   Vec3T _v; //linear velocity
   Vec3T _w; //angular velocity
   /* Derived quantities (auxiliary variables) */
