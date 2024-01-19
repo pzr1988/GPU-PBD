@@ -18,8 +18,8 @@ std::shared_ptr<DRAWER::CompositeShape> visualizeOrUpdateGeometry(const Geometry
     ret.reset(new DRAWER::CompositeShape());
     for(int i=0; i<(int)cpuGeometry.size(); i++) {
       std::shared_ptr<DRAWER::Bullet3DShape> c(new DRAWER::Bullet3DShape);
-      c->addShape(DRAWER::makeSphericalBox(RES,fill,cpuGeometry[i]._radius,Eigen::Matrix<GLfloat,3,1>(cpuGeometry[i]._len/2.0,0,0)));
-      c->setColorDiffuse(GL_LINES,.7,.7,.7);
+      c->addShape(DRAWER::makeSphericalBox(RES,fill,cpuGeometry[i]._radius,Eigen::Matrix<GLfloat,3,1>((GLfloat)cpuGeometry[i]._len/2.0f,0,0)));
+      c->setColorDiffuse(GL_LINES,.7f,.7f,.7f);
       c->setLineWidth(5);
       ret->addShape(c);
     }
@@ -38,8 +38,8 @@ std::shared_ptr<DRAWER::MeshShape> visualizeOrUpdateCollision(const Geometry<T>&
   std::vector<Capsule<T>> cpuGeometry(g.getCapsules().size());
   thrust::copy(g.getCapsules().begin(),g.getCapsules().end(),cpuGeometry.begin());
   //collision
-  std::vector<Collision<T>> cpuCollision(cd.getCollisions().size());
-  thrust::copy(cd.getCollisions().begin(),cd.getCollisions().end(),cpuCollision.begin());
+  std::vector<Collision<T>> cpuCollision(cd.size());
+  thrust::copy(cd.begin(),cd.end(),cpuCollision.begin());
   //visualize
   std::shared_ptr<DRAWER::MeshShape> ret=s;
   if(!ret)
@@ -56,7 +56,7 @@ std::shared_ptr<DRAWER::MeshShape> visualizeOrUpdateCollision(const Geometry<T>&
     ret->addIndexSingle(i*2+1);
   }
   ret->setMode(GL_LINES);
-  ret->setLineWidth(width);
+  ret->setLineWidth((GLfloat)width);
   ret->setColorDiffuse(GL_LINES,1,0,0);
   return ret;
 }

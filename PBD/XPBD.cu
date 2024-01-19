@@ -29,7 +29,7 @@ void XPBD<T>::integrate() {
       capsule._Iinv = capsule._R*capsule._Ibodyinv*capsule._R.transpose();
       capsule._w += capsule._Iinv*(capsule._torque - capsule._w.cross(capsule._R*capsule._Ibody*capsule._R.transpose()*capsule._w))*dt;
       QuatT wQuat(0,capsule._w.x(),capsule._w.y(),capsule._w.z());
-      QuatT updatedQuat = QuatT(0.5*dt,0,0,0)*wQuat*capsule._q;
+      QuatT updatedQuat = QuatT(0.5f*dt,0,0,0)*wQuat*capsule._q;
       capsule._q = QuatT(capsule._q.coeffs() + updatedQuat.coeffs());
       capsule._q.normalize();
     }
@@ -38,10 +38,9 @@ void XPBD<T>::integrate() {
 }
 template <typename T>
 void XPBD<T>::initRelaxConstraint() {
-  int numCollision = _detector->size();
-  if(numCollision == 0) {
+  size_t numCollision = _detector->size();
+  if(numCollision == 0)
     return;
-  }
   _lambda.clear();
   _lambda.resize(numCollision);
   _collisionCapsuleId.resize(numCollision*2); //each collision contains 2 capsules
@@ -54,7 +53,7 @@ void XPBD<T>::relaxConstraint() {
   if(_detector->size() == 0)
     return;
   const auto& collisions = _detector->getCollisions();
-  const Collision<T>* d_collisions = thrust::raw_pointer_cast(collisions.data());
+  const Collision<T>* d_collisions = thrust::raw_pointer_cast(collisions);
   auto& capsules = _geometry->getMutableCapsules();
   Capsule<T>* d_capsules = thrust::raw_pointer_cast(capsules.data());
   T* d_lambda = thrust::raw_pointer_cast(_lambda.data());
@@ -63,7 +62,7 @@ void XPBD<T>::relaxConstraint() {
   T dt = _dt;
   thrust::for_each(thrust::device,
                    thrust::make_counting_iterator(0),
-                   thrust::make_counting_iterator(static_cast<int>(collisions.size())),
+                   thrust::make_counting_iterator(static_cast<int>(_detector->size())),
   [=] __host__ __device__ (int idx) {
     auto& collision = d_collisions[idx];
     auto& cA = d_capsules[collision._capsuleIdA];
@@ -81,9 +80,8 @@ void XPBD<T>::relaxConstraint() {
     auto deltaLambda = (-collisionDepth-d_lambda[idx]*alpha)/(wA+wB+alpha);
     d_lambda[idx] += deltaLambda;
     Vec3T pulse = deltaLambda*collision._globalNormal;
-    if(collisionDepth<=0) {
+    if(collisionDepth<=0)
       pulse = Vec3T(0,0,0);
-    }
     // To avoid multi write problem, first cache update
     d_collisionCapsuleId[2*idx] = collision._capsuleIdA;
     d_collisionCapsuleId[2*idx+1] = collision._capsuleIdB;
@@ -121,7 +119,7 @@ DEVICE_HOST T XPBD<T>::computeGeneralizedInversMass(const Capsule<T>& c, const V
     return 0;
   auto Iinv = c.getInertiaTensorInv();
   auto rCrossN = r.cross(n);
-  auto w = 1.0/c._mass+rCrossN.transpose()*Iinv*rCrossN;
+  auto w = 1.0f/c._mass+rCrossN.transpose()*Iinv*rCrossN;
   return w;
 }
 template <typename T>

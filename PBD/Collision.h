@@ -20,7 +20,7 @@ struct Collision {
   Vec3T _localPointB;
   Vec3T _globalNormal;
   T _alpha; // compliance of the constraint
-  DEVICE_HOST Collision():_capsuleIdA(-1),_capsuleIdB(-1), _localPointA(Vec3T()),_localPointB(Vec3T()),_globalNormal(Vec3T()), _alpha(.0001), _isValid(false) {}
+  DEVICE_HOST Collision():_capsuleIdA(-1),_capsuleIdB(-1), _localPointA(Vec3T()),_localPointB(Vec3T()),_globalNormal(Vec3T()), _alpha(.0001f), _isValid(false) {}
 };
 
 template <typename T>
@@ -66,10 +66,13 @@ class CollisionDetector {
   //Fetch the id-th collision
   Collision<T> operator[](int id);
   //Return the number of detected collisions
-  int size() const;
+  size_t size() const;
   //Get All Collisions
-  const thrust::device_vector<Collision<T>>& getCollisions() const;
+  typename thrust::device_vector<Collision<T>>::const_iterator begin() const;
+  typename thrust::device_vector<Collision<T>>::const_iterator end() const;
+  typename thrust::device_ptr<const Collision<T>> getCollisions() const;
  protected:
+  size_t _size;
   std::shared_ptr<Geometry<T>> _geometry;
   thrust::device_vector<Collision<T>> _collisions;
   thrust::device_vector<Collision<T>> _collisionsTemporary;

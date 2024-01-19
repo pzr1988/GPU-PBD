@@ -44,21 +44,28 @@ void CollisionDetector<T>::detectCollisions() {
   // Second remove invalid ones
   if(_collisions.size() < numCapsules * maxCollisionPerObject)
     _collisions.resize(numCapsules * maxCollisionPerObject);
-  auto ret = thrust::copy_if(_collisionsTemporary.begin(), _collisionsTemporary.end(), _collisions.begin(), [] __device__(const Collision<T>& c) {return c._isValid;});
-  int nCollision = std::distance(_collisions.begin(), ret);
-  _collisions.resize(nCollision);
+  auto collisionsEnd = thrust::copy_if(_collisionsTemporary.begin(), _collisionsTemporary.end(), _collisions.begin(), [] __device__(const Collision<T>& c) {return c._isValid;});
+  _size = std::distance(_collisions.begin(), collisionsEnd);
 }
 template <typename T>
 Collision<T> CollisionDetector<T>::operator[](int id) {
   return _collisions[id];
 }
 template <typename T>
-int CollisionDetector<T>::size() const {
-  return _collisions.size();
+size_t CollisionDetector<T>::size() const {
+  return _size;
 }
 template <typename T>
-const thrust::device_vector<Collision<T>>& CollisionDetector<T>::getCollisions() const {
-  return _collisions;
+typename thrust::device_vector<Collision<T>>::const_iterator CollisionDetector<T>::begin() const {
+  return _collisions.begin();
+}
+template <typename T>
+typename thrust::device_vector<Collision<T>>::const_iterator CollisionDetector<T>::end() const {
+  return _collisions.begin()+_size;
+}
+template <typename T>
+typename thrust::device_ptr<const Collision<T>> CollisionDetector<T>::getCollisions() const {
+  return _collisions.data();
 }
 
 //declare instance

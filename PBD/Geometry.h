@@ -44,20 +44,19 @@ struct Capsule {
   DEVICE_HOST Vec3T globalMaxCorner() const {
     return _q.toRotationMatrix()*maxCorner()+_x;
   }
-  DEVICE_HOST void initInertiaTensor() {
+  DEVICE_HOST void initInertiaTensor(T rho=1) {
     //https://gamedev.net/tutorials/programming/math-and-physics/capsule-inertia-tensor-r3856/
-    T mCy = _mass * (_radius*_radius*_len)/(_radius*_radius*_len + (4./3.)*_radius*_radius*_radius);
-    T mHSph = _mass * ((2./3.)*_radius*_radius*_radius)/(_radius*_radius*_len + (4./3.)*_radius*_radius*_radius);
-    T Ixx = mCy*(_radius*_radius/2.)
-            + 2.*mHSph*(2.*_radius*_radius/5.);
-    T Iyy = mCy*(_radius*_radius/4. + _len*_len/12.)
-            + 2.*mHSph*(2.*_radius*_radius/5.+_len*_len/2.+3.*_len*_radius/8);
-    _Ibody << Ixx, 0, 0,
-           0, Iyy, 0,
-           0, 0, Iyy;
-    _Ibodyinv << 1./Ixx, 0, 0,
-              0, 1./Iyy, 0,
-              0, 0, 1./Iyy;
+    _mass = 3.14f * (_radius*_radius*_len) + 3.14f * (4.f/3.f)*_radius*_radius*_radius;
+    _mass *= rho;
+    T mCy = _mass * (_radius*_radius*_len)/(_radius*_radius*_len + (4.f/3.f)*_radius*_radius*_radius);
+    T mHSph = _mass * ((2.f/3.f)*_radius*_radius*_radius)/(_radius*_radius*_len + (4.f/3.f)*_radius*_radius*_radius);
+    T Ixx = mCy*(_radius*_radius/2.f)
+            + 2.f*mHSph*(2.f*_radius*_radius/5.f);
+    T Iyy = mCy*(_radius*_radius/4.f + _len*_len/12.f)
+            + 2.f*mHSph*(2.f*_radius*_radius/5.f+_len*_len/2.f+3.f*_len*_radius/8);
+    _Ibody.setIdentity();
+    _Ibody.diagonal()=Vec3T(Ixx,Iyy,Iyy);
+    _Ibodyinv=_Ibody.inverse();
   }
   DEVICE_HOST Mat3T getInertiaTensorInv() const {
     auto R = _q.toRotationMatrix();
@@ -72,22 +71,22 @@ template <typename T>
 struct Geometry {
   DECL_MAT_VEC_MAP_TYPES_T
   //Set the actual number of capsules used
-  void resize(int nrCapsule);
+  void resize(size_t nrCapsule);
   //Set the pre-allocated capsule list
-  void reserve(int nrCapsule);
+  void reserve(size_t nrCapsule);
   //CPU->GPU transfer: copying the list of capsules to GPU
   void setCapsule(const std::vector<Capsule<T>>& c);
   //Set the id-th capsule
-  void setCapsule(int id, const Capsule<T>& c);
+  void setCapsule(size_t id, const Capsule<T>& c);
   //Get the id-th capsule
-  Capsule<T> operator[](int id) const;
+  Capsule<T> operator[](size_t id) const;
   //Get All Capsules
   const thrust::device_vector<Capsule<T>>& getCapsules() const;
   // Get mutable capsules for integration, don't change the number of capsuels.
   thrust::device_vector<Capsule<T>>& getMutableCapsules();
  protected:
   thrust::device_vector<Capsule<T>> _capsules;
-  int _nrCapsule=0;
+  size_t _nrCapsule=0;
 };
 
 // 获得物体的bounding box

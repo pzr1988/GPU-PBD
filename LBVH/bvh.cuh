@@ -274,7 +274,7 @@ class bvh {
       return;
     }
 
-    const unsigned int num_objects        = objects_h_.size();
+    const unsigned int num_objects        = (unsigned int)objects_h_.size();
     const unsigned int num_internal_nodes = num_objects - 1;
     const unsigned int num_nodes          = num_objects * 2 - 1;
 

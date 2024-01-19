@@ -18,15 +18,13 @@ int main(int argc,char** argv) {
   std::vector<Capsule<T>> ps(N);
 
   std::mt19937 mt(123456789);
-  std::uniform_real_distribution<T> uni(0.0, 1.0);
+  std::uniform_real_distribution<T> uni(0, 1);
 
   T len = uni(mt);
-  T radius = uni(mt)/3.;
+  T radius = uni(mt)/3.f;
   for(auto& p:ps) {
     p._len=len;
     p._radius=radius;
-    p._mass = 3.14*p._radius*p._radius*p._len+3.14*4.0/3.0*p._radius*p._radius*p._radius;
-    p._force = Vec3T(0, -9.8*p._mass,0);
     QuatT q(uni(mt),0,0,uni(mt));
     q.normalize();
     p._q = q;
@@ -35,14 +33,15 @@ int main(int argc,char** argv) {
     p._x = trans*3;
     p._x.z() = 0;
     p.initInertiaTensor();
+    p._force = Vec3T(0, -9.8f*p._mass,0);
     p._isDynamic = true;
   }
 
   // boundary
   Capsule<T> b_1;
-  b_1._len = 20.;
-  b_1._radius = 1.0;
-  b_1._mass = 1.0;
+  b_1._len = 20;
+  b_1._radius = 1;
+  b_1._mass = 1;
   b_1._x = Vec3T(0,-4,0);
   b_1._q = QuatT(1,0,0,0);
   b_1.initInertiaTensor();
@@ -51,26 +50,25 @@ int main(int argc,char** argv) {
 
   Capsule<T> b_2;
   b_2._len = 18.;
-  b_2._radius = 1.0;
-  b_2._mass = 1.0;
+  b_2._radius = 1;
+  b_2._mass = 1;
   b_2._x = Vec3T(5,0,0);
-  b_2._q = QuatT(0.7071,0,0,0.7071);
+  b_2._q = QuatT(0.7071f,0,0,0.7071f);
   b_2.initInertiaTensor();
   b_2._isDynamic = false;
   ps.push_back(b_2);
 
   Capsule<T> b_3;
   b_3._len = 18;
-  b_3._radius = 1.0;
-  b_3._mass = 1.0;
+  b_3._radius = 1;
+  b_3._mass = 1;
   b_3._x = Vec3T(-5,0,0);
-  b_3._q = QuatT(0.7071,0,0,0.7071);
+  b_3._q = QuatT(0.7071f,0,0,0.7071f);
   b_3.initInertiaTensor();
   b_3._isDynamic = false;
   ps.push_back(b_3);
 
   std::shared_ptr<Geometry<T>> geometry(new Geometry<T>);
-  geometry->reserve(ps.size());
   geometry->resize(ps.size());
   geometry->setCapsule(ps);
 
@@ -79,7 +77,7 @@ int main(int argc,char** argv) {
   DRAWER::Drawer drawer(argc,argv);
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CaptureGIFPlugin(GLFW_KEY_1,"record.gif",drawer.FPS())));
-  XPBD<T> xpbd(geometry, 1.0/drawer.FPS());
+  XPBD<T> xpbd(geometry, 1.0f/drawer.FPS());
   auto shapeGeometry=visualizeOrUpdateGeometry(*geometry);
   auto shapeCollision=visualizeOrUpdateCollision(*geometry,xpbd.getDetector());
   drawer.addShape(shapeGeometry);
