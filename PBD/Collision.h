@@ -51,11 +51,14 @@ struct ContactManifold {
     _lhsMinCorner = _lhs->globalMinCorner().template cast<T>();
     _lhsMaxCorner = _lhs->globalMaxCorner().template cast<T>();
   }
-  DEVICE_HOST void UpdateRhs(const Capsule<T> *rhs, unsigned int rhsId) {
+  DEVICE_HOST void updateRhs(const Capsule<T> *rhs, unsigned int rhsId) {
     _rhsId = rhsId;
     _rhs = rhs;
     _rhsMinCorner = _rhs->globalMinCorner().template cast<T>();
     _rhsMaxCorner = _rhs->globalMaxCorner().template cast<T>();
+  }
+  DEVICE_HOST bool canCollide() const {
+    return _numCollision < maxCollisionPerObject && _lhs->_parent != _rhsId && _rhs->_parent != _lhsId;
   }
 };
 

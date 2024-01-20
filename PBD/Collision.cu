@@ -30,10 +30,8 @@ void CollisionDetector<T>::detectCollisions() {
     for (size_t i = 0; i < num_found; i++)
       if(idx < buffer[i]) {
         const auto &rhs = bvh_dev.objects[buffer[i]];
-        contactM.UpdateRhs(&rhs, buffer[i]);
-        if(contactM._lhs->_collisionGroupId == contactM._rhs->_collisionGroupId)
-          continue;
-        if(contactM._numCollision < maxCollisionPerObject)
+        contactM.updateRhs(&rhs, buffer[i]);
+        if(contactM.canCollide())
           NarrowPhase<T>::narrowPhaseCollision(contactM, maxCollisionPerObject);
       }
     // fill invalid

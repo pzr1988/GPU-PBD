@@ -33,7 +33,7 @@ struct Capsule {
   Vec3T _force;
   Vec3T _torque;
   // Collision exclusion
-  size_t _collisionGroupId = 0;
+  int _parent = -1;
   void initInertiaTensor(T rho=1);
   DEVICE_HOST Vec3T minCorner() const {
     return Vec3T(-_len / 2, 0, 0);

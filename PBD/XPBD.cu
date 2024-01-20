@@ -1,5 +1,6 @@
 #include "XPBD.h"
 #include <thrust/sort.h>
+#include <unordered_map>
 
 namespace GPUPBD {
 template <typename T>
@@ -134,6 +135,27 @@ template <typename T>
 void XPBD<T>::assignCollisionGroup() {
   if(_collisionGroupAssigned)
     return;
+  //Step 1: collect capsules into trees
+  std::vector<int> parents(_geometry->size(),-1);
+  for(size_t jid=0; jid<_joints.size(); jid++) {
+    const Constraint<T>& j=_joints[jid];
+    int rootA=j._capsuleIdA, rootB=j._capsuleIdB;
+    while(parents[rootA]>=0)
+      rootA=parents[rootA];
+    while(parents[rootB]>=0)
+      rootB=parents[rootB];
+    if(rootA != rootB)
+      parents[rootA]=rootB;
+    else throw std::runtime_error("Kinematic tree has loops!");
+  }
+  //Step 2: assign collision group id 
+  std::unordered_map<size_t,int> treeId;
+  for(size_t gid=0; gid<_geometry->size(); gid++)
+    if(parents[gid]==-1) {
+      Capsule<T> c=_geometry->get(gid);
+      c._parent=parents[gid];
+      _geometry->setCapsule(gid, c);
+    }
   _collisionGroupAssigned=true;
 }
 template <typename T>

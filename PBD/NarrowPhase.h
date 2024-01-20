@@ -9,8 +9,7 @@ template<typename T>
 class NarrowPhase {
  public:
   DECL_MAT_VEC_MAP_TYPES_T
-  // 胶囊体碰撞
-  // maxCollisionsPerNode是单个胶囊体碰撞的最大数目
+  // maxCollisionsPerNode is the number of collisions per capsule
   static DEVICE_HOST int narrowPhaseCollision(ContactManifold<T>& contactM,size_t maxCollisionsPerNode) noexcept {
     int numCollision = 0;
     Vec3T &cA1 = contactM._lhsMinCorner;
@@ -122,7 +121,7 @@ class NarrowPhase {
     return numCollision;
   }
  private:
-  // 胶囊体碰撞内部使用
+  // For internal use: sphere-sphere collision
   static DEVICE_HOST int generateManifoldSphereSphereInternal(ContactManifold<T>& contactM, size_t maxCollisionsPerNode) {
     Vec3T &cA1 = contactM._lhsMinCorner;
     Vec3T &cA2 = contactM._lhsMaxCorner;
