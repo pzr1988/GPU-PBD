@@ -28,22 +28,21 @@ const unsigned int maxCollisionPerObject=8;
 #include <Eigen/Dense>
 
 template <typename T>
-class CopyableQuaternion : public Eigen::Quaternion<T>
-{
-public:
-	CopyableQuaternion():Eigen::Quaternion<T>(1,0,0,0){}
-	CopyableQuaternion(const Eigen::AngleAxis<T>& aa):Eigen::Quaternion<T>(aa){}
-	CopyableQuaternion(T w, T x, T y, T z):Eigen::Quaternion<T>(w,x,y,z){}
-	CopyableQuaternion(const typename Eigen::Quaternion<T>::Coefficients& coeffs):Eigen::Quaternion<T>(coeffs){}
-	CopyableQuaternion(const CopyableQuaternion& other):Eigen::Quaternion<T>(other.w(),other.x(),other.y(),other.z()){}
-	CopyableQuaternion(const Eigen::Quaternion<T>& other):Eigen::Quaternion<T>(other.w(),other.x(),other.y(),other.z()){}
-	DEVICE_HOST CopyableQuaternion& operator=(const CopyableQuaternion& other) {
-		w() = other.w();
-		x() = other.x();
-		y() = other.y();
-		z() = other.z();
-		return *this;
-	}
+class CopyableQuaternion : public Eigen::Quaternion<T> {
+ public:
+  CopyableQuaternion():Eigen::Quaternion<T>(1,0,0,0) {}
+  CopyableQuaternion(const Eigen::AngleAxis<T>& aa):Eigen::Quaternion<T>(aa) {}
+  CopyableQuaternion(T w, T x, T y, T z):Eigen::Quaternion<T>(w,x,y,z) {}
+  CopyableQuaternion(const typename Eigen::Quaternion<T>::Coefficients& coeffs):Eigen::Quaternion<T>(coeffs) {}
+  CopyableQuaternion(const CopyableQuaternion<T>& other):Eigen::Quaternion<T>(other.w(),other.x(),other.y(),other.z()) {}
+  CopyableQuaternion(const Eigen::Quaternion<T>& other):Eigen::Quaternion<T>(other.w(),other.x(),other.y(),other.z()) {}
+  DEVICE_HOST CopyableQuaternion<T>& operator=(const CopyableQuaternion<T>& other) {
+    this->w() = other.w();
+    this->x() = other.x();
+    this->y() = other.y();
+    this->z() = other.z();
+    return *this;
+  }
 };
 
 #define DECL_MAT_VEC_MAP_TYPES_T \
