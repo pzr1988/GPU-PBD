@@ -152,7 +152,7 @@ void XPBD<T>::assignCollisionGroup() {
   std::unordered_map<size_t,int> treeId;
   for(size_t gid=0; gid<_geometry->size(); gid++)
     if(parents[gid]==-1) {
-      Capsule<T> c=_geometry->get(gid);
+      Capsule<T> c=(*_geometry)[gid];
       c._parent=parents[gid];
       _geometry->setCapsule(gid, c);
     }
