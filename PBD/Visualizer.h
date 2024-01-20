@@ -38,7 +38,7 @@ std::shared_ptr<DRAWER::MeshShape> visualizeOrUpdateCollision(const Geometry<T>&
   std::vector<Capsule<T>> cpuGeometry(g.size());
   thrust::copy(g.begin(),g.end(),cpuGeometry.begin());
   //collision
-  std::vector<Collision<T>> cpuCollision(cd.size());
+  std::vector<Constraint<T>> cpuCollision(cd.size());
   thrust::copy(cd.begin(),cd.end(),cpuCollision.begin());
   //visualize
   std::shared_ptr<DRAWER::MeshShape> ret=s;

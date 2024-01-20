@@ -11,6 +11,19 @@ template <typename T>
 class XPBD {
  public:
   DECL_MAT_VEC_MAP_TYPES_T
+  struct update {
+    Vec3T _x;
+    Vec4T _q;
+  };
+  struct UpdateAdd {
+    __host__ __device__
+    update operator()(const update& a, const update& b) const {
+      update result;
+      result._x = a._x + b._x;
+      result._q = a._q + b._q;
+      return result;
+    }
+  };
   //The contructor takes the set of capsules
   XPBD(std::shared_ptr<Geometry<T>> geometry,T dt,int nRelax=8);
   //Timestepping the physical system
@@ -27,35 +40,28 @@ class XPBD {
   void updateVelocity();
   //Use detector to visulize collisions
   const CollisionDetector<T>& getDetector() const;
- protected:
-  std::shared_ptr<Geometry<T>> _geometry;
-  std::shared_ptr<CollisionDetector<T>> _detector;
-  T _dt;
-  int _nRelax;
+  //Get number of constraints
+  size_t numConstraints() const;
+  //Add joint between a pair of capsules
+  void addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T& localB);
  private:
+  //Automatically avoid collision between a Capsule<T> and its children
+  void assignCollisionGroup();
   //Init for relax all the constraints process
   void initRelaxConstraint();
   DEVICE_HOST static T computeGeneralizedInversMass(const Capsule<T>& capsule, const Vec3T& normal, const Vec3T& placementPoint);
   DEVICE_HOST static QuatT getDeltaRot(const Capsule<T>& capsule, const Vec3T& placementPoint, const Vec3T& pulse);
- private:
+  //data
+  std::shared_ptr<Geometry<T>> _geometry;
+  std::shared_ptr<CollisionDetector<T>> _detector;
+  thrust::device_vector<Constraint<T>> _joints;
+  T _dt;
+  int _nRelax;
   thrust::device_vector<T> _lambda;
+  bool _collisionGroupAssigned;
   //Cache deltaX and deltaQ during relaxConstraint to avoid multi write problem
- public:
-  struct update {
-    Vec3T _x;
-    Vec4T _q;
-  };
-  struct UpdateAdd {
-    __host__ __device__
-    update operator()(const update& a, const update& b) const {
-      update result;
-      result._x = a._x + b._x;
-      result._q = a._q + b._q;
-      return result;
-    }
-  };
- private:
-  thrust::device_vector<int> _collisionCapsuleId;
+  //Jacobian aggregation
+  thrust::device_vector<int> _constraintCapsuleId;
   thrust::device_vector<update> _update;
   thrust::device_vector<int> _reduceCapsuleId;
   thrust::device_vector<update> _reduceUpdate;

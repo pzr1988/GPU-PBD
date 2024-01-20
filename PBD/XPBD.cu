@@ -4,9 +4,10 @@
 namespace GPUPBD {
 template <typename T>
 XPBD<T>::XPBD(std::shared_ptr<Geometry<T>> geometry,T dt,int nRelax)
-  :_geometry(geometry),_detector(new CollisionDetector<T>(geometry)),_dt(dt),_nRelax(nRelax) {}
+  :_geometry(geometry),_detector(new CollisionDetector<T>(geometry)),_dt(dt),_nRelax(nRelax),_collisionGroupAssigned(false) {}
 template <typename T>
 void XPBD<T>::step() {
+  assignCollisionGroup();
   integrate();
   _detector->detectCollisions();
   initRelaxConstraint();
@@ -36,52 +37,55 @@ void XPBD<T>::integrate() {
 }
 template <typename T>
 void XPBD<T>::initRelaxConstraint() {
-  size_t numCollision = _detector->size();
-  if(numCollision == 0)
+  if(numConstraints() == 0)
     return;
-  _lambda.clear();
-  _lambda.resize(numCollision);
-  _collisionCapsuleId.resize(numCollision*2); //each collision contains 2 capsules
-  _update.resize(numCollision*2);
-  _reduceCapsuleId.resize(numCollision*2);
-  _reduceUpdate.resize(numCollision*2);
+  _constraintCapsuleId.resize(numConstraints()*2); //each collision contains 2 capsules
+  _update.resize(numConstraints()*2);
+  _reduceCapsuleId.resize(numConstraints()*2);
+  _reduceUpdate.resize(numConstraints()*2);
 }
 template <typename T>
 void XPBD<T>::relaxConstraint() {
-  if(_detector->size() == 0)
+  if(numConstraints() == 0)
     return;
-  const auto& collisions = _detector->getCollisions();
-  const Collision<T>* d_collisions = thrust::raw_pointer_cast(collisions);
+  size_t numJoints = _joints.size();
+  Constraint<T>* d_joints = thrust::raw_pointer_cast(_joints.data());
+  Constraint<T>* d_collisions = thrust::raw_pointer_cast(_detector->getCollisions());
   Capsule<T>* d_capsules = thrust::raw_pointer_cast(_geometry->getCapsules());
   T* d_lambda = thrust::raw_pointer_cast(_lambda.data());
-  int* d_collisionCapsuleId = thrust::raw_pointer_cast(_collisionCapsuleId.data());
+  int* d_constraintCapsuleId = thrust::raw_pointer_cast(_constraintCapsuleId.data());
   auto d_update = thrust::raw_pointer_cast(_update.data());
   T dt = _dt;
   thrust::for_each(thrust::device,
                    thrust::make_counting_iterator(0),
-                   thrust::make_counting_iterator(static_cast<int>(_detector->size())),
+                   thrust::make_counting_iterator((int)numConstraints()),
   [=] __host__ __device__ (int idx) {
-    auto& collision = d_collisions[idx];
-    auto& cA = d_capsules[collision._capsuleIdA];
-    auto& cB = d_capsules[collision._capsuleIdB];
-    auto placementPointA = cA._q.toRotationMatrix()*collision._localPointA;
-    auto placementPointB = cB._q.toRotationMatrix()*collision._localPointB;
+    Vec3T pulse;
+    auto& constraint = idx < numJoints ? d_joints[idx] : d_collisions[idx];
+    auto& cA = d_capsules[constraint._capsuleIdA];
+    auto& cB = d_capsules[constraint._capsuleIdB];
+    auto placementPointA = cA._q.toRotationMatrix()*constraint._localPointA;
+    auto placementPointB = cB._q.toRotationMatrix()*constraint._localPointB;
     auto globalPointA = placementPointA+cA._x;
     auto globalPointB = placementPointB+cB._x;
-    auto wA = computeGeneralizedInversMass(cA, placementPointA,
-                                           collision._globalNormal);
-    auto wB = computeGeneralizedInversMass(cB, placementPointB,
-                                           collision._globalNormal);
-    auto collisionDepth = (globalPointA-globalPointB).dot(collision._globalNormal);
-    auto alpha = collision._alpha/(dt*dt);
-    auto deltaLambda = (-collisionDepth-d_lambda[idx]*alpha)/(wA+wB+alpha);
+    if(constraint._type == Joint) {
+      auto distSqr = (globalPointA - globalPointB).squaredNorm();
+      if(distSqr > epsDist * epsDist)
+        constraint._globalNormal = (globalPointA - globalPointB) / sqrt(distSqr);
+      else constraint._globalNormal.setZero();
+    }
+    auto wA = computeGeneralizedInversMass(cA, placementPointA, constraint._globalNormal);
+    auto wB = computeGeneralizedInversMass(cB, placementPointB, constraint._globalNormal);
+    auto constraintViolation = (globalPointA-globalPointB).dot(constraint._globalNormal);
+    auto alpha = constraint._alpha/(dt*dt);
+    auto deltaLambda = (-constraintViolation-d_lambda[idx]*alpha)/(wA+wB+alpha);
     d_lambda[idx] += deltaLambda;
-    Vec3T pulse = deltaLambda*collision._globalNormal;
-    if(collisionDepth<=0)
-      pulse = Vec3T(0,0,0);
+    pulse = deltaLambda * constraint._globalNormal;
+    if(constraint._type == Collision && constraintViolation <= 0)
+      pulse.setZero();
     // To avoid multi write problem, first cache update
-    d_collisionCapsuleId[2*idx] = collision._capsuleIdA;
-    d_collisionCapsuleId[2*idx+1] = collision._capsuleIdB;
+    d_constraintCapsuleId[2*idx] = constraint._capsuleIdA;
+    d_constraintCapsuleId[2*idx+1] = constraint._capsuleIdB;
     d_update[2*idx]._x = pulse/cA._mass;
     d_update[2*idx+1]._x = -pulse/cB._mass;
     d_update[2*idx]._q = getDeltaRot(cA, placementPointA, pulse).coeffs();
@@ -109,6 +113,30 @@ const CollisionDetector<T>& XPBD<T>::getDetector() const {
   return *_detector;
 }
 template <typename T>
+size_t XPBD<T>::numConstraints() const {
+  return _joints.size() + _detector->size();
+}
+template <typename T>
+void XPBD<T>::addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T& localB) {
+  if(idA==idB)
+    throw std::runtime_error("Cannot add joint to the same Capsule<T>!");
+  Constraint<T> c;
+  c._isValid=true;
+  c._type=Joint;
+  c._capsuleIdA=(int)idA;
+  c._capsuleIdB=(int)idB;
+  c._localPointA=localA;
+  c._localPointB=localB;
+  _joints.push_back(c);
+  _collisionGroupAssigned=false;    //need to re-assign
+}
+template <typename T>
+void XPBD<T>::assignCollisionGroup() {
+  if(_collisionGroupAssigned)
+    return;
+  _collisionGroupAssigned=true;
+}
+template <typename T>
 DEVICE_HOST T XPBD<T>::computeGeneralizedInversMass(const Capsule<T>& c, const Vec3T& n, const Vec3T& r) {
   if(!c._isDynamic)
     return 0;
@@ -129,9 +157,8 @@ template <typename T>
 void XPBD<T>::updateCapsuleState() {
   Capsule<T>* d_capsules = thrust::raw_pointer_cast(_geometry->getCapsules());
   //Reduce multi collisions of one capsule, then write
-  thrust::sort_by_key(_collisionCapsuleId.begin(), _collisionCapsuleId.end(),
-                      _update.begin(), thrust::greater<int>());
-  auto end = thrust::reduce_by_key(_collisionCapsuleId.begin(), _collisionCapsuleId.end(),
+  thrust::sort_by_key(_constraintCapsuleId.begin(), _constraintCapsuleId.end(), _update.begin(), thrust::greater<int>());
+  auto end = thrust::reduce_by_key(_constraintCapsuleId.begin(), _constraintCapsuleId.end(),
                                    _update.begin(), _reduceCapsuleId.begin(), _reduceUpdate.begin(),
                                    thrust::equal_to<int>(), UpdateAdd());
   _reduceCapsuleId.erase(end.first, _reduceCapsuleId.end());
@@ -139,7 +166,7 @@ void XPBD<T>::updateCapsuleState() {
   auto d_reduceUpdate = thrust::raw_pointer_cast(_reduceUpdate.data());
   thrust::for_each(thrust::device,
                    thrust::make_counting_iterator(0),
-                   thrust::make_counting_iterator(static_cast<int>(_reduceCapsuleId.size())),
+                   thrust::make_counting_iterator((int)_reduceCapsuleId.size()),
   [=] __host__ __device__ (int idx) {
     if(d_capsules[d_reduceCapsuleId[idx]]._isDynamic) {
       d_capsules[d_reduceCapsuleId[idx]]._x = d_capsules[d_reduceCapsuleId[idx]]._x + d_reduceUpdate[idx]._x;

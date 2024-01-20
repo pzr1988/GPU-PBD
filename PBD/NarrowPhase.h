@@ -101,7 +101,7 @@ class NarrowPhase {
         contactM._numCollision++;
         numCollision++;
       } else {
-        Collision<T> collision;
+        Constraint<T> collision;
         T collisionDepth = 0;
         generateManifoldSphereCapsuleInternal(collision, collisionDepth, cA1, contactM._lhs, contactM._lhsId, contactM._rhs, contactM._rhsId);
         generateManifoldSphereCapsuleInternal(collision,collisionDepth, cA2, contactM._lhs, contactM._lhsId, contactM._rhs, contactM._rhsId);
@@ -162,8 +162,8 @@ class NarrowPhase {
     contactM._numCollision++;
     return 1;
   }
-  static DEVICE_HOST void generateManifoldSphereCapsuleInternal(Collision<T>& originCollision, T& originCollisionDepth, const Vec3T &cA,const Capsule<T>* lhs,int lhs_idx, const Capsule<T>* rhs,int rhs_idx) {
-    Collision<T> collision;
+  static DEVICE_HOST void generateManifoldSphereCapsuleInternal(Constraint<T>& originCollision, T& originCollisionDepth, const Vec3T &cA,const Capsule<T>* lhs,int lhs_idx, const Capsule<T>* rhs,int rhs_idx) {
+    Constraint<T> collision;
     auto cB1 = rhs->globalMinCorner().template cast<T>();
     auto cB2 = rhs->globalMaxCorner().template cast<T>();
     Vec3T n = cB2 - cB1;

@@ -24,7 +24,7 @@ size_t Geometry<T>::size() const {
 template <typename T>
 void Geometry<T>::resize(size_t nrCapsule) {
   _nrCapsule=nrCapsule;
-  if(_nrCapsule<_capsules.size())
+  if(_nrCapsule>_capsules.size())
     _capsules.resize(_nrCapsule);
 }
 template <typename T>
@@ -33,7 +33,8 @@ void Geometry<T>::reserve(size_t nrCapsule) {
 }
 template <typename T>
 void Geometry<T>::setCapsule(const std::vector<Capsule<T>>& c) {
-  assert(c.size()==_nrCapsule);
+  if(c.size()!=_nrCapsule)
+    throw std::runtime_error("#Capsule mismatch!");
   thrust::copy(c.begin(),c.end(),_capsules.begin());
 }
 template <typename T>
