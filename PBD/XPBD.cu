@@ -62,7 +62,7 @@ void XPBD<T>::relaxConstraint() {
                    thrust::make_counting_iterator((int)numConstraints()),
   [=] __host__ __device__ (int idx) {
     Vec3T pulse;
-    auto& constraint = idx < numJoints ? d_joints[idx] : d_collisions[idx];
+    auto& constraint = idx < numJoints ? d_joints[idx] : d_collisions[idx-numJoints];
     auto& cA = d_capsules[constraint._capsuleIdA];
     auto& cB = d_capsules[constraint._capsuleIdB];
     auto placementPointA = cA._q.toRotationMatrix()*constraint._localPointA;
