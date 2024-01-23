@@ -30,12 +30,12 @@ const unsigned int maxCollisionPerObject=8;
 template <typename T>
 class CopyableQuaternion : public Eigen::Quaternion<T> {
  public:
-  CopyableQuaternion():Eigen::Quaternion<T>(1,0,0,0) {}
-  CopyableQuaternion(const Eigen::AngleAxis<T>& aa):Eigen::Quaternion<T>(aa) {}
-  CopyableQuaternion(T w, T x, T y, T z):Eigen::Quaternion<T>(w,x,y,z) {}
-  CopyableQuaternion(const typename Eigen::Quaternion<T>::Coefficients& coeffs):Eigen::Quaternion<T>(coeffs) {}
-  CopyableQuaternion(const CopyableQuaternion<T>& other):Eigen::Quaternion<T>(other.w(),other.x(),other.y(),other.z()) {}
-  CopyableQuaternion(const Eigen::Quaternion<T>& other):Eigen::Quaternion<T>(other.w(),other.x(),other.y(),other.z()) {}
+  DEVICE_HOST CopyableQuaternion():Eigen::Quaternion<T>(1,0,0,0) {}
+  DEVICE_HOST CopyableQuaternion(const Eigen::AngleAxis<T>& aa):Eigen::Quaternion<T>(aa) {}
+  DEVICE_HOST CopyableQuaternion(T w, T x, T y, T z):Eigen::Quaternion<T>(w,x,y,z) {}
+  DEVICE_HOST CopyableQuaternion(const typename Eigen::Quaternion<T>::Coefficients& coeffs):Eigen::Quaternion<T>(coeffs) {}
+  DEVICE_HOST CopyableQuaternion(const CopyableQuaternion<T>& other):Eigen::Quaternion<T>(other.w(),other.x(),other.y(),other.z()) {}
+  DEVICE_HOST CopyableQuaternion(const Eigen::Quaternion<T>& other):Eigen::Quaternion<T>(other.w(),other.x(),other.y(),other.z()) {}
   DEVICE_HOST CopyableQuaternion<T>& operator=(const CopyableQuaternion<T>& other) {
     this->w() = other.w();
     this->x() = other.x();
