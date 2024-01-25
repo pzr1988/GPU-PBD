@@ -33,27 +33,5 @@ INCLUDE_DIRECTORIES(${GLFW_INCLUDE_DIR})
 LIST(APPEND ALL_LIBRARIES ${GLFW_LIBRARY})
 
 #TinyVisualizer
-ADD_DEFINITIONS(-DIMGUI_SUPPORT)
-ADD_DEFINITIONS(-DIMGUI_IMPL_OPENGL_LOADER_GLAD2)
-FILE(GLOB IMGUI
-  ${PROJECT_SOURCE_DIR}/extern/TinyVisualizer/extern/imgui/*.h
-  ${PROJECT_SOURCE_DIR}/extern/TinyVisualizer/extern/imgui/*.cpp
-  ${PROJECT_SOURCE_DIR}/extern/TinyVisualizer/TinyVisualizer/imgui/*.h
-  ${PROJECT_SOURCE_DIR}/extern/TinyVisualizer/extern/imgui/backends/imgui_impl_glfw.h
-  ${PROJECT_SOURCE_DIR}/extern/TinyVisualizer/extern/imgui/backends/imgui_impl_glfw.cpp
-  ${PROJECT_SOURCE_DIR}/extern/TinyVisualizer/extern/imgui/backends/imgui_impl_opengl3.h
-  ${PROJECT_SOURCE_DIR}/extern/TinyVisualizer/extern/imgui/backends/imgui_impl_opengl3.cpp)
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/extern/TinyVisualizer/extern/glad/include)
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/extern/TinyVisualizer/extern/imgui)
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/extern/TinyVisualizer/extern)
-MACRO(SEARCH_SOURCE NAME DIRPRJ)
-  FILE(GLOB_RECURSE header${NAME} ${PROJECT_SOURCE_DIR}/${DIRPRJ}/*.h ${PROJECT_SOURCE_DIR}/${DIRPRJ}/*.hpp ${PROJECT_SOURCE_DIR}/${DIRPRJ}/*.hh ${PROJECT_SOURCE_DIR}/${DIRPRJ}/*.cuh)
-  FILE(GLOB_RECURSE source${NAME} ${PROJECT_SOURCE_DIR}/${DIRPRJ}/*.cpp ${PROJECT_SOURCE_DIR}/${DIRPRJ}/*.cc ${PROJECT_SOURCE_DIR}/${DIRPRJ}/*.c ${PROJECT_SOURCE_DIR}/${DIRPRJ}/*.cu)
-ENDMACRO(SEARCH_SOURCE)
-SEARCH_SOURCE(TinyVisualizer extern/TinyVisualizer/TinyVisualizer)
-SEARCH_SOURCE(GLAD extern/TinyVisualizer/extern/glad/src)
-SEARCH_SOURCE(ImGui extern/TinyVisualizer/extern/imgui)
-ADD_LIBRARY(TinyVisualizer STATIC
-    ${headerTinyVisualizer} ${sourceTinyVisualizer}
-    ${headerGLAD} ${sourceGLAD}
-    ${IMGUI} ${IMGUI})
+SET(TINY_VISUALIZER_LOCATION ${PROJECT_SOURCE_DIR}/extern/TinyVisualizer)
+INCLUDE(${TINY_VISUALIZER_LOCATION}/cmake/IncludeTinyVisualizer.cmake)
