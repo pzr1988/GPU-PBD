@@ -40,6 +40,7 @@ template <typename T>
 void XPBD<T>::initRelaxConstraint() {
   if(numConstraints() == 0)
     return;
+  _lambda.resize(numConstraints());
   _constraintCapsuleId.resize(numConstraints()*2); //each collision contains 2 capsules
   _update.resize(numConstraints()*2);
   _reduceCapsuleId.resize(numConstraints()*2);
@@ -78,8 +79,8 @@ void XPBD<T>::relaxConstraint() {
     auto wA = computeGeneralizedInversMass(cA, placementPointA, constraint._globalNormal);
     auto wB = computeGeneralizedInversMass(cB, placementPointB, constraint._globalNormal);
     auto constraintViolation = (globalPointA-globalPointB).dot(constraint._globalNormal);
-    auto alpha = constraint._alpha/(dt*dt);
-    auto deltaLambda = (-constraintViolation-d_lambda[idx]*alpha)/(wA+wB+alpha);
+    auto alpha = constraint._alpha / (dt*dt);
+    auto deltaLambda = (-constraintViolation-d_lambda[idx]*alpha) / (wA+wB+alpha);
     d_lambda[idx] += deltaLambda;
     pulse = deltaLambda * constraint._globalNormal;
     if(constraint._type == Collision && constraintViolation <= 0)
@@ -87,8 +88,8 @@ void XPBD<T>::relaxConstraint() {
     // To avoid multi write problem, first cache update
     d_constraintCapsuleId[2*idx] = constraint._capsuleIdA;
     d_constraintCapsuleId[2*idx+1] = constraint._capsuleIdB;
-    d_update[2*idx]._x = pulse/cA._mass;
-    d_update[2*idx+1]._x = -pulse/cB._mass;
+    d_update[2*idx]._x = pulse / cA._mass;
+    d_update[2*idx+1]._x = -pulse / cB._mass;
     d_update[2*idx]._q = getDeltaRot(cA, placementPointA, pulse).coeffs();
     d_update[2*idx+1]._q = -getDeltaRot(cB, placementPointB, pulse).coeffs();
   });

@@ -11,14 +11,13 @@ template <typename T>
 class XPBD {
  public:
   DECL_MAT_VEC_MAP_TYPES_T
-  struct update {
+  struct Update {
     Vec3T _x;
     Vec4T _q;
   };
   struct UpdateAdd {
-    __host__ __device__
-    update operator()(const update& a, const update& b) const {
-      update result;
+    DEVICE_HOST Update operator()(const Update& a, const Update& b) const {
+      Update result;
       result._x = a._x + b._x;
       result._q = a._q + b._q;
       return result;
@@ -62,9 +61,9 @@ class XPBD {
   //Cache deltaX and deltaQ during relaxConstraint to avoid multi write problem
   //Jacobian aggregation
   thrust::device_vector<int> _constraintCapsuleId;
-  thrust::device_vector<update> _update;
+  thrust::device_vector<Update> _update;
   thrust::device_vector<int> _reduceCapsuleId;
-  thrust::device_vector<update> _reduceUpdate;
+  thrust::device_vector<Update> _reduceUpdate;
 };
 
 }
