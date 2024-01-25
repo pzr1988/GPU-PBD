@@ -2,11 +2,11 @@
 #include <PBD/Collision.h>
 #include <PBD/XPBD.h>
 #include <PBD/Visualizer.h>
-/*#include <TinyVisualizer/FirstPersonCameraManipulator.h>
+#include <TinyVisualizer/FirstPersonCameraManipulator.h>
 #include <TinyVisualizer/CameraExportPlugin.h>
 #include <TinyVisualizer/CaptureGIFPlugin.h>
 #include <TinyVisualizer/ImGuiPlugin.h>
-#include <TinyVisualizer/Camera3D.h>*/
+#include <TinyVisualizer/Camera3D.h>
 #include <random>
 
 using namespace GPUPBD;
@@ -73,9 +73,7 @@ int main(int argc,char** argv) {
   geometry->setCapsule(ps);
   XPBD<T> xpbd(geometry, 1.0f/60);
 
-  for(int i=0;i<1000;i++)
-    xpbd.step();
-  /*DRAWER::Drawer drawer(argc,argv);
+  DRAWER::Drawer drawer(argc,argv);
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CaptureGIFPlugin(GLFW_KEY_1,"record.gif",drawer.FPS())));
   auto shapeGeometry=visualizeOrUpdateGeometry(*geometry);
@@ -102,6 +100,6 @@ int main(int argc,char** argv) {
     else if(key==GLFW_KEY_R && action==GLFW_PRESS)
       sim=!sim;
   });
-  drawer.mainLoop();*/
+  drawer.mainLoop();
   return 0;
 }
