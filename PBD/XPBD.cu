@@ -40,6 +40,7 @@ template <typename T>
 void XPBD<T>::initRelaxConstraint() {
   if(numConstraints() == 0)
     return;
+  _lambda.clear();
   _lambda.resize(numConstraints());
   _constraintCapsuleId.resize(numConstraints()*2); //each collision contains 2 capsules
   _update.resize(numConstraints()*2);
