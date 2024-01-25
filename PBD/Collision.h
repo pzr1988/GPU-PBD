@@ -84,7 +84,7 @@ class CollisionDetector {
   typename thrust::device_ptr<const Constraint<T>> getCollisions() const;
   typename thrust::device_ptr<Constraint<T>> getCollisions();
  protected:
-  size_t _size;
+  size_t _size=0;
   std::shared_ptr<Geometry<T>> _geometry;
   thrust::device_vector<Constraint<T>> _collisions;
   thrust::device_vector<Constraint<T>> _collisionsTemporary;

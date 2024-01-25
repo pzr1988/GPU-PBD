@@ -7,3 +7,6 @@
 [submodule "extern/cccl"]
 	path = extern/cccl
 	url = https://github.com/NVIDIA/cccl.git
+[submodule "extern/TinyVisualizer"]
+	path = extern/TinyVisualizer
+	url = https://github.com/gaoxifeng/TinyVisualizer.git
