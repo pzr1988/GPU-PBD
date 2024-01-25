@@ -34,4 +34,3 @@ IF(TinyVisualizer_FOUND)
 ELSE(TinyVisualizer_FOUND)
   MESSAGE(SEND_ERROR "Cannot find TinyVisualizer!")
 ENDIF(TinyVisualizer_FOUND)
-
