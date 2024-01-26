@@ -4,7 +4,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive TZ=America/Los_Angeles apt-
 
 RUN apt update && apt install -y wget vim python3-dev python3-numpy g++ build-essential \
 	libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libglu1-mesa-dev \
-	freeglut3-dev mesa-common-dev libglfw3 libglfw3-dev
+	freeglut3-dev mesa-common-dev libglfw3 libglfw3-dev libeigen3-dev libxxf86vm-dev
 
 RUN wget https://github.com/Kitware/CMake/releases/download/v3.27.9/cmake-3.27.9-linux-x86_64.sh && \
 	chmod +x cmake-3.27.9-linux-x86_64.sh && \
