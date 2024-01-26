@@ -47,7 +47,6 @@ struct ContactManifold {
   }
   DEVICE_HOST ContactManifold(const Capsule<T> *lhs, unsigned int lhsId, Constraint<T> *localMemory)
     :_lhsId(lhsId), _lhs(lhs), _localMemory(localMemory), _numCollision(0) {
-    _numCollision = 0;
     _lhsMinCorner = _lhs->globalMinCorner().template cast<T>();
     _lhsMaxCorner = _lhs->globalMaxCorner().template cast<T>();
   }

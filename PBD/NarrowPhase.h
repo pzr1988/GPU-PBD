@@ -11,6 +11,8 @@ class NarrowPhase {
   DECL_MAT_VEC_MAP_TYPES_T
   // maxCollisionsPerNode is the number of collisions per capsule
   static DEVICE_HOST int narrowPhaseCollision(ContactManifold<T>& contactM,size_t maxCollisionsPerNode) noexcept {
+    if(contactM._numCollision >= maxCollisionPerObject)
+      return 0;
     int numCollision = 0;
     Vec3T &cA1 = contactM._lhsMinCorner;
     Vec3T &cA2 = contactM._lhsMaxCorner;

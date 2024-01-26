@@ -28,7 +28,7 @@ void CollisionDetector<T>::detectCollisions() {
     Constraint<T>* localMemory = d_collisionsTemporary + idx * maxCollisionPerObject;
     ContactManifold<T> contactM(&self, idx, localMemory);
     for (size_t i = 0; i < num_found; i++)
-      if(idx < buffer[i]) {
+      if(idx < buffer[i] && contactM._numCollision < maxCollisionPerObject) {
         const auto &rhs = bvh_dev.objects[buffer[i]];
         contactM.updateRhs(&rhs, buffer[i]);
         if(contactM.canCollide())
