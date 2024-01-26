@@ -44,10 +44,15 @@ void CollisionDetector<T>::detectCollisions() {
   cudaDeviceSynchronize();
 
   // Second remove invalid ones
-  if(_collisions.size() < numCapsules * maxCollisionPerObject)
-    _collisions.resize(numCapsules * maxCollisionPerObject);
-  auto collisionsEnd = thrust::copy_if(_collisionsTemporary.begin(), _collisionsTemporary.end(), _collisions.begin(), [] __device__(const Constraint<T>& c) {return c._isValid;});
-  _size = std::distance(_collisions.begin(), collisionsEnd);
+  int numCollision = thrust::count_if(_collisionsTemporary.begin(), _collisionsTemporary.end(),  [] __device__(const Constraint<T>& c) {
+    return c._isValid;
+  });
+  if(_collisions.capacity() < numCollision)
+    _collisions.reserve(numCollision*2);
+  thrust::copy_if(_collisionsTemporary.begin(), _collisionsTemporary.end(), _collisions.begin(), [] __device__(const Constraint<T>& c) {
+    return c._isValid;
+  });
+  _size = numCollision;
 }
 template <typename T>
 Constraint<T> CollisionDetector<T>::operator[](int id) {
