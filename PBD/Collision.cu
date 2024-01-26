@@ -23,7 +23,8 @@ void CollisionDetector<T>::detectCollisions() {
     unsigned int buffer[maxCollisionPerObject];
     const auto& self = bvh_dev.objects[idx];
     // broad phase
-    const auto num_found = lbvh::query_device(bvh_dev, lbvh::overlaps(AABBGetter<Capsule, T>()(self)), buffer, maxCollisionPerObject);
+    auto num_found = lbvh::query_device(bvh_dev, lbvh::overlaps(AABBGetter<Capsule, T>()(self)), buffer, maxCollisionPerObject);
+    num_found = min(num_found, maxCollisionPerObject);
     // narrow phase
     Constraint<T>* localMemory = d_collisionsTemporary + idx * maxCollisionPerObject;
     ContactManifold<T> contactM(&self, idx, localMemory);
