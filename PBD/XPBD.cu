@@ -149,11 +149,9 @@ void XPBD<T>::assignCollisionGroup() {
       if(c._type!=Joint || !c._isValid)
         return false;
       int parentA = d_parents[c._capsuleIdA];
-      int parentB = d_parents[c._capsuleIdB];
+      int parentB = c._capsuleIdB;
       if(parentA != parentB) {
-        int minParent = min(parentA, parentB);
-        atomicMin(&d_parents[c._capsuleIdA], minParent);
-        atomicMin(&d_parents[c._capsuleIdB], minParent);
+        atomicExch(&d_parents[c._capsuleIdA], parentB);
         return true;
       }
       return false;

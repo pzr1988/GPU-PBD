@@ -21,7 +21,7 @@ int main(int argc,char** argv) {
   std::uniform_real_distribution<T> uni(0, 1);
 
   T len = uni(mt);
-  T radius = uni(mt)/3.f;
+  T radius = uni(mt)/5.f;
   // Joint, which includes 5 capsules.
   auto prevX = Vec3T(-2,1,0);
   for(int i=0; i<N; i++) {
