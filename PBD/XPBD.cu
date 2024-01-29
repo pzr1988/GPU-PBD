@@ -137,27 +137,38 @@ template <typename T>
 void XPBD<T>::assignCollisionGroup() {
   if(_collisionGroupAssigned)
     return;
-  //Step 1: collect capsules into trees
-  std::vector<int> parents(_geometry->size(),-1);
-  for(size_t jid=0; jid<_joints.size(); jid++) {
-    const Constraint<T>& j=_joints[jid];
-    int rootA=j._capsuleIdA, rootB=j._capsuleIdB;
-    while(parents[rootA]>=0)
-      rootA=parents[rootA];
-    while(parents[rootB]>=0)
-      rootB=parents[rootB];
-    if(rootA != rootB)
-      parents[rootA]=rootB;
-    else throw std::runtime_error("Kinematic tree has loops!");
-  }
-  //Step 2: assign collision group id 
-  std::unordered_map<size_t,int> treeId;
-  for(size_t gid=0; gid<_geometry->size(); gid++)
-    if(parents[gid]==-1) {
-      Capsule<T> c=(*_geometry)[gid];
-      c._parent=parents[gid];
-      _geometry->setCapsule(gid, c);
-    }
+  //Step 1: do label propagation in capsules.
+  thrust::device_vector<int> _parents(_geometry->size());
+  thrust::device_vector<int> _changes(_geometry->size());
+  thrust::sequence(thrust::device, _parents.begin(), _parents.end());
+  int* d_parents = thrust::raw_pointer_cast(_parents.data());
+  bool changed;
+  do {
+    thrust::transform(thrust::device, _joints.begin(), _joints.end(), _changes.begin(),
+    [d_parents] __device__ (const Constraint<T>& c) {
+      if(c._type!=Joint || !c._isValid)
+        return false;
+      int parentA = d_parents[c._capsuleIdA];
+      int parentB = d_parents[c._capsuleIdB];
+      if(parentA != parentB) {
+        int minParent = min(parentA, parentB);
+        atomicMin(&d_parents[c._capsuleIdA], minParent);
+        atomicMin(&d_parents[c._capsuleIdB], minParent);
+        return true;
+      }
+      return false;
+    });
+    int change_count = thrust::count_if(thrust::device, _changes.begin(), _changes.end(), thrust::identity<bool>());
+    changed = change_count > 0;
+  } while (changed);
+  //Step 2: assign collision group id
+  Capsule<T>* d_capsules = thrust::raw_pointer_cast(_geometry->getCapsules());
+  thrust::for_each(thrust::device,
+                   thrust::make_counting_iterator(0),
+                   thrust::make_counting_iterator((int)_geometry->size()),
+  [d_capsules, d_parents] __device__ (int idx) {
+    d_capsules[idx]._parent = d_parents[idx];
+  });
   _collisionGroupAssigned=true;
 }
 template <typename T>

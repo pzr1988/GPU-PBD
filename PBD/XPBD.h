@@ -43,9 +43,9 @@ class XPBD {
   size_t numConstraints() const;
   //Add joint between a pair of capsules
   void addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T& localB);
- private:
   //Automatically avoid collision between a Capsule<T> and its children
   void assignCollisionGroup();
+ private:
   //Init for relax all the constraints process
   void initRelaxConstraint();
   DEVICE_HOST static T computeGeneralizedInversMass(const Capsule<T>& capsule, const Vec3T& normal, const Vec3T& placementPoint);

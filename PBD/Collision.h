@@ -57,7 +57,7 @@ struct ContactManifold {
     _rhsMaxCorner = _rhs->globalMaxCorner().template cast<T>();
   }
   DEVICE_HOST bool canCollide() const {
-    return _numCollision < maxCollisionPerObject && _lhs->_parent != _rhsId && _rhs->_parent != _lhsId;
+    return _numCollision < maxCollisionPerObject && _lhs->_parent != _rhs->_parent;
   }
 };
 
