@@ -12,7 +12,8 @@ namespace GPUPBD {
 //The separating direction of contact is stored in _globalNormal, extending from A to B and having unit norm
 enum ConstraintType {
   Collision,
-  Joint,
+  JointPosition,
+  JointAngular,
   Unknown,
 };
 template <typename T>

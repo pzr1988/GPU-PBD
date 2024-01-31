@@ -48,12 +48,17 @@ class XPBD {
  private:
   //Init for relax all the constraints process
   void initRelaxConstraint();
+  //Position constraint
   DEVICE_HOST static T computeGeneralizedInversMass(const Capsule<T>& capsule, const Vec3T& normal, const Vec3T& placementPoint);
   DEVICE_HOST static QuatT getDeltaRot(const Capsule<T>& capsule, const Vec3T& placementPoint, const Vec3T& pulse);
+  //Angular constrant
+  DEVICE_HOST static T computeGeneralizedInversMass(const Capsule<T>& c, const Vec3T& n);
+  DEVICE_HOST static QuatT getDeltaRot(const Capsule<T>& c, const Vec3T& pulse);
   //data
   std::shared_ptr<Geometry<T>> _geometry;
   std::shared_ptr<CollisionDetector<T>> _detector;
-  thrust::device_vector<Constraint<T>> _joints;
+  thrust::device_vector<Constraint<T>> _jointPositions;
+  thrust::device_vector<Constraint<T>> _jointAngulars;
   T _dt;
   int _nRelax;
   thrust::device_vector<T> _lambda;

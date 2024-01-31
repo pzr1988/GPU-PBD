@@ -51,8 +51,10 @@ template <typename T>
 void XPBD<T>::relaxConstraint() {
   if(numConstraints() == 0)
     return;
-  size_t numJoints = _joints.size();
-  Constraint<T>* d_joints = thrust::raw_pointer_cast(_joints.data());
+  size_t numJointPositions = _jointPositions.size();
+  size_t numJointAngulars = _jointAngulars.size();
+  Constraint<T>* d_jointPositions = thrust::raw_pointer_cast(_jointPositions.data());
+  Constraint<T>* d_jointAngulars = thrust::raw_pointer_cast(_jointAngulars.data());
   Constraint<T>* d_collisions = thrust::raw_pointer_cast(_detector->getCollisions());
   Capsule<T>* d_capsules = thrust::raw_pointer_cast(_geometry->getCapsules());
   T* d_lambda = thrust::raw_pointer_cast(_lambda.data());
@@ -64,22 +66,28 @@ void XPBD<T>::relaxConstraint() {
                    thrust::make_counting_iterator((int)numConstraints()),
   [=] __host__ __device__ (int idx) {
     Vec3T pulse;
-    auto& constraint = idx < numJoints ? d_joints[idx] : d_collisions[idx-numJoints];
+    auto& constraint = idx < numJointPositions ? d_jointPositions[idx] :
+                       (idx < numJointPositions + numJointAngulars ?
+                        d_collisions[idx - numJointPositions] :
+                        d_collisions[idx - numJointPositions - numJointAngulars]);
     auto& cA = d_capsules[constraint._capsuleIdA];
     auto& cB = d_capsules[constraint._capsuleIdB];
     auto placementPointA = cA._q.toRotationMatrix()*constraint._localPointA;
     auto placementPointB = cB._q.toRotationMatrix()*constraint._localPointB;
     auto globalPointA = placementPointA+cA._x;
     auto globalPointB = placementPointB+cB._x;
-    if(constraint._type == Joint) {
+    if(constraint._type == JointPosition) {
       auto distSqr = (globalPointA - globalPointB).squaredNorm();
       if(distSqr > epsDist * epsDist)
         constraint._globalNormal = (globalPointA - globalPointB) / sqrt(distSqr);
       else constraint._globalNormal.setZero();
     }
-    auto wA = computeGeneralizedInversMass(cA, placementPointA, constraint._globalNormal);
-    auto wB = computeGeneralizedInversMass(cB, placementPointB, constraint._globalNormal);
-    auto constraintViolation = (globalPointA-globalPointB).dot(constraint._globalNormal);
+    auto wA = constraint._type == JointAngular ? computeGeneralizedInversMass(cA, constraint._globalNormal)
+              : computeGeneralizedInversMass(cA, placementPointA, constraint._globalNormal);
+    auto wB = constraint._type == JointAngular ? computeGeneralizedInversMass(cB, constraint._globalNormal)
+              : computeGeneralizedInversMass(cB, placementPointB, constraint._globalNormal);
+    // TODO angular constraint violation
+    auto constraintViolation = constraint._type == JointAngular ? 0 : (globalPointA-globalPointB).dot(constraint._globalNormal);
     auto alpha = constraint._alpha / (dt*dt);
     auto deltaLambda = (-constraintViolation-d_lambda[idx]*alpha) / (wA+wB+alpha);
     d_lambda[idx] += deltaLambda;
@@ -89,10 +97,15 @@ void XPBD<T>::relaxConstraint() {
     // To avoid multi write problem, first cache update
     d_constraintCapsuleId[2*idx] = constraint._capsuleIdA;
     d_constraintCapsuleId[2*idx+1] = constraint._capsuleIdB;
-    d_update[2*idx]._x = pulse / cA._mass;
-    d_update[2*idx+1]._x = -pulse / cB._mass;
-    d_update[2*idx]._q = getDeltaRot(cA, placementPointA, pulse).coeffs();
-    d_update[2*idx+1]._q = -getDeltaRot(cB, placementPointB, pulse).coeffs();
+    if(constraint._type == JointAngular) {
+      d_update[2*idx]._q = getDeltaRot(cA, pulse).coeffs();
+      d_update[2*idx+1]._q = -getDeltaRot(cB, pulse).coeffs();
+    } else {
+      d_update[2*idx]._x = pulse / cA._mass;
+      d_update[2*idx+1]._x = -pulse / cB._mass;
+      d_update[2*idx]._q = getDeltaRot(cA, placementPointA, pulse).coeffs();
+      d_update[2*idx+1]._q = -getDeltaRot(cB, placementPointB, pulse).coeffs();
+    }
   });
   updateCapsuleState();
 }
@@ -117,7 +130,7 @@ const CollisionDetector<T>& XPBD<T>::getDetector() const {
 }
 template <typename T>
 size_t XPBD<T>::numConstraints() const {
-  return _joints.size() + _detector->size();
+  return _detector->size() + _jointPositions.size() + _jointAngulars.size();
 }
 template <typename T>
 void XPBD<T>::addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T& localB) {
@@ -125,12 +138,12 @@ void XPBD<T>::addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T&
     throw std::runtime_error("Cannot add joint to the same Capsule<T>!");
   Constraint<T> c;
   c._isValid=true;
-  c._type=Joint;
+  c._type=JointPosition;
   c._capsuleIdA=(int)idA;
   c._capsuleIdB=(int)idB;
   c._localPointA=localA;
   c._localPointB=localB;
-  _joints.push_back(c);
+  _jointPositions.push_back(c);
   _collisionGroupAssigned=false;    //need to re-assign
 }
 template <typename T>
@@ -144,9 +157,9 @@ void XPBD<T>::assignCollisionGroup() {
   int* d_parents = thrust::raw_pointer_cast(_parents.data());
   bool changed;
   do {
-    thrust::transform(thrust::device, _joints.begin(), _joints.end(), _changes.begin(),
+    thrust::transform(thrust::device, _jointPositions.begin(), _jointPositions.end(), _changes.begin(),
     [d_parents] __device__ (const Constraint<T>& c) {
-      if(c._type!=Joint || !c._isValid)
+      if(c._type!=JointPosition || !c._isValid)
         return false;
       int parentA = d_parents[c._capsuleIdA];
       int parentB = c._capsuleIdB;
@@ -169,6 +182,7 @@ void XPBD<T>::assignCollisionGroup() {
   });
   _collisionGroupAssigned=true;
 }
+//Position Constraint
 template <typename T>
 DEVICE_HOST T XPBD<T>::computeGeneralizedInversMass(const Capsule<T>& c, const Vec3T& n, const Vec3T& r) {
   if(!c._isDynamic)
@@ -184,6 +198,23 @@ DEVICE_HOST typename XPBD<T>::QuatT XPBD<T>::getDeltaRot(const Capsule<T>& c, co
   auto cIinvRCrossP = cIinv * (r.cross(pulse)); // I^{-1}(r x p)
   QuatT cIinvRCrossPQuat(0,cIinvRCrossP.x(),cIinvRCrossP.y(),cIinvRCrossP.z());
   auto qUpdated = QuatT(0.5,0,0,0)*cIinvRCrossPQuat*c._q;
+  return qUpdated;
+}
+//Angular Constraint
+template <typename T>
+DEVICE_HOST T XPBD<T>::computeGeneralizedInversMass(const Capsule<T>& c, const Vec3T& n) {
+  if(!c._isDynamic)
+    return 0;
+  auto Iinv = c.getInertiaTensorInv();
+  auto w = n.transpose()*Iinv*n;
+  return w;
+}
+template <typename T>
+DEVICE_HOST typename XPBD<T>::QuatT XPBD<T>::getDeltaRot(const Capsule<T>& c, const Vec3T& pulse) {
+  auto cIinv = c.getInertiaTensorInv();
+  auto cIinvP = cIinv * pulse;
+  QuatT cIinvPQuat(0,cIinvP.x(),cIinvP.y(),cIinvP.z());
+  auto qUpdated = QuatT(0.5,0,0,0)*cIinvPQuat*c._q;
   return qUpdated;
 }
 template <typename T>
