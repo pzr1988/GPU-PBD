@@ -43,8 +43,12 @@ class XPBD {
   size_t numConstraints() const;
   //Add joint between a pair of capsules
   void addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T& localB);
+  //Fix angle between a pair of capsules, from B to A.
+  void addJointAngular(size_t idA, size_t idB, const QuatT& targetQ);
   //Automatically avoid collision between a Capsule<T> and its children
   void assignCollisionGroup();
+  //Calculate globalnormal of joint position constraint, and axis/theta of joint angular constraint.
+  void updateJointConstraint();
  private:
   //Init for relax all the constraints process
   void initRelaxConstraint();

@@ -1,4 +1,5 @@
 #include "XPBD.h"
+#include <cmath>
 #include <thrust/sort.h>
 #include <unordered_map>
 
@@ -12,8 +13,10 @@ void XPBD<T>::step() {
   integrate();
   _detector->detectCollisions();
   initRelaxConstraint();
-  for(int i=0; i<_nRelax; i++)
+  for(int i=0; i<_nRelax; i++) {
+    updateJointConstraint();
     relaxConstraint();
+  }
   updateVelocity();
 }
 template <typename T>
@@ -68,7 +71,7 @@ void XPBD<T>::relaxConstraint() {
     Vec3T pulse;
     auto& constraint = idx < numJointPositions ? d_jointPositions[idx] :
                        (idx < numJointPositions + numJointAngulars ?
-                        d_collisions[idx - numJointPositions] :
+                        d_jointAngulars[idx - numJointPositions] :
                         d_collisions[idx - numJointPositions - numJointAngulars]);
     auto& cA = d_capsules[constraint._capsuleIdA];
     auto& cB = d_capsules[constraint._capsuleIdB];
@@ -76,28 +79,25 @@ void XPBD<T>::relaxConstraint() {
     auto placementPointB = cB._q.toRotationMatrix()*constraint._localPointB;
     auto globalPointA = placementPointA+cA._x;
     auto globalPointB = placementPointB+cB._x;
-    if(constraint._type == JointPosition) {
-      auto distSqr = (globalPointA - globalPointB).squaredNorm();
-      if(distSqr > epsDist * epsDist)
-        constraint._globalNormal = (globalPointA - globalPointB) / sqrt(distSqr);
-      else constraint._globalNormal.setZero();
-    }
-    auto wA = constraint._type == JointAngular ? computeGeneralizedInversMass(cA, constraint._globalNormal)
+    auto wA = constraint._type == JointAngular ? computeGeneralizedInversMass(cA, constraint._axis)
               : computeGeneralizedInversMass(cA, placementPointA, constraint._globalNormal);
-    auto wB = constraint._type == JointAngular ? computeGeneralizedInversMass(cB, constraint._globalNormal)
+    auto wB = constraint._type == JointAngular ? computeGeneralizedInversMass(cB, constraint._axis)
               : computeGeneralizedInversMass(cB, placementPointB, constraint._globalNormal);
-    // TODO angular constraint violation
-    auto constraintViolation = constraint._type == JointAngular ? 0 : (globalPointA-globalPointB).dot(constraint._globalNormal);
+    auto constraintViolation = constraint._type == JointAngular ? constraint._theta
+                               : (globalPointA-globalPointB).dot(constraint._globalNormal);
     auto alpha = constraint._alpha / (dt*dt);
     auto deltaLambda = (-constraintViolation-d_lambda[idx]*alpha) / (wA+wB+alpha);
     d_lambda[idx] += deltaLambda;
-    pulse = deltaLambda * constraint._globalNormal;
+    pulse = constraint._type == JointAngular ? deltaLambda * constraint._axis
+            : deltaLambda * constraint._globalNormal;
     if(constraint._type == Collision && constraintViolation <= 0)
       pulse.setZero();
     // To avoid multi write problem, first cache update
     d_constraintCapsuleId[2*idx] = constraint._capsuleIdA;
     d_constraintCapsuleId[2*idx+1] = constraint._capsuleIdB;
     if(constraint._type == JointAngular) {
+      d_update[2*idx]._x.setZero();
+      d_update[2*idx+1]._x.setZero();
       d_update[2*idx]._q = getDeltaRot(cA, pulse).coeffs();
       d_update[2*idx+1]._q = -getDeltaRot(cB, pulse).coeffs();
     } else {
@@ -110,12 +110,48 @@ void XPBD<T>::relaxConstraint() {
   updateCapsuleState();
 }
 template <typename T>
+void XPBD<T>::updateJointConstraint() {
+  Constraint<T>* d_jointPositions = thrust::raw_pointer_cast(_jointPositions.data());
+  Capsule<T>* d_capsules = thrust::raw_pointer_cast(_geometry->getCapsules());
+  thrust::for_each(thrust::device,
+                   _jointPositions.begin(),
+                   _jointPositions.end(),
+  [=]  __device__ (Constraint<T>& constraint) {
+    auto& cA = d_capsules[constraint._capsuleIdA];
+    auto& cB = d_capsules[constraint._capsuleIdB];
+    auto globalPointA = cA._q.toRotationMatrix()*constraint._localPointA+cA._x;
+    auto globalPointB = cB._q.toRotationMatrix()*constraint._localPointB+cB._x;
+    auto distSqr = (globalPointA - globalPointB).squaredNorm();
+    if(distSqr > epsDist * epsDist)
+      constraint._globalNormal = (globalPointA - globalPointB) / sqrt(distSqr);
+    else
+      constraint._globalNormal.setZero();
+  });
+  thrust::for_each(thrust::device,
+                   _jointAngulars.begin(),
+                   _jointAngulars.end(),
+  [=]  __device__ (Constraint<T>& constraint) {
+    auto& cA = d_capsules[constraint._capsuleIdA];
+    auto& cB = d_capsules[constraint._capsuleIdB];
+    auto deltaQ = (constraint._targetQ.conjugate()*cA._q*cB._q.conjugate()).vec();
+    // auto deltaQ = (constraint._targetQ.conjugate()*cB._q*cA._q.conjugate()).vec();
+    auto len = sqrt(deltaQ.squaredNorm());
+    constraint._theta = 2*asin(len);
+    if(constraint._theta > epsDir)
+      constraint._axis = deltaQ/len;
+    else {
+      constraint._axis=Vec3T(0,0,1);
+      constraint._theta=0;
+    }
+  });
+}
+template <typename T>
 void XPBD<T>::updateVelocity() {
   T dt = _dt;
   thrust::for_each(thrust::device, _geometry->begin(), _geometry->end(), [=] __host__ __device__ (Capsule<T>& capsule) {
     if(capsule._isDynamic) {
       capsule._v = (capsule._x-capsule._xPrev)/dt;
-      auto deltaQ = capsule._q*capsule._qPrev.inverse();
+      auto deltaQ = capsule._q*capsule._qPrev.conjugate();
       capsule._w = 2*deltaQ.vec()/dt;
       capsule._w = deltaQ.w() >=0 ? capsule._w : -capsule._w;
     }
@@ -145,6 +181,18 @@ void XPBD<T>::addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T&
   c._localPointB=localB;
   _jointPositions.push_back(c);
   _collisionGroupAssigned=false;    //need to re-assign
+}
+template <typename T>
+void XPBD<T>::addJointAngular(size_t idA, size_t idB, const XPBD<T>::QuatT& targetQ) {
+  if(idA==idB)
+    throw std::runtime_error("Cannot add joint to the same Capsule<T>!");
+  Constraint<T> c;
+  c._isValid=true;
+  c._type=JointAngular;
+  c._capsuleIdA=(int)idA;
+  c._capsuleIdB=(int)idB;
+  c._targetQ=targetQ;
+  _jointAngulars.push_back(c);
 }
 template <typename T>
 void XPBD<T>::assignCollisionGroup() {

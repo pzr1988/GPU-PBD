@@ -28,7 +28,7 @@ int main(int argc,char** argv) {
     Capsule<T> c;
     c._len = len;
     c._radius = radius;
-    QuatT q(uni(mt),0,0,uni(mt));
+    QuatT q(sqrt(3.0)/2,0,0,1/2.0);
     q.normalize();
     c._q = q;
     Vec3T trans;
@@ -100,6 +100,11 @@ int main(int argc,char** argv) {
   xpbd.addJoint(1,2,ps[1].maxCorner(),ps[2].minCorner());
   xpbd.addJoint(2,3,ps[2].maxCorner(),ps[3].minCorner());
   xpbd.addJoint(3,4,ps[3].maxCorner(),ps[4].minCorner());
+  xpbd.addJointAngular(0, 1, QuatT(1.0,0,0,0.0));
+  xpbd.addJointAngular(1, 2, QuatT(1.0,0,0,0.0));
+  xpbd.addJointAngular(2, 3, QuatT(1.0,0,0,0.0));
+  xpbd.addJointAngular(3, 4, QuatT(1.0,0,0,0.0));
+
 
   xpbd.addJoint(5,6,ps[5].maxCorner(),ps[6].minCorner());
   xpbd.addJoint(6,7,ps[6].maxCorner(),ps[7].minCorner());

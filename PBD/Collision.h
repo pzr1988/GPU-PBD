@@ -22,10 +22,13 @@ struct Constraint {
   ConstraintType _type=Unknown;
   bool _isValid;
   int _capsuleIdA;
-  int _capsuleIdB;
+  int _capsuleIdB; // B is the parent of A
   Vec3T _localPointA;
   Vec3T _localPointB;
   Vec3T _globalNormal;
+  QuatT _targetQ; // the rotation from B to A
+  Vec3T _axis; // rotate axis of angular constraint
+  T _theta; // angular of rotation.
   T _alpha; // compliance of the constraint
   DEVICE_HOST Constraint():_capsuleIdA(-1),_capsuleIdB(-1), _localPointA(Vec3T()),_localPointB(Vec3T()),_globalNormal(Vec3T()), _alpha(.0001f), _isValid(false) {}
 };
