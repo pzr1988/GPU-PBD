@@ -23,13 +23,17 @@ int main(int argc,char** argv) {
   T len = uni(mt);
   T radius = uni(mt)/5.f;
   // Joint, which includes 5 capsules.
+  QuatT fixedRotation(sqrt(24)/5,0,0,1/5.0);
+  fixedRotation.normalize();
+  QuatT initQ(1,0,0,0);
   auto prevX = Vec3T(-2,1,0);
   for(int i=0; i<N; i++) {
     Capsule<T> c;
     c._len = len;
     c._radius = radius;
-    QuatT q(sqrt(3.0)/2,0,0,1/2.0);
+    QuatT q = fixedRotation * initQ;
     q.normalize();
+    initQ = q;
     c._q = q;
     Vec3T trans;
     trans = prevX + q.toRotationMatrix()*Vec3T(len/2,0,0);
@@ -100,10 +104,11 @@ int main(int argc,char** argv) {
   xpbd.addJoint(1,2,ps[1].maxCorner(),ps[2].minCorner());
   xpbd.addJoint(2,3,ps[2].maxCorner(),ps[3].minCorner());
   xpbd.addJoint(3,4,ps[3].maxCorner(),ps[4].minCorner());
-  xpbd.addJointAngular(0, 1, QuatT(1.0,0,0,0.0));
-  xpbd.addJointAngular(1, 2, QuatT(1.0,0,0,0.0));
-  xpbd.addJointAngular(2, 3, QuatT(1.0,0,0,0.0));
-  xpbd.addJointAngular(3, 4, QuatT(1.0,0,0,0.0));
+  // Because the fixedRotation is from A to B, we need to inverse it.
+  xpbd.addJointAngular(0, 1, fixedRotation.conjugate());
+  xpbd.addJointAngular(1, 2, fixedRotation.conjugate());
+  xpbd.addJointAngular(2, 3, fixedRotation.conjugate());
+  xpbd.addJointAngular(3, 4, fixedRotation.conjugate());
 
 
   xpbd.addJoint(5,6,ps[5].maxCorner(),ps[6].minCorner());
