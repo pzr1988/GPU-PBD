@@ -60,3 +60,4 @@ ENDMACRO(ADD_EXE)
 #DEBUG
 ADD_EXE(mainPBD)
 ADD_EXE(mainJoint)
+ADD_EXE(mainSK)
