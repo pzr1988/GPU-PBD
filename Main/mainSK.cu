@@ -37,16 +37,28 @@ int main(int argc,char** argv) {
             continue;
         }
         Capsule<T> b;
-        b._x = Vec3T(pNow->posGlobal[0], pNow->posGlobal[1], pNow->posGlobal[2]);
+        Vec3T globalPos(pNow->posGlobal[0],pNow->posGlobal[1],pNow->posGlobal[2]);
+        Vec3T geomPos(pNow->pGeoms->fPos[0],pNow->pGeoms->fPos[1],pNow->pGeoms->fPos[2]);
+        QuatT parentQ(pNow->quatParent[0], pNow->quatParent[1], pNow->quatParent[2], pNow->quatParent[3]);
+        QuatT globalQ(pNow->quatGlobal[0], pNow->quatGlobal[1], pNow->quatGlobal[2], pNow->quatGlobal[3]);
+        QuatT geomQ(pNow->pGeoms->quat[0], pNow->pGeoms->quat[1], pNow->pGeoms->quat[2], pNow->pGeoms->quat[3]);
+        QuatT q = QuatT(0.7071,0.0,-0.7071,0.0) * geomQ * globalQ;
+        q.normalize();
+        b._x = globalPos + globalQ.inverse().toRotationMatrix()*geomPos;
         b._len = pNow->pGeoms->fHalfHeight*2;
         b._radius = pNow->pGeoms->fRadius;
-        T sinValue = sin(pNow->pGeoms->qOrient[0]*3.1415/360.0);
-        T cosValue = cos(pNow->pGeoms->qOrient[0]*3.1415/360.0);
-        b._q = QuatT(cosValue,sinValue*pNow->pGeoms->qOrient[1],sinValue*pNow->pGeoms->qOrient[2], sinValue*pNow->pGeoms->qOrient[3]);
-        printf("Capusle pos:%f,%f,%f, radius:%f, len:%f, q:%f,%f,%f,%f \n",
+        b._q = q;
+        // T sinValue = sin(pNow->pGeoms->qOrient[0]*3.1415/360.0);
+        // T cosValue = cos(pNow->pGeoms->qOrient[0]*3.1415/360.0);
+        // b._q = QuatT(cosValue,sinValue*pNow->pGeoms->qOrient[1],sinValue*pNow->pGeoms->qOrient[2], sinValue*pNow->pGeoms->qOrient[3]);
+        printf("----------------Capusle pos:%f,%f,%f, radius:%f, len:%f, q:%f,%f,%f,%f, geomQ:%f,%f,%f,%f, globalQ:%f,%f,%f,%f, parentQ:%f,%f,%f,%f, globalPos:%f,%f,%f\n",
             b._x[0], b._x[1],b._x[2],
             b._radius, b._len,
-            b._q.w(), b._q.x(),b._q.y(),b._q.z());
+            b._q.w(), b._q.x(),b._q.y(),b._q.z(),
+            geomQ.w(), geomQ.x(), geomQ.y(), geomQ.z(),
+            globalQ.w(), globalQ.x(), globalQ.y(), globalQ.z(),
+            parentQ.w(), parentQ.x(), parentQ.y(), parentQ.z(),
+            globalPos.x(), globalPos.y(),globalPos.z());
         ps.push_back(b);
     }
   }

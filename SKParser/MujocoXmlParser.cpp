@@ -3,6 +3,7 @@
 #include <string>
 #include <cmath>
 #include <queue>
+#include <Eigen/Dense>
 #include "MujocoXmlParser.h"
 
 void BodyParam::Destroy() {
@@ -58,7 +59,7 @@ std::vector<float> ParseStringToFloats(const std::string& input) {
 int MujocoXmlParser::ProcessBodyElement(
   BodyParam* _parentBody,
   std::vector<float> _parentPosVec,
-  std::vector<float> _parentLocalPosVec,
+  std::vector<float> _parentQuatVec,
   const XMLElement* _bodyElement, int depth) {
   if (0 == _bodyElement) {
     return -1;
@@ -78,21 +79,41 @@ int MujocoXmlParser::ProcessBodyElement(
 
   _bodyParam->pParent = _parentBody;
 
+  _bodyParam->quatParent[0] = _parentQuatVec[0];
+  _bodyParam->quatParent[1] = _parentQuatVec[1];
+  _bodyParam->quatParent[2] = _parentQuatVec[2];
+  _bodyParam->quatParent[3] = _parentQuatVec[3];
+  const char* _bodyQuatStr = _bodyElement->Attribute("quat");
+  std::vector<float> _bodyQuatLocalVec = ParseStringToFloats(_bodyQuatStr);
+  _bodyParam->quatLocal[0] = _bodyQuatLocalVec[0];
+  _bodyParam->quatLocal[1] = _bodyQuatLocalVec[1];
+  _bodyParam->quatLocal[2] = _bodyQuatLocalVec[2];
+  _bodyParam->quatLocal[3] = _bodyQuatLocalVec[3];
+  Eigen::Quaternion parentQ(_parentQuatVec[0], _parentQuatVec[1], _parentQuatVec[2], _parentQuatVec[3]);
+  Eigen::Quaternion localQ(_bodyQuatLocalVec[0], _bodyQuatLocalVec[1], _bodyQuatLocalVec[2], _bodyQuatLocalVec[3]);
+  Eigen::Quaternion globalQ = localQ*parentQ;
+  globalQ.normalize();
+  std::vector<float> _bodyQuatVec({globalQ.w(),globalQ.x(),globalQ.y(),globalQ.z()});
+  _bodyParam->quatGlobal[0] = _bodyQuatVec[0];
+  _bodyParam->quatGlobal[1] = _bodyQuatVec[1];
+  _bodyParam->quatGlobal[2] = _bodyQuatVec[2];
+  _bodyParam->quatGlobal[3] = _bodyQuatVec[3];
+
   const char* _bodyPosStr = _bodyElement->Attribute("pos");
   std::vector<float> _bodyLocalPosVec = ParseStringToFloats(_bodyPosStr);
-  std::vector<float> _bodyPosVec(_bodyLocalPosVec);
 
   _bodyParam->posLocal[0] = _bodyLocalPosVec[0] * this->fScale;
   _bodyParam->posLocal[1] = _bodyLocalPosVec[1] * this->fScale;
   _bodyParam->posLocal[2] = _bodyLocalPosVec[2] * this->fScale;
 
-  _bodyPosVec[0] += _parentPosVec[0];
-  _bodyPosVec[1] += _parentPosVec[1];
-  _bodyPosVec[2] += _parentPosVec[2];
+  Eigen::Matrix<float, 3,1> parentPosVec(_parentPosVec[0], _parentPosVec[1], _parentPosVec[2]);
+  Eigen::Matrix<float, 3,1> localPosVec(_bodyLocalPosVec[0], _bodyLocalPosVec[1], _bodyLocalPosVec[2]);
+  Eigen::Matrix<float, 3,1> globalPosVec = parentPosVec + parentQ.inverse().toRotationMatrix()*localPosVec;
 
-  _bodyParam->posGlobal[0] = _bodyPosVec[0] * this->fScale;
-  _bodyParam->posGlobal[1] = _bodyPosVec[1] * this->fScale;
-  _bodyParam->posGlobal[2] = _bodyPosVec[2] * this->fScale;
+  _bodyParam->posGlobal[0] = globalPosVec.x() * this->fScale;
+  _bodyParam->posGlobal[1] = globalPosVec.y() * this->fScale;
+  _bodyParam->posGlobal[2] = globalPosVec.z() * this->fScale;
+  std::vector<float> _bodyPosVec({globalPosVec.x(), globalPosVec.y(), globalPosVec.z()});
 
   GeomParam* _pPrevGeomParam = 0;
 
@@ -130,6 +151,13 @@ int MujocoXmlParser::ProcessBodyElement(
       float _radius = atof(_sizeStr);
 
       _pGeomParam->fRadius = _radius * this->fScale;
+
+      const char* _geomQuatStr = childBodyElement->Attribute("quat");
+      std::vector<float> _geomQuatVec = ParseStringToFloats(_geomQuatStr);
+      _pGeomParam->quat[0] = _geomQuatVec[0];
+      _pGeomParam->quat[1] = _geomQuatVec[1];
+      _pGeomParam->quat[2] = _geomQuatVec[2];
+      _pGeomParam->quat[3] = _geomQuatVec[3];
 
       const char* _shapeStr = childBodyElement->Attribute("fromto");
       std::vector<float> _shapeVec = ParseStringToFloats(_shapeStr);
@@ -244,7 +272,7 @@ int MujocoXmlParser::ProcessBodyElement(
        childBodyElement != nullptr;
        childBodyElement = childBodyElement->NextSiblingElement("body")) {
 
-    ProcessBodyElement(_bodyParam, _bodyPosVec, _bodyLocalPosVec, childBodyElement, depth + 1);
+    ProcessBodyElement(_bodyParam, _bodyPosVec, _bodyQuatVec, childBodyElement, depth + 1);
   }
 
   return 0;
@@ -272,21 +300,8 @@ BodyParam* MujocoXmlParser::Load(const char* pXmlFileName, float* _posRoot, floa
     return 0;
   }
 
-  std::vector<float> _bodyPosVec;
-  _bodyPosVec.push_back(0.0f);
-  _bodyPosVec.push_back(0.0f);
-  _bodyPosVec.push_back(0.0f);
-
-  std::vector<float> _bodyLocalPosVec;
-  if (0 == _posRoot) {
-    _bodyLocalPosVec.push_back(0.0f);
-    _bodyLocalPosVec.push_back(0.0f);
-    _bodyLocalPosVec.push_back(0.0f);
-  } else {
-    _bodyLocalPosVec.push_back(_posRoot[0]);
-    _bodyLocalPosVec.push_back(_posRoot[1]);
-    _bodyLocalPosVec.push_back(_posRoot[2]);
-  }
+  std::vector<float> _bodyPosVec({0,0,0});
+  std::vector<float> _bodyQuatVec({1, 0, 0, 0});
 
   BodyParam* pRootBody = new BodyParam();
 
@@ -296,7 +311,7 @@ BodyParam* MujocoXmlParser::Load(const char* pXmlFileName, float* _posRoot, floa
     const char* bodyPos = bodyElement->Attribute("pos");
     cout << "Body Name: " << (bodyName != nullptr ? bodyName : "unnamed") << ", Position: " << (bodyPos != nullptr ? bodyPos : "undefined") << endl;
     if (bodyElement) {
-      ProcessBodyElement(pRootBody, _bodyPosVec, _bodyLocalPosVec, bodyElement, 0);
+      ProcessBodyElement(pRootBody, _bodyPosVec, _bodyQuatVec, bodyElement, 0);
       break;
     }
   }

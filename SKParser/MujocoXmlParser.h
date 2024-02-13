@@ -15,6 +15,7 @@ struct GeomParam {
 
   float fPos[3];
   float qOrient[4];
+  float quat[4];
   float fRadius;
   float fHalfHeight;
   float fSize[3];
@@ -50,6 +51,9 @@ struct BodyParam {
 
   float posLocal[3];
   float posGlobal[3];
+  float quatLocal[4];
+  float quatParent[4];
+  float quatGlobal[4];
 
   GeomParam* pGeoms;
   JointParam* pJoints;
@@ -68,7 +72,7 @@ struct MujocoXmlParser {
   int ProcessBodyElement(
     BodyParam* _parentBody,
     std::vector<float> _parentPosVec,
-    std::vector<float> _parentLocalPosVec,
+    std::vector<float> _parentQuatVec,
     const XMLElement* _bodyElement, int depth);
 
   float fScale;
