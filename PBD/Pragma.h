@@ -49,6 +49,7 @@ class CopyableQuaternion : public Eigen::Quaternion<T> {
 typedef Eigen::Matrix<T,2,1> Vec2T;\
 typedef Eigen::Matrix<T,3,1> Vec3T;\
 typedef Eigen::Matrix<T,4,1> Vec4T;\
+typedef Eigen::Matrix<T,6,1> Vec6T;\
 typedef Eigen::Matrix<T,3,3> Mat3T;\
 typedef Eigen::Matrix<T,3,2> Mat3X2T;\
 typedef CopyableQuaternion<T> QuatT;

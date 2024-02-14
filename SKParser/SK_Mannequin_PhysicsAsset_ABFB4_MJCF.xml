@@ -1,0 +1,167 @@
+<mujoco model="SK_Mannequin_PhysicsAsset_ABFB4">
+	<compiler angle="degree" inertiafromgeom="true"/>
+	<option timestep="0.01666"/>
+	<statistic extent="2" center="0 0 1"/>
+	<default>
+		<motor ctrlrange="-1 1" ctrllimited="true"/>
+		<default class="body">
+			<geom type="capsule" condim="1" friction="1.00 1.00 1.00" solimp=".9 .99 .003" solref=".015 1"/>
+			<joint type="hinge" damping="1.00" stiffness="1" armature="0.01" limited="true" solimplimit="0 .99 .01"/>
+		</default>
+	</default>
+	<worldbody>
+		<body name="pelvis" pos="0.0000 -0.0106 0.9675" quat="-0.7071 0.0013 0.7071 -0.0013" childclass="body">
+			<freejoint name="pelvis"/>
+			<geom name="pelvis" fromto="0.0000 0.0000 0.0431 0.0000 0.0000 -0.0431" quat="0.7071 -0.0000 0.0000 -0.7071" size="0.1459" density="1000.00"/>
+			<body name="spine_01" pos="0.1081 0.0085 -0.0000" quat="0.9981 -0.0000 -0.0000 0.0624">
+				<joint name="spine_01_x" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-30 30" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+				<joint name="spine_01_y" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-30 30" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+				<joint name="spine_01_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-30 30" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+				<geom name="spine_01" fromto="0.0000 0.0000 0.0422 0.0000 0.0000 -0.0422" quat="0.7071 -0.0000 0.0000 -0.7071" size="0.1261" density="1000.00"/>
+				<body name="spine_02" pos="0.1888 -0.0380 0.0000" quat="0.9925 0.0000 -0.0000 -0.1224">
+					<joint name="spine_02_x" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+					<joint name="spine_02_y" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-45 45" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+					<joint name="spine_02_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-45 45" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+					<geom name="spine_02" fromto="0.0000 0.0000 0.0281 0.0000 0.0000 -0.0281" quat="1.0000 0.0000 -0.0000 0.0000" size="0.1564" density="1000.00"/>
+					<body name="spine_03" pos="0.1341 -0.0042 -0.0000" quat="0.9997 -0.0000 0.0000 -0.0243">
+						<joint name="spine_03_x" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+						<joint name="spine_03_y" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-45 45" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+						<joint name="spine_03_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-45 45" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+						<geom name="spine_03" fromto="0.0000 -0.0154 0.0487 0.0000 -0.0154 -0.0487" quat="0.7071 -0.0000 0.0000 -0.7071" size="0.1580" density="1000.00"/>
+						<body name="clavicle_l" pos="0.1188 0.0273 -0.0378" quat="0.6480 -0.1445 0.7448 -0.0668">
+							<joint name="clavicle_l_x" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000593 -0.00002722" range="-65 65" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+							<joint name="clavicle_l_y" pos="0.0000 0.0000 0.0000" axis="-0.00000593 1.00000000 0.00006086" range="-65 65" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+							<joint name="clavicle_l_z" pos="0.0000 0.0000 0.0000" axis="0.00002722 -0.00006086 1.00000000" range="-65 65" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+							<geom name="clavicle_l" fromto="0.1283 0.0140 -0.0000 0.0517 -0.0140 0.0000" quat="0.6964 -0.1228 0.6964 0.1228" size="0.0802" density="1000.00"/>
+							<body name="upperarm_l" pos="0.1578 -0.0000 0.0000" quat="0.8511 -0.0628 -0.0716 0.5162">
+								<joint name="upperarm_l_x" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+								<joint name="upperarm_l_y" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-85 85" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+								<joint name="upperarm_l_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-45 45" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+								<geom name="upperarm_l" fromto="0.0443 0.0000 -0.0000 0.2794 0.0000 0.0000" quat="0.7071 0.0000 -0.7071 0.0000" size="0.0759" density="1000.00"/>
+								<body name="lowerarm_l" pos="0.3034 -0.0000 0.0000" quat="0.7472 0.0138 -0.0949 0.6576">
+									<joint name="lowerarm_l_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-90 90" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+									<geom name="lowerarm_l" fromto="0.0443 0.0000 -0.0000 0.2380 0.0000 0.0000" quat="0.7071 0.0000 -0.7071 0.0000" size="0.0629" density="1000.00"/>
+									<body name="hand_l" pos="0.2698 -0.0000 -0.0000" quat="0.7859 0.6179 0.0194 -0.0107">
+										<joint name="hand_l_y" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-25 25" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+										<joint name="hand_l_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-35 35" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+										<geom name="hand_l" type="box" pos="0.0688 -0.0109 0.0212" quat="0.5496 0.5181 0.4495 0.4769" size="0.0342 0.0535 0.1180" density="1000.00"/>
+									</body>
+								</body>
+							</body>
+						</body>
+						<body name="clavicle_r" pos="0.1188 0.0273 0.0378" quat="-0.0668 0.7448 0.1445 -0.6479">
+							<joint name="clavicle_r_x" pos="0.0000 0.0000 0.0000" axis="0.98480800 -0.17364679 -0.00000626" range="-65 65" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+							<joint name="clavicle_r_y" pos="0.0000 0.0000 0.0000" axis="0.17364679 0.98480800 0.00000657" range="-65 65" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+							<joint name="clavicle_r_z" pos="0.0000 0.0000 0.0000" axis="0.00000502 -0.00000755 1.00000000" range="-65 65" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+							<geom name="clavicle_r" fromto="-0.1308 0.0000 -0.0000 -0.0492 -0.0000 0.0000" quat="0.0000 -0.7071 0.0000 0.7071" size="0.0802" density="1000.00"/>
+							<body name="upperarm_r" pos="-0.1578 0.0000 -0.0000" quat="0.8509 -0.0631 -0.0738 0.5162">
+								<joint name="upperarm_r_x" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+								<joint name="upperarm_r_y" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-85 85" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+								<joint name="upperarm_r_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-45 45" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+								<geom name="upperarm_r" fromto="-0.0443 0.0000 -0.0000 -0.2794 -0.0000 0.0000" quat="0.0000 -0.7071 -0.0000 -0.7071" size="0.0759" density="1000.00"/>
+								<body name="lowerarm_r" pos="-0.3034 0.0000 0.0000" quat="0.7473 0.0138 -0.0949 0.6576">
+									<joint name="lowerarm_r_z" pos="0.0000 0.0000 0.0000" axis="0.00000192 -0.00000903 1.00000000" range="-90 90" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+									<geom name="lowerarm_r" fromto="-0.0443 0.0000 -0.0000 -0.2380 -0.0000 0.0000" quat="0.0000 -0.7071 -0.0000 -0.7071" size="0.0629" density="1000.00"/>
+									<body name="hand_r" pos="-0.2698 -0.0000 -0.0000" quat="0.7859 0.6179 0.0194 -0.0107">
+										<joint name="hand_r_y" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-25 25" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+										<joint name="hand_r_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-35 35" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+										<geom name="hand_r" type="box" pos="-0.0688 0.0109 -0.0212" quat="0.5181 -0.5496 -0.4769 0.4495" size="0.0342 0.0535 0.1180" density="1000.00"/>
+									</body>
+								</body>
+							</body>
+						</body>
+						<body name="neck_01" pos="0.1656 0.0036 -0.0000" quat="0.9790 0.0000 -0.0000 0.2037">
+							<joint name="neck_01_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-25 25" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+							<geom name="neck_01" fromto="0.0414 0.0000 -0.0000 0.0699 0.0000 0.0000" quat="0.7071 0.0000 -0.7071 0.0000" size="0.0684" density="1000.00"/>
+							<body name="head" pos="0.0928 -0.0036 0.0000" quat="0.9910 0.0000 0.0000 -0.1335">
+								<joint name="head_x" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-25 25" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+								<joint name="head_y" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-25 25" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+								<joint name="head_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-15 15" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+								<geom name="head" fromto="0.0046 0.0262 0.0000 0.0792 0.0262 0.0000" quat="0.7071 0.0000 -0.7071 0.0000" size="0.0940" density="1000.00"/>
+							</body>
+						</body>
+					</body>
+				</body>
+			</body>
+			<body name="thigh_l" pos="-0.0145 0.0053 -0.0901" quat="0.9953 -0.0737 -0.0621 0.0086">
+				<joint name="thigh_l_x" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+				<joint name="thigh_l_y" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-65 65" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+				<joint name="thigh_l_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-85 85" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+				<geom name="thigh_l" fromto="-0.0868 0.0040 -0.0182 -0.3622 0.0089 -0.0047" quat="0.4882 -0.5022 0.5217 -0.4870" size="0.1040" density="1000.00"/>
+				<body name="calf_l" pos="-0.4257 -0.0000 -0.0000" quat="0.8301 0.0518 -0.0081 0.5551">
+					<joint name="calf_l_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-65 65" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+					<geom name="calf_l" fromto="-0.3495 -0.0054 -0.0067 -0.0390 -0.0116 -0.0046" quat="0.5115 -0.4982 -0.5052 0.4847" size="0.0798" density="1000.00"/>
+					<body name="foot_l" pos="-0.4020 0.0000 0.0000" quat="0.9970 0.0059 0.0320 -0.0704">
+						<joint name="foot_l_x" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+						<joint name="foot_l_y" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-5 5" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+						<joint name="foot_l_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-35 35" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+						<geom name="foot_l" type="box" pos="-0.0765 0.0503 -0.0061" quat="0.7083 -0.7059 0.0056 -0.0041" size="0.0578 0.0578 0.1415" density="1000.00"/>
+					</body>
+				</body>
+			</body>
+			<body name="thigh_r" pos="-0.0145 0.0053 0.0901" quat="-0.0086 0.0621 -0.0737 0.9953">
+				<joint name="thigh_r_x" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+				<joint name="thigh_r_y" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-65 65" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+				<joint name="thigh_r_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-85 85" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+				<geom name="thigh_r" fromto="0.0868 -0.0040 0.0182 0.3622 -0.0089 0.0047" quat="0.5022 0.4882 -0.4870 -0.5217" size="0.1040" density="1000.00"/>
+				<body name="calf_r" pos="0.4257 0.0000 -0.0000" quat="0.8290 0.0517 -0.0082 0.5568">
+					<joint name="calf_r_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-65 65" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+					<geom name="calf_r" fromto="0.3495 0.0054 0.0067 0.0390 0.0116 0.0046" quat="0.4982 0.5115 0.4847 0.5052" size="0.0798" density="1000.00"/>
+					<body name="foot_r" pos="0.4020 -0.0000 -0.0000" quat="0.9970 0.0059 0.0320 -0.0704">
+						<joint name="foot_r_x" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+						<joint name="foot_r_y" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-5 5" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+						<joint name="foot_r_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-35 35" stiffness="0.0000" damping="1.0000" armature="0.00"/>
+						<geom name="foot_r" type="box" pos="0.0765 -0.0503 0.0061" quat="0.7059 0.7083 -0.0041 -0.0056" size="0.0578 0.0578 0.1415" density="1000.00"/>
+					</body>
+				</body>
+			</body>
+		</body>
+	</worldbody>
+	<actuator>
+		<motor name="spine_01_x" gear="3200000" joint="spine_01_x"/>
+		<motor name="spine_01_y" gear="3200000" joint="spine_01_y"/>
+		<motor name="spine_01_z" gear="3200000" joint="spine_01_z"/>
+		<motor name="spine_02_x" gear="3200000" joint="spine_02_x"/>
+		<motor name="spine_02_y" gear="3200000" joint="spine_02_y"/>
+		<motor name="spine_02_z" gear="3200000" joint="spine_02_z"/>
+		<motor name="spine_03_x" gear="3200000" joint="spine_03_x"/>
+		<motor name="spine_03_y" gear="3200000" joint="spine_03_y"/>
+		<motor name="spine_03_z" gear="3200000" joint="spine_03_z"/>
+		<motor name="clavicle_l_x" gear="3200000" joint="clavicle_l_x"/>
+		<motor name="clavicle_l_y" gear="3200000" joint="clavicle_l_y"/>
+		<motor name="clavicle_l_z" gear="3200000" joint="clavicle_l_z"/>
+		<motor name="upperarm_l_x" gear="3200000" joint="upperarm_l_x"/>
+		<motor name="upperarm_l_y" gear="3200000" joint="upperarm_l_y"/>
+		<motor name="upperarm_l_z" gear="3200000" joint="upperarm_l_z"/>
+		<motor name="lowerarm_l_z" gear="3200000" joint="lowerarm_l_z"/>
+		<motor name="hand_l_y" gear="320000" joint="hand_l_y"/>
+		<motor name="hand_l_z" gear="320000" joint="hand_l_z"/>
+		<motor name="clavicle_r_x" gear="3200000" joint="clavicle_r_x"/>
+		<motor name="clavicle_r_y" gear="3200000" joint="clavicle_r_y"/>
+		<motor name="clavicle_r_z" gear="3200000" joint="clavicle_r_z"/>
+		<motor name="upperarm_r_x" gear="3200000" joint="upperarm_r_x"/>
+		<motor name="upperarm_r_y" gear="3200000" joint="upperarm_r_y"/>
+		<motor name="upperarm_r_z" gear="3200000" joint="upperarm_r_z"/>
+		<motor name="lowerarm_r_z" gear="3200000" joint="lowerarm_r_z"/>
+		<motor name="hand_r_y" gear="320000" joint="hand_r_y"/>
+		<motor name="hand_r_z" gear="320000" joint="hand_r_z"/>
+		<motor name="neck_01_z" gear="3200000" joint="neck_01_z"/>
+		<motor name="head_x" gear="3200000" joint="head_x"/>
+		<motor name="head_y" gear="3200000" joint="head_y"/>
+		<motor name="head_z" gear="3200000" joint="head_z"/>
+		<motor name="thigh_l_x" gear="6400000" joint="thigh_l_x"/>
+		<motor name="thigh_l_y" gear="6400000" joint="thigh_l_y"/>
+		<motor name="thigh_l_z" gear="6400000" joint="thigh_l_z"/>
+		<motor name="calf_l_z" gear="6400000" joint="calf_l_z"/>
+		<motor name="foot_l_x" gear="500000" joint="foot_l_x"/>
+		<motor name="foot_l_y" gear="500000" joint="foot_l_y"/>
+		<motor name="foot_l_z" gear="500000" joint="foot_l_z"/>
+		<motor name="thigh_r_x" gear="6400000" joint="thigh_r_x"/>
+		<motor name="thigh_r_y" gear="6400000" joint="thigh_r_y"/>
+		<motor name="thigh_r_z" gear="6400000" joint="thigh_r_z"/>
+		<motor name="calf_r_z" gear="6400000" joint="calf_r_z"/>
+		<motor name="foot_r_x" gear="500000" joint="foot_r_x"/>
+		<motor name="foot_r_y" gear="500000" joint="foot_r_y"/>
+		<motor name="foot_r_z" gear="500000" joint="foot_r_z"/>
+	</actuator>
+</mujoco>
