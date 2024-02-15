@@ -13,7 +13,7 @@
 using namespace GPUPBD;
 
 template <typename T>
-struct Joint {
+struct Body {
   DECL_MAT_VEC_MAP_TYPES_T
   int _parent;
   int _depth;
@@ -25,62 +25,62 @@ struct Joint {
   Capsule<T> _c;
 };
 template <typename T>
-void readJoints(std::vector<Joint<T>>& joints, int parentId, const tinyxml2::XMLElement* g) {
+void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLElement* g) {
   DECL_MAT_VEC_MAP_TYPES_T
-  Joint<T> joint;
-  joint._parent=parentId;
-  joint._name=g->Attribute("name");
+  Body<T> body;
+  body._parent=parentId;
+  body._name=g->Attribute("name");
   //compute depth
-  joint._depth=parentId==-1?0:joints[parentId]._depth+1;
+  body._depth=parentId==-1?0:bodies[parentId]._depth+1;
   //read trans
   {
-    joint._x=PHYSICSMOTION::parsePtreeDef<Vec3T>(*g,"<xmlattr>.pos","0 0 0");
+    body._x=PHYSICSMOTION::parsePtreeDef<Vec3T>(*g,"<xmlattr>.pos","0 0 0");
     Vec4T tmpQ=PHYSICSMOTION::parsePtreeDef<Vec4T>(*g,"<xmlattr>.quat","1 0 0 0");
-    joint._q=QuatT(tmpQ[0],tmpQ[1],tmpQ[2],tmpQ[3]);
+    body._q=QuatT(tmpQ[0],tmpQ[1],tmpQ[2],tmpQ[3]);
   }
   //read geometry
   if(g->FirstChildElement("geom")->FindAttribute("type") == NULL) {
     //capsule
     const tinyxml2::XMLElement* gg=g->FirstChildElement("geom");
-    joint._ft=PHYSICSMOTION::parsePtreeDef<Vec6T>(*gg,"<xmlattr>.fromto","0 0 0 0 0 0");
-    joint._radius=PHYSICSMOTION::get<T>(*gg,"<xmlattr>.size");
-    int _parentId=(int)joints.size();
-    joints.push_back(joint);
+    body._ft=PHYSICSMOTION::parsePtreeDef<Vec6T>(*gg,"<xmlattr>.fromto","0 0 0 0 0 0");
+    body._radius=PHYSICSMOTION::get<T>(*gg,"<xmlattr>.size");
+    int _parentId=(int)bodies.size();
+    bodies.push_back(body);
     for(const tinyxml2::XMLElement* gc=g->FirstChildElement(); gc; gc=gc->NextSiblingElement())
       if(std::string(gc->Name()) == "body")
-        readJoints(joints,_parentId,gc);
+        readBodies(bodies,_parentId,gc);
   }
 }
 
 template <typename T>
-void readMJCF(std::vector<Joint<T>>& joints, const std::string& file) {
+void readMJCF(std::vector<Body<T>>& bodies, const std::string& file) {
   tinyxml2::XMLDocument pt;
   pt.LoadFile(file.c_str());
   tinyxml2::XMLElement* link=pt.RootElement();
   for(const tinyxml2::XMLElement* g=link->FirstChildElement(); g; g=g->NextSiblingElement())
     if(std::string(g->Name()) == "worldbody")
-      readJoints(joints,-1,g->FirstChildElement("body"));
+      readBodies(bodies,-1,g->FirstChildElement("body"));
 }
 
 template <typename T>
-void updateCapsule(std::vector<Joint<T>>& joints) {
+void updateCapsule(std::vector<Body<T>>& bodies) {
   DECL_MAT_VEC_MAP_TYPES_T
-  for(auto& joint : joints) {
-    Vec3T c1 = Vec3T(joint._ft[0], joint._ft[1], joint._ft[2]);
-    Vec3T c2 = Vec3T(joint._ft[3], joint._ft[4], joint._ft[5]);
-    c1 = joint._x + joint._q.toRotationMatrix() * c1;
-    c2 = joint._x + joint._q.toRotationMatrix() * c2;
-    if(joint._parent>=0) {
-      const auto& p = joints[joint._parent];
+  for(auto& body : bodies) {
+    Vec3T c1 = Vec3T(body._ft[0], body._ft[1], body._ft[2]);
+    Vec3T c2 = Vec3T(body._ft[3], body._ft[4], body._ft[5]);
+    c1 = body._x + body._q.toRotationMatrix() * c1;
+    c2 = body._x + body._q.toRotationMatrix() * c2;
+    if(body._parent>=0) {
+      const auto& p = bodies[body._parent];
       c1 = p._x + p._q.toRotationMatrix()*c1;
       c2 = p._x + p._q.toRotationMatrix()*c2;
-      joint._x = p._x + p._q.toRotationMatrix()*joint._x;
-      joint._q = (p._q * joint._q).normalized();
+      body._x = p._x + p._q.toRotationMatrix()*body._x;
+      body._q = (p._q * body._q).normalized();
     }
-    joint._c._radius=joint._radius;
-    joint._c._len=(c2-c1).norm();
-    joint._c._x=(c1+c2)/2;
-    joint._c._q=QuatT::FromTwoVectors(Vec3T::UnitX(),(c2-c1).normalized());
+    body._c._radius=body._radius;
+    body._c._len=(c2-c1).norm();
+    body._c._x=(c1+c2)/2;
+    body._c._q=QuatT::FromTwoVectors(Vec3T::UnitX(),(c2-c1).normalized());
   }
 }
 
@@ -88,38 +88,38 @@ void updateCapsule(std::vector<Joint<T>>& joints) {
 int main(int argc,char** argv) {
   typedef LSCALAR T;
   DECL_MAT_VEC_MAP_TYPES_T
-  std::vector<Joint<T>> joints;
-  readMJCF(joints, "/data/GPU-PBD/SKParser/SK_Mannequin_PhysicsAsset_ABFB4_MJCF.xml");
+  std::vector<Body<T>> bodies;
+  readMJCF(bodies, "/data/GPU-PBD/SKParser/SK_Mannequin_PhysicsAsset_ABFB4_MJCF.xml");
   std::cout<<"==========================original info==========================" << std::endl;
-  for(int i=0; i<joints.size(); i++) {
-    Joint<T>& j = joints[i];
-    std::string indent(j._depth * 2, ' ');
-    std::cout << indent  << j._name <<": x:" << j._x[0] << " " << j._x[1] << " " << j._x[2]
-              << ", q:" << j._q.w() << " " << j._q.x() << " " << j._q.y() << " " << j._q.z()
-              << ", radius:" << j._radius
-              << ", fromto:" << j._ft[0] << " " << j._ft[1] << " "<< j._ft[2] << " "<< j._ft[3] << " "<< j._ft[4] << " "<< j._ft[5]
-              << ", parent Name: " << joints[j._parent>-1?j._parent:0]._name
+  for(int i=0; i<bodies.size(); i++) {
+    Body<T>& b = bodies[i];
+    std::string indent(b._depth * 2, ' ');
+    std::cout << indent  << b._name <<": x:" << b._x[0] << " " << b._x[1] << " " << b._x[2]
+              << ", q:" << b._q.w() << " " << b._q.x() << " " << b._q.y() << " " << b._q.z()
+              << ", radius:" << b._radius
+              << ", fromto:" << b._ft[0] << " " << b._ft[1] << " "<< b._ft[2] << " "<< b._ft[3] << " "<< b._ft[4] << " "<< b._ft[5]
+              << ", parent Name: " << bodies[b._parent>-1?b._parent:0]._name
               << std::endl;
   }
 
-  updateCapsule(joints);
+  updateCapsule(bodies);
   std::cout<<"==========================updated info==========================" << std::endl;
-  for(int i=0; i<joints.size(); i++) {
-    Joint<T>& j = joints[i];
-    std::string indent(j._depth * 2, ' ');
-    auto tmpx = j._c._q.toRotationMatrix() * Vec3T(j._c._len, 0, 0);
-    std::cout << indent  << j._name <<": x:" << j._x[0] << " " << j._x[1] << " " << j._x[2]
-              << ", q:" << j._q.w() << " " << j._q.x() << " " << j._q.y() << " " << j._q.z()
-              << ", capsule radius: " << j._c._radius << ", len:" << j._c._len
-              <<", x:" << j._c._x[0] << " " << j._c._x[1] << " " << j._c._x[2]
-              << ", q:" << j._c._q.w() << " " << j._c._q.x() << " " << j._c._q.y() << " " << j._c._q.z()
-              << ", parent Name: " << joints[j._parent>-1?j._parent:0]._name
+  for(int i=0; i<bodies.size(); i++) {
+    Body<T>& b = bodies[i];
+    std::string indent(b._depth * 2, ' ');
+    auto tmpx = b._c._q.toRotationMatrix() * Vec3T(b._c._len, 0, 0);
+    std::cout << indent  << b._name <<": x:" << b._x[0] << " " << b._x[1] << " " << b._x[2]
+              << ", q:" << b._q.w() << " " << b._q.x() << " " << b._q.y() << " " << b._q.z()
+              << ", capsule radius: " << b._c._radius << ", len:" << b._c._len
+              <<", x:" << b._c._x[0] << " " << b._c._x[1] << " " << b._c._x[2]
+              << ", q:" << b._c._q.w() << " " << b._c._q.x() << " " << b._c._q.y() << " " << b._c._q.z()
+              << ", parent Name: " << bodies[b._parent>-1?b._parent:0]._name
               << std::endl;
   }
 
   std::vector<Capsule<T>> ps;
-  for(auto& j : joints) {
-    Capsule<T> c = j._c;
+  for(auto& b : bodies) {
+    Capsule<T> c = b._c;
     ps.push_back(c);
   }
 
