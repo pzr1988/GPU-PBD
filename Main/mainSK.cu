@@ -164,11 +164,17 @@ int main(int argc,char** argv) {
   geometry->setCapsule(ps);
   XPBD<T> xpbd(geometry, 1.0f/60);
   // addJoint
-  // for(auto& b : bodies) {
-  //   auto& j = b._j;
-  //   if(j._isValid)
-  //     xpbd.addJoint(j._cA,j._cB,j._cAPos,j._cBPos);
-  // }
+  std::cout<<"==========================joint info==========================" << std::endl;
+  for(auto& b : bodies) {
+    auto& j = b._j;
+    if(j._isValid) {
+      xpbd.addJoint(j._cA,j._cB,j._cAPos,j._cBPos);
+      std::cout<<"Parent: " << bodies[j._cB]._name << ", Self: " << bodies[j._cA]._name
+        << ", Parent Pos: " << j._cBPos[0] << ", "  << j._cBPos[2] << ", " << j._cBPos[2]
+        << ", Self Pos: " << j._cAPos[0] << ", "  << j._cAPos[2] << ", " << j._cAPos[2]
+        << std::endl;
+    }
+  }
   DRAWER::Drawer drawer(argc,argv);
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CaptureGIFPlugin(GLFW_KEY_1,"record.gif",drawer.FPS())));

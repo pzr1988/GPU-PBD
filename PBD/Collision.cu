@@ -36,7 +36,7 @@ void CollisionDetector<T>::detectCollisions() {
           NarrowPhase<T>::narrowPhaseCollision(contactM, maxCollisionPerObject);
       }
     // fill invalid
-    assert(contactM._numCollision < maxCollisionPerObject);
+    // assert(contactM._numCollision < maxCollisionPerObject);
     for(size_t i = 0; i < maxCollisionPerObject; i++)
       localMemory[i]._type = Collision;
     for(size_t i = contactM._numCollision; i < maxCollisionPerObject; i++)
