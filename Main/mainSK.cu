@@ -13,8 +13,18 @@
 using namespace GPUPBD;
 
 template <typename T>
+struct Joint {
+  DECL_MAT_VEC_MAP_TYPES_T
+  bool _isValid=false;
+  int _cA=-1;
+  int _cB=-1;
+  Vec3T _cAPos;
+  Vec3T _cBPos;
+};
+template <typename T>
 struct Body {
   DECL_MAT_VEC_MAP_TYPES_T
+  bool _isValid=false;
   int _parent;
   int _depth;
   T _radius;
@@ -23,6 +33,7 @@ struct Body {
   Vec6T _ft;
   std::string _name;
   Capsule<T> _c;
+  Joint<T> _j;
 };
 template <typename T>
 void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLElement* g) {
@@ -32,6 +43,7 @@ void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLE
   body._name=g->Attribute("name");
   //compute depth
   body._depth=parentId==-1?0:bodies[parentId]._depth+1;
+  int _currId=(int)bodies.size();
   //read trans
   {
     body._x=PHYSICSMOTION::parsePtreeDef<Vec3T>(*g,"<xmlattr>.pos","0 0 0");
@@ -41,15 +53,33 @@ void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLE
   //read geometry
   if(g->FirstChildElement("geom")->FindAttribute("type") == NULL) {
     //capsule
+    body._isValid=true;
     const tinyxml2::XMLElement* gg=g->FirstChildElement("geom");
     body._ft=PHYSICSMOTION::parsePtreeDef<Vec6T>(*gg,"<xmlattr>.fromto","0 0 0 0 0 0");
     body._radius=PHYSICSMOTION::get<T>(*gg,"<xmlattr>.size");
-    int _parentId=(int)bodies.size();
-    bodies.push_back(body);
-    for(const tinyxml2::XMLElement* gc=g->FirstChildElement(); gc; gc=gc->NextSiblingElement())
-      if(std::string(gc->Name()) == "body")
-        readBodies(bodies,_parentId,gc);
+  } else {
+    // TODO box
+    body._isValid=false;
   }
+
+  //read joints, temporarily ignore all angular constraints.
+  if(g->FirstChildElement("joint")) {
+    body._j._isValid=true;
+    body._j._cA=_currId;
+    body._j._cB=body._parent;
+    // TODO
+    body._j._cAPos=-Vec3T(body._ft[0]+body._ft[3], body._ft[1]+body._ft[4], body._ft[2]+body._ft[5])/2;
+    body._j._cBPos=body._x;
+  } else {
+    body._j._isValid=false;
+  }
+
+  if(!body._isValid) return;
+
+  bodies.push_back(body);
+  for(const tinyxml2::XMLElement* gc=g->FirstChildElement(); gc; gc=gc->NextSiblingElement())
+    if(std::string(gc->Name()) == "body")
+      readBodies(bodies,_currId,gc);
 }
 
 template <typename T>
@@ -99,6 +129,9 @@ int main(int argc,char** argv) {
               << ", radius:" << b._radius
               << ", fromto:" << b._ft[0] << " " << b._ft[1] << " "<< b._ft[2] << " "<< b._ft[3] << " "<< b._ft[4] << " "<< b._ft[5]
               << ", parent Name: " << bodies[b._parent>-1?b._parent:0]._name
+              << ", joint._isValid: " << b._j._isValid
+              << ", joint._cAName: " << bodies[b._j._cA>-1?b._j._cA:0]._name
+              << ", joint._cBName: " << bodies[b._j._cB>-1?b._j._cB:0]._name
               << std::endl;
   }
 
@@ -120,6 +153,9 @@ int main(int argc,char** argv) {
   std::vector<Capsule<T>> ps;
   for(auto& b : bodies) {
     Capsule<T> c = b._c;
+    c.initInertiaTensor();
+    c._force = Vec3T(0, -9.8f*c._mass,0);
+    c._isDynamic = true;
     ps.push_back(c);
   }
 
@@ -127,7 +163,12 @@ int main(int argc,char** argv) {
   geometry->resize(ps.size());
   geometry->setCapsule(ps);
   XPBD<T> xpbd(geometry, 1.0f/60);
-  // TODO addJoint
+  // addJoint
+  // for(auto& b : bodies) {
+  //   auto& j = b._j;
+  //   if(j._isValid)
+  //     xpbd.addJoint(j._cA,j._cB,j._cAPos,j._cBPos);
+  // }
   DRAWER::Drawer drawer(argc,argv);
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CaptureGIFPlugin(GLFW_KEY_1,"record.gif",drawer.FPS())));
@@ -135,7 +176,7 @@ int main(int argc,char** argv) {
   auto shapeCollision=visualizeOrUpdateCollision(*geometry,xpbd.getDetector());
   drawer.addShape(shapeGeometry);
   drawer.addShape(shapeCollision);
-  // drawer.addCamera3D(90,Eigen::Matrix<GLfloat,3,1>(0,1,0),Eigen::Matrix<GLfloat,3,1>(0,0,2),Eigen::Matrix<GLfloat,3,1>(0,0,-1));
+  // drawer.addCamera3D(90,Eigen::Matrix<GLfloat,3,1>(0,1,0),Eigen::Matrix<GLfloat,3,1>(0,0,5),Eigen::Matrix<GLfloat,3,1>(0,0,-1));
   // drawer.getCamera3D()->setManipulator(std::shared_ptr<DRAWER::CameraManipulator>(new DRAWER::FirstPersonCameraManipulator(drawer.getCamera3D())));
   // drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::ImGuiPlugin([&]() {
   //   drawer.getCamera3D()->getManipulator()->imGuiCallback();
