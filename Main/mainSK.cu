@@ -16,8 +16,8 @@ template <typename T>
 struct Joint {
   DECL_MAT_VEC_MAP_TYPES_T
   bool _isValid=false;
-  int _cA=-1;
-  int _cB=-1;
+  int _cA=-1;//son
+  int _cB=-1;//parent
   Vec3T _cAPos;
   Vec3T _cBPos;
 };
@@ -65,11 +65,21 @@ void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLE
   //read joints, temporarily ignore all angular constraints.
   if(g->FirstChildElement("joint")) {
     body._j._isValid=true;
-    body._j._cA=_currId;
+    // parent:
+    Body<T>& p = bodies[body._parent];
+    Vec3T pC1 = Vec3T(p._ft[0], p._ft[1], p._ft[2]);
+    Vec3T pC2 = Vec3T(p._ft[3], p._ft[4], p._ft[5]);
+    Vec3T pX = (pC1+pC2)/2;
+    QuatT pQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(pC2-pC1).normalized());
     body._j._cB=body._parent;
-    // TODO
-    body._j._cAPos=-Vec3T(body._ft[0]+body._ft[3], body._ft[1]+body._ft[4], body._ft[2]+body._ft[5])/2;
-    body._j._cBPos=body._x;
+    body._j._cBPos=pQ.inverse().toRotationMatrix()*(body._x-pX);
+    // son:
+    body._j._cA=_currId;
+    Vec3T sC1 = Vec3T(body._ft[0], body._ft[1], body._ft[2]);
+    Vec3T sC2 = Vec3T(body._ft[3], body._ft[4], body._ft[5]);
+    Vec3T sX = (sC1+sC2)/2;
+    QuatT sQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(sC2-sC1).normalized());
+    body._j._cAPos=-sQ.inverse().toRotationMatrix()*(sX);;
   } else {
     body._j._isValid=false;
   }
@@ -170,9 +180,9 @@ int main(int argc,char** argv) {
     if(j._isValid) {
       xpbd.addJoint(j._cA,j._cB,j._cAPos,j._cBPos);
       std::cout<<"Parent: " << bodies[j._cB]._name << ", Self: " << bodies[j._cA]._name
-        << ", Parent Pos: " << j._cBPos[0] << ", "  << j._cBPos[2] << ", " << j._cBPos[2]
-        << ", Self Pos: " << j._cAPos[0] << ", "  << j._cAPos[2] << ", " << j._cAPos[2]
-        << std::endl;
+               << ", Parent Pos: " << j._cBPos[0] << ", "  << j._cBPos[2] << ", " << j._cBPos[2]
+               << ", Self Pos: " << j._cAPos[0] << ", "  << j._cAPos[2] << ", " << j._cAPos[2]
+               << std::endl;
     }
   }
   DRAWER::Drawer drawer(argc,argv);
