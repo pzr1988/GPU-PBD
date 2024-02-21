@@ -80,23 +80,23 @@ void XPBD<T>::relaxConstraint() {
     auto placementPointB = cB._q.toRotationMatrix()*constraint._localPointB;
     auto globalPointA = placementPointA+cA._x;
     auto globalPointB = placementPointB+cB._x;
-    auto wA = constraint._type == JointAngular ? computeGeneralizedInversMass(cA, constraint._axis)
+    auto wA = constraint._type == ConstraintType::JointAngular ? computeGeneralizedInversMass(cA, constraint._axis)
               : computeGeneralizedInversMass(cA, placementPointA, constraint._globalNormal);
-    auto wB = constraint._type == JointAngular ? computeGeneralizedInversMass(cB, constraint._axis)
+    auto wB = constraint._type == ConstraintType::JointAngular ? computeGeneralizedInversMass(cB, constraint._axis)
               : computeGeneralizedInversMass(cB, placementPointB, constraint._globalNormal);
-    auto constraintViolation = constraint._type == JointAngular ? constraint._theta
+    auto constraintViolation = constraint._type == ConstraintType::JointAngular ? constraint._theta
                                : (globalPointA-globalPointB).dot(constraint._globalNormal);
     auto alpha = constraint._alpha / (dt*dt);
     auto deltaLambda = (-constraintViolation-d_lambda[idx]*alpha)/max(epsDir,(wA+wB+alpha));
     d_lambda[idx] += deltaLambda;
-    pulse = constraint._type == JointAngular ? deltaLambda * constraint._axis
+    pulse = constraint._type == ConstraintType::JointAngular ? deltaLambda * constraint._axis
             : deltaLambda * constraint._globalNormal;
-    if(constraint._type == Collision && constraintViolation <= 0)
+    if(constraint._type == ConstraintType::Collision && constraintViolation <= 0)
       pulse.setZero();
     // To avoid multi write problem, first cache update
     d_constraintShapeId[2*idx] = constraint._shapeIdA;
     d_constraintShapeId[2*idx+1] = constraint._shapeIdB;
-    if(constraint._type == JointAngular) {
+    if(constraint._type == ConstraintType::JointAngular) {
       d_update[2*idx]._x.setZero();
       d_update[2*idx+1]._x.setZero();
       d_update[2*idx]._q = getDeltaRot(cA, pulse).coeffs();
@@ -175,7 +175,7 @@ void XPBD<T>::addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T&
     throw std::runtime_error("Cannot add joint to the same Shape<T>!");
   Constraint<T> c;
   c._isValid=true;
-  c._type=JointPosition;
+  c._type=ConstraintType::JointPosition;
   c._shapeIdA=(int)idA;
   c._shapeIdB=(int)idB;
   c._localPointA=localA;
@@ -189,7 +189,7 @@ void XPBD<T>::addJointAngular(size_t idA, size_t idB, const XPBD<T>::QuatT& targ
     throw std::runtime_error("Cannot add joint to the same Shape<T>!");
   Constraint<T> c;
   c._isValid=true;
-  c._type=JointAngular;
+  c._type=ConstraintType::JointAngular;
   c._shapeIdA=(int)idA;
   c._shapeIdB=(int)idB;
   c._targetQ=targetQ;
@@ -208,7 +208,7 @@ void XPBD<T>::assignCollisionGroup() {
   do {
     thrust::transform(thrust::device, _jointPositions.begin(), _jointPositions.end(), _changes.begin(),
     [d_parents] __device__ (const Constraint<T>& c) {
-      if(c._type!=JointPosition || !c._isValid)
+      if(c._type!=ConstraintType::JointPosition || !c._isValid)
         return false;
       int parentA = d_parents[c._shapeIdA];
       int parentB = c._shapeIdB;

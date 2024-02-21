@@ -38,7 +38,7 @@ void CollisionDetector<T>::detectCollisions() {
     // fill invalid
     // assert(contactM._numCollision < maxCollisionPerObject);
     for(size_t i = 0; i < maxCollisionPerObject; i++)
-      localMemory[i]._type = Collision;
+      localMemory[i]._type = ConstraintType::Collision;
     for(size_t i = contactM._numCollision; i < maxCollisionPerObject; i++)
       localMemory[i]._isValid = false;
   });

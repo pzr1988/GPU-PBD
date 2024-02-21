@@ -10,7 +10,7 @@ namespace GPUPBD {
 //The index of first/second shape is store in _shapeIdA/_shapeIdB
 //The points of contact in local coordinates are stored in _localPointA/_localPointB
 //The separating direction of contact is stored in _globalNormal, extending from A to B and having unit norm
-enum ConstraintType {
+enum class ConstraintType {
   Collision,
   JointPosition,
   JointAngular,
@@ -19,7 +19,7 @@ enum ConstraintType {
 template <typename T>
 struct Constraint {
   DECL_MAT_VEC_MAP_TYPES_T
-  ConstraintType _type=Unknown;
+  ConstraintType _type=ConstraintType::Unknown;
   bool _isValid;
   int _shapeIdA;
   int _shapeIdB; // B is the parent of A
