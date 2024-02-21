@@ -3,17 +3,30 @@
 namespace GPUPBD {
 template <typename T>
 void Shape<T>::initInertiaTensor(T rho) {
-  //https://gamedev.net/tutorials/programming/math-and-physics/shape-inertia-tensor-r3856/
-  _mass = 3.14f * (_radius*_radius*_len) + 3.14f * (4.f/3.f)*_radius*_radius*_radius;
-  _mass *= rho;
-  T mCy = _mass * (_radius*_radius*_len)/(_radius*_radius*_len + (4.f/3.f)*_radius*_radius*_radius);
-  T mHSph = _mass * ((2.f/3.f)*_radius*_radius*_radius)/(_radius*_radius*_len + (4.f/3.f)*_radius*_radius*_radius);
-  T Ixx = mCy*(_radius*_radius/2.f)
-          + 2.f*mHSph*(2.f*_radius*_radius/5.f);
-  T Iyy = mCy*(_radius*_radius/4.f + _len*_len/12.f)
-          + 2.f*mHSph*(2.f*_radius*_radius/5.f+_len*_len/2.f+3.f*_len*_radius/8);
-  _Ibody.setIdentity();
-  _Ibody.diagonal()=Vec3T(Ixx,Iyy,Iyy);
+  if(ShapeType::Capsule==_type) {
+    //https://gamedev.net/tutorials/programming/math-and-physics/shape-inertia-tensor-r3856/
+    _mass = 3.14f * (_radius*_radius*_len) + 3.14f * (4.f/3.f)*_radius*_radius*_radius;
+    _mass *= rho;
+    T mCy = _mass * (_radius*_radius*_len)/(_radius*_radius*_len + (4.f/3.f)*_radius*_radius*_radius);
+    T mHSph = _mass * ((2.f/3.f)*_radius*_radius*_radius)/(_radius*_radius*_len + (4.f/3.f)*_radius*_radius*_radius);
+    T Ixx = mCy*(_radius*_radius/2.f)
+            + 2.f*mHSph*(2.f*_radius*_radius/5.f);
+    T Iyy = mCy*(_radius*_radius/4.f + _len*_len/12.f)
+            + 2.f*mHSph*(2.f*_radius*_radius/5.f+_len*_len/2.f+3.f*_len*_radius/8);
+    _Ibody.setIdentity();
+    _Ibody.diagonal()=Vec3T(Ixx,Iyy,Iyy);
+  } else if(ShapeType::Box==_type) {
+    _mass = _len*_width*_height;
+    _mass *= rho;
+    T Ixx = _mass*(_width*_width+_height*_height)/12.f;
+    T Iyy = _mass*(_len*_len+_height*_height)/12.f;
+    T Izz = _mass*(_len*_len+_width*_width)/12.f;
+    _Ibody.setIdentity();
+    _Ibody.diagonal()=Vec3T(Ixx,Iyy,Izz);
+  } else {
+    _mass = 1.f;
+    _Ibody.setIdentity();
+  }
   _Ibodyinv=_Ibody.inverse();
 }
 

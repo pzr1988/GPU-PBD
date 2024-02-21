@@ -29,6 +29,7 @@ int main(int argc,char** argv) {
   auto prevX = Vec3T(-2,1,0);
   for(int i=0; i<N; i++) {
     Shape<T> c;
+    c._type = ShapeType::Capsule;
     c._len = len;
     c._radius = radius;
     QuatT q = fixedRotation * initQ;
@@ -49,6 +50,7 @@ int main(int argc,char** argv) {
   prevX = Vec3T(2, 1, 0);
   for(int i=0; i<N; i++) {
     Shape<T> c;
+    c._type = ShapeType::Capsule;
     c._len = len;
     c._radius = radius;
     QuatT q(uni(mt),0,0,uni(mt));
@@ -67,6 +69,7 @@ int main(int argc,char** argv) {
 
   // boundary
   Shape<T> b_1;
+  b_1._type = ShapeType::Capsule;
   b_1._len = 20;
   b_1._radius = 1;
   b_1._mass = 1;
@@ -77,6 +80,7 @@ int main(int argc,char** argv) {
   ps.push_back(b_1);
 
   Shape<T> b_2;
+  b_2._type = ShapeType::Capsule;
   b_2._len = 18.;
   b_2._radius = 1;
   b_2._mass = 1;
@@ -87,6 +91,7 @@ int main(int argc,char** argv) {
   ps.push_back(b_2);
 
   Shape<T> b_3;
+  b_3._type = ShapeType::Capsule;
   b_3._len = 18;
   b_3._radius = 1;
   b_3._mass = 1;

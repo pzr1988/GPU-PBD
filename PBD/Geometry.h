@@ -6,16 +6,27 @@
 
 namespace GPUPBD {
 //This struct represents a shape-shaped object
-//The shape's centerline extends from (-_len/2,0,0) to (_len/2,0,0)
-//The radius of the shape is stored in _radius
+//This struct represents a shaped object
+//The capsule shape's centerline extends from (-_len/2,0,0) to (_len/2,0,0)
+//The box shape's centerline extends from (-_len/2,-_width/2,-_height/2) to (_len/2,_width/2,_height/2)
+//The radius of the capsule is stored in _radius
+//The height and width of the box is stored in _height, _width
 //The local to global transformation is stored in _x and _q
 //The 3x3 rotational matrix is: _q.toRotationMatrix()
 //The 3x1 translational vector is: _x
+enum class ShapeType {
+  Capsule,
+  Box,
+  Unknown,
+};
 template <typename T>
 struct Shape {
   DECL_MAT_VEC_MAP_TYPES_T
   /* Constant quantities */
-  T _len,_radius;
+  ShapeType _type=ShapeType::Unknown;
+  T _len;
+  T _radius; //capsule
+  T _width, _height; //box
   T _mass;
   Mat3T _Ibody, _Ibodyinv; //body space inertia tensor
   bool _isDynamic;
@@ -36,10 +47,18 @@ struct Shape {
   int _parent = -1;
   void initInertiaTensor(T rho=1);
   DEVICE_HOST Vec3T minCorner() const {
-    return Vec3T(-_len / 2, 0, 0);
+    if(ShapeType::Capsule==_type)
+      return Vec3T(-_len/2, 0, 0);
+    else if(ShapeType::Box==_type)
+      return Vec3T(-_len/2,-_width/2,-_height/2);
+    return Vec3T(0, 0, 0);
   }
   DEVICE_HOST Vec3T maxCorner() const {
-    return Vec3T(_len / 2, 0, 0);
+    if(ShapeType::Capsule==_type)
+      return Vec3T(_len/2, 0, 0);
+    else if(ShapeType::Box==_type)
+      return Vec3T(_len/2,_width/2,_height/2);
+    return Vec3T(0, 0, 0);
   }
   DEVICE_HOST Vec3T globalMinCorner() const {
     return _q.toRotationMatrix()*minCorner()+_x;
