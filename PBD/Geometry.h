@@ -5,14 +5,14 @@
 #include <thrust/device_vector.h>
 
 namespace GPUPBD {
-//This struct represents a capsule-shaped object
-//The capsule's centerline extends from (-_len/2,0,0) to (_len/2,0,0)
-//The radius of the capsule is stored in _radius
+//This struct represents a shape-shaped object
+//The shape's centerline extends from (-_len/2,0,0) to (_len/2,0,0)
+//The radius of the shape is stored in _radius
 //The local to global transformation is stored in _x and _q
 //The 3x3 rotational matrix is: _q.toRotationMatrix()
 //The 3x1 translational vector is: _x
 template <typename T>
-struct Capsule {
+struct Shape {
   DECL_MAT_VEC_MAP_TYPES_T
   /* Constant quantities */
   T _len,_radius;
@@ -53,42 +53,42 @@ struct Capsule {
   }
 };
 
-//The geometry stores a vector of capsules
+//The geometry stores a vector of shapes
 //The vector is over-sized and pre-allocated
-//The number of capsules in use is stored in _nrCapsule
+//The number of shapes in use is stored in _nrShape
 template <typename T>
 struct Geometry {
   DECL_MAT_VEC_MAP_TYPES_T
-  //Get/Set the actual number of capsules used
+  //Get/Set the actual number of shapes used
   size_t size() const;
-  void resize(size_t nrCapsule);
-  //Set the pre-allocated capsule list
-  void reserve(size_t nrCapsule);
-  //CPU->GPU transfer: copying the list of capsules to GPU
-  void setCapsule(const std::vector<Capsule<T>>& c);
-  //Set the id-th capsule
-  void setCapsule(size_t id, const Capsule<T>& c);
-  //Get the id-th capsule
-  Capsule<T> operator[](size_t id) const;
-  //Get All Capsules
-  typename thrust::device_vector<Capsule<T>>::iterator begin();
-  typename thrust::device_vector<Capsule<T>>::iterator end();
-  typename thrust::device_vector<Capsule<T>>::const_iterator begin() const;
-  typename thrust::device_vector<Capsule<T>>::const_iterator end() const;
-  typename thrust::device_ptr<const Capsule<T>> getCapsules() const;
-  typename thrust::device_ptr<Capsule<T>> getCapsules();
+  void resize(size_t nrShape);
+  //Set the pre-allocated shape list
+  void reserve(size_t nrShape);
+  //CPU->GPU transfer: copying the list of shapes to GPU
+  void setShape(const std::vector<Shape<T>>& c);
+  //Set the id-th shape
+  void setShape(size_t id, const Shape<T>& c);
+  //Get the id-th shape
+  Shape<T> operator[](size_t id) const;
+  //Get All Shapes
+  typename thrust::device_vector<Shape<T>>::iterator begin();
+  typename thrust::device_vector<Shape<T>>::iterator end();
+  typename thrust::device_vector<Shape<T>>::const_iterator begin() const;
+  typename thrust::device_vector<Shape<T>>::const_iterator end() const;
+  typename thrust::device_ptr<const Shape<T>> getShapes() const;
+  typename thrust::device_ptr<Shape<T>> getShapes();
  protected:
-  thrust::device_vector<Capsule<T>> _capsules;
-  size_t _nrCapsule=0;
+  thrust::device_vector<Shape<T>> _shapes;
+  size_t _nrShape=0;
 };
 
 // General function to get AABB
 template <template<typename> class Geometry, typename T>
 struct AABBGetter;
-// AABBGetter for Capsule<T>
+// AABBGetter for Shape<T>
 template <typename T>
-struct AABBGetter<Capsule, T> {
-  DEVICE_HOST lbvh::aabb<T> operator()(const Capsule<T> &c) const noexcept {
+struct AABBGetter<Shape, T> {
+  DEVICE_HOST lbvh::aabb<T> operator()(const Shape<T> &c) const noexcept {
     lbvh::aabb<T> retval;
     auto transformedEnd1 = c.globalMaxCorner();
     auto transformedEnd2 = c.globalMinCorner();

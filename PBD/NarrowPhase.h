@@ -9,7 +9,7 @@ template<typename T>
 class NarrowPhase {
  public:
   DECL_MAT_VEC_MAP_TYPES_T
-  // maxCollisionsPerNode is the number of collisions per capsule
+  // maxCollisionsPerNode is the number of collisions per shape
   static DEVICE_HOST int narrowPhaseCollision(ContactManifold<T>& contactM,size_t maxCollisionsPerNode) noexcept {
     if(contactM._numCollision >= maxCollisionPerObject)
       return 0;
@@ -63,8 +63,8 @@ class NarrowPhase {
           Vec3T globalPointB = cB1 + nB * r - nA2B * contactM._rhs->_radius;
           T depth = (globalPointA-globalPointB).dot(nA2B);
           if(depth > 0) {
-            contactM._localMemory[contactM._numCollision]._capsuleIdA = contactM._lhsId;
-            contactM._localMemory[contactM._numCollision]._capsuleIdB = contactM._rhsId;
+            contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
+            contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
             contactM._localMemory[contactM._numCollision]._localPointA = contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
             contactM._localMemory[contactM._numCollision]._localPointB = contactM._rhs->_q.conjugate().toRotationMatrix()*(globalPointB-contactM._rhs->_x);
             contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
@@ -91,8 +91,8 @@ class NarrowPhase {
         nA2B /= nA2B.template cast<double>().norm();
         if ((cB - cA).dot(nA2B) < 0)
           nA2B *= -1;
-        contactM._localMemory[contactM._numCollision]._capsuleIdA = contactM._lhsId;
-        contactM._localMemory[contactM._numCollision]._capsuleIdB = contactM._rhsId;
+        contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
+        contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
         auto globalPointA = cA + nA2B * contactM._lhs->_radius;
         auto globalPointB = cB - nA2B * contactM._rhs->_radius;
         contactM._localMemory[contactM._numCollision]._localPointA = contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
@@ -104,13 +104,13 @@ class NarrowPhase {
       } else {
         Constraint<T> collision;
         T collisionDepth = 0;
-        generateManifoldSphereCapsuleInternal(collision, collisionDepth, cA1, contactM._lhs, contactM._lhsId, contactM._rhs, contactM._rhsId);
-        generateManifoldSphereCapsuleInternal(collision,collisionDepth, cA2, contactM._lhs, contactM._lhsId, contactM._rhs, contactM._rhsId);
-        generateManifoldSphereCapsuleInternal(collision, collisionDepth, cB1, contactM._rhs, contactM._rhsId, contactM._lhs, contactM._lhsId);
-        generateManifoldSphereCapsuleInternal(collision, collisionDepth, cB2, contactM._rhs, contactM._rhsId, contactM._lhs, contactM._lhsId);
+        generateManifoldSphereShapeInternal(collision, collisionDepth, cA1, contactM._lhs, contactM._lhsId, contactM._rhs, contactM._rhsId);
+        generateManifoldSphereShapeInternal(collision,collisionDepth, cA2, contactM._lhs, contactM._lhsId, contactM._rhs, contactM._rhsId);
+        generateManifoldSphereShapeInternal(collision, collisionDepth, cB1, contactM._rhs, contactM._rhsId, contactM._lhs, contactM._lhsId);
+        generateManifoldSphereShapeInternal(collision, collisionDepth, cB2, contactM._rhs, contactM._rhsId, contactM._lhs, contactM._lhsId);
         if (collision._isValid) {
-          contactM._localMemory[contactM._numCollision]._capsuleIdA = collision._capsuleIdA;
-          contactM._localMemory[contactM._numCollision]._capsuleIdB = collision._capsuleIdB;
+          contactM._localMemory[contactM._numCollision]._shapeIdA = collision._shapeIdA;
+          contactM._localMemory[contactM._numCollision]._shapeIdB = collision._shapeIdB;
           contactM._localMemory[contactM._numCollision]._localPointA = collision._localPointA;
           contactM._localMemory[contactM._numCollision]._localPointB = collision._localPointB;
           contactM._localMemory[contactM._numCollision]._globalNormal = collision._globalNormal;
@@ -152,8 +152,8 @@ class NarrowPhase {
       nA2B = cBn - cAn;
       nA2B /= nA2B.template cast<double>().norm();
     }
-    contactM._localMemory[contactM._numCollision]._capsuleIdA = contactM._lhsId;
-    contactM._localMemory[contactM._numCollision]._capsuleIdB = contactM._rhsId;
+    contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
+    contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
     auto globalPointA = cA + nA2B * contactM._lhs->_radius;
     auto globalPointB = cB - nA2B * contactM._rhs->_radius;
     contactM._localMemory[contactM._numCollision]._localPointA = contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
@@ -163,7 +163,7 @@ class NarrowPhase {
     contactM._numCollision++;
     return 1;
   }
-  static DEVICE_HOST void generateManifoldSphereCapsuleInternal(Constraint<T>& originCollision, T& originCollisionDepth, const Vec3T &cA,const Capsule<T>* lhs,int lhs_idx, const Capsule<T>* rhs,int rhs_idx) {
+  static DEVICE_HOST void generateManifoldSphereShapeInternal(Constraint<T>& originCollision, T& originCollisionDepth, const Vec3T &cA,const Shape<T>* lhs,int lhs_idx, const Shape<T>* rhs,int rhs_idx) {
     Constraint<T> collision;
     auto cB1 = rhs->globalMinCorner().template cast<T>();
     auto cB2 = rhs->globalMaxCorner().template cast<T>();
@@ -229,8 +229,8 @@ class NarrowPhase {
     auto collisionDepth = (globalPointA-globalPointB).dot(collision._globalNormal);
     if (!originCollision._isValid || originCollisionDepth < collisionDepth) {
       originCollisionDepth = collisionDepth;
-      originCollision._capsuleIdA = lhs_idx;
-      originCollision._capsuleIdB = rhs_idx;
+      originCollision._shapeIdA = lhs_idx;
+      originCollision._shapeIdB = rhs_idx;
       originCollision._localPointA = collision._localPointA;
       originCollision._localPointB = collision._localPointB;
       originCollision._globalNormal = collision._globalNormal;

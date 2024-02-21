@@ -15,7 +15,7 @@ int main(int argc,char** argv) {
   typedef LSCALAR T;
   DECL_MAT_VEC_MAP_TYPES_T
   constexpr std::size_t N=5;
-  std::vector<Capsule<T>> ps(N);
+  std::vector<Shape<T>> ps(N);
 
   std::mt19937 mt(123456789);
   std::uniform_real_distribution<T> uni(0, 1);
@@ -38,7 +38,7 @@ int main(int argc,char** argv) {
   }
 
   // boundary
-  Capsule<T> b_1;
+  Shape<T> b_1;
   b_1._len = 20;
   b_1._radius = 1;
   b_1._mass = 1;
@@ -48,7 +48,7 @@ int main(int argc,char** argv) {
   b_1._isDynamic = false;
   ps.push_back(b_1);
 
-  Capsule<T> b_2;
+  Shape<T> b_2;
   b_2._len = 18.;
   b_2._radius = 1;
   b_2._mass = 1;
@@ -58,7 +58,7 @@ int main(int argc,char** argv) {
   b_2._isDynamic = false;
   ps.push_back(b_2);
 
-  Capsule<T> b_3;
+  Shape<T> b_3;
   b_3._len = 18;
   b_3._radius = 1;
   b_3._mass = 1;
@@ -70,7 +70,7 @@ int main(int argc,char** argv) {
 
   std::shared_ptr<Geometry<T>> geometry(new Geometry<T>);
   geometry->resize(ps.size());
-  geometry->setCapsule(ps);
+  geometry->setShape(ps);
   XPBD<T> xpbd(geometry, 1.0f/60);
 
   DRAWER::Drawer drawer(argc,argv);

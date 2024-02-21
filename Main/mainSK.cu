@@ -32,7 +32,7 @@ struct Body {
   QuatT _q;
   Vec6T _ft;
   std::string _name;
-  Capsule<T> _c;
+  Shape<T> _c;
   Joint<T> _j;
 };
 template <typename T>
@@ -52,7 +52,7 @@ void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLE
   }
   //read geometry
   if(g->FirstChildElement("geom")->FindAttribute("type") == NULL) {
-    //capsule
+    //shape
     body._isValid=true;
     const tinyxml2::XMLElement* gg=g->FirstChildElement("geom");
     body._ft=PHYSICSMOTION::parsePtreeDef<Vec6T>(*gg,"<xmlattr>.fromto","0 0 0 0 0 0");
@@ -103,7 +103,7 @@ void readMJCF(std::vector<Body<T>>& bodies, const std::string& file) {
 }
 
 template <typename T>
-void updateCapsule(std::vector<Body<T>>& bodies) {
+void updateShape(std::vector<Body<T>>& bodies) {
   DECL_MAT_VEC_MAP_TYPES_T
   for(auto& body : bodies) {
     Vec3T c1 = Vec3T(body._ft[0], body._ft[1], body._ft[2]);
@@ -145,7 +145,7 @@ int main(int argc,char** argv) {
               << std::endl;
   }
 
-  updateCapsule(bodies);
+  updateShape(bodies);
   std::cout<<"==========================updated info==========================" << std::endl;
   for(int i=0; i<bodies.size(); i++) {
     Body<T>& b = bodies[i];
@@ -153,16 +153,16 @@ int main(int argc,char** argv) {
     auto tmpx = b._c._q.toRotationMatrix() * Vec3T(b._c._len, 0, 0);
     std::cout << indent  << b._name <<": x:" << b._x[0] << " " << b._x[1] << " " << b._x[2]
               << ", q:" << b._q.w() << " " << b._q.x() << " " << b._q.y() << " " << b._q.z()
-              << ", capsule radius: " << b._c._radius << ", len:" << b._c._len
+              << ", shape radius: " << b._c._radius << ", len:" << b._c._len
               <<", x:" << b._c._x[0] << " " << b._c._x[1] << " " << b._c._x[2]
               << ", q:" << b._c._q.w() << " " << b._c._q.x() << " " << b._c._q.y() << " " << b._c._q.z()
               << ", parent Name: " << bodies[b._parent>-1?b._parent:0]._name
               << std::endl;
   }
 
-  std::vector<Capsule<T>> ps;
+  std::vector<Shape<T>> ps;
   for(auto& b : bodies) {
-    Capsule<T> c = b._c;
+    Shape<T> c = b._c;
     c._v.setZero();
     c._w.setZero();
     c._torque.setZero();
@@ -173,7 +173,7 @@ int main(int argc,char** argv) {
   }
 
   // boundary
-  Capsule<T> b_1;
+  Shape<T> b_1;
   b_1._len = 20;
   b_1._radius = 1;
   b_1._mass = 1;
@@ -183,7 +183,7 @@ int main(int argc,char** argv) {
   b_1._isDynamic = false;
   ps.push_back(b_1);
 
-  Capsule<T> b_2;
+  Shape<T> b_2;
   b_2._len = 20;
   b_2._radius = 1;
   b_2._mass = 1;
@@ -193,7 +193,7 @@ int main(int argc,char** argv) {
   b_2._isDynamic = false;
   ps.push_back(b_2);
 
-  Capsule<T> b_3;
+  Shape<T> b_3;
   b_3._len = 20;
   b_3._radius = 1;
   b_3._mass = 1;
@@ -203,7 +203,7 @@ int main(int argc,char** argv) {
   b_3._isDynamic = false;
   ps.push_back(b_3);
 
-  Capsule<T> b_4;
+  Shape<T> b_4;
   b_4._len = 20;
   b_4._radius = 1;
   b_4._mass = 1;
@@ -213,7 +213,7 @@ int main(int argc,char** argv) {
   b_4._isDynamic = false;
   ps.push_back(b_4);
 
-  Capsule<T> b_5;
+  Shape<T> b_5;
   b_5._len = 20;
   b_5._radius = 1;
   b_5._mass = 1;
@@ -225,7 +225,7 @@ int main(int argc,char** argv) {
 
   std::shared_ptr<Geometry<T>> geometry(new Geometry<T>);
   geometry->resize(ps.size());
-  geometry->setCapsule(ps);
+  geometry->setShape(ps);
   XPBD<T> xpbd(geometry, 1.0f/60);
   // addJoint
   std::cout<<"==========================joint info==========================" << std::endl;

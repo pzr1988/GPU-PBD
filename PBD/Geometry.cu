@@ -2,8 +2,8 @@
 
 namespace GPUPBD {
 template <typename T>
-void Capsule<T>::initInertiaTensor(T rho) {
-  //https://gamedev.net/tutorials/programming/math-and-physics/capsule-inertia-tensor-r3856/
+void Shape<T>::initInertiaTensor(T rho) {
+  //https://gamedev.net/tutorials/programming/math-and-physics/shape-inertia-tensor-r3856/
   _mass = 3.14f * (_radius*_radius*_len) + 3.14f * (4.f/3.f)*_radius*_radius*_radius;
   _mass *= rho;
   T mCy = _mass * (_radius*_radius*_len)/(_radius*_radius*_len + (4.f/3.f)*_radius*_radius*_radius);
@@ -19,58 +19,58 @@ void Capsule<T>::initInertiaTensor(T rho) {
 
 template <typename T>
 size_t Geometry<T>::size() const {
-  return _nrCapsule;
+  return _nrShape;
 }
 template <typename T>
-void Geometry<T>::resize(size_t nrCapsule) {
-  _nrCapsule=nrCapsule;
-  if(_nrCapsule>_capsules.size())
-    _capsules.resize(_nrCapsule);
+void Geometry<T>::resize(size_t nrShape) {
+  _nrShape=nrShape;
+  if(_nrShape>_shapes.size())
+    _shapes.resize(_nrShape);
 }
 template <typename T>
-void Geometry<T>::reserve(size_t nrCapsule) {
-  _capsules.resize(std::max(nrCapsule,_nrCapsule));
+void Geometry<T>::reserve(size_t nrShape) {
+  _shapes.resize(std::max(nrShape,_nrShape));
 }
 template <typename T>
-void Geometry<T>::setCapsule(const std::vector<Capsule<T>>& c) {
-  if(c.size()!=_nrCapsule)
-    throw std::runtime_error("#Capsule mismatch!");
-  thrust::copy(c.begin(),c.end(),_capsules.begin());
+void Geometry<T>::setShape(const std::vector<Shape<T>>& c) {
+  if(c.size()!=_nrShape)
+    throw std::runtime_error("#Shape mismatch!");
+  thrust::copy(c.begin(),c.end(),_shapes.begin());
 }
 template <typename T>
-void Geometry<T>::setCapsule(size_t id, const Capsule<T>& c) {
-  _capsules[id]=c;
+void Geometry<T>::setShape(size_t id, const Shape<T>& c) {
+  _shapes[id]=c;
 }
 template <typename T>
-Capsule<T> Geometry<T>::operator[](size_t id) const {
-  return _capsules[id];
+Shape<T> Geometry<T>::operator[](size_t id) const {
+  return _shapes[id];
 }
 template <typename T>
-typename thrust::device_vector<Capsule<T>>::iterator Geometry<T>::begin() {
-  return _capsules.begin();
+typename thrust::device_vector<Shape<T>>::iterator Geometry<T>::begin() {
+  return _shapes.begin();
 }
 template <typename T>
-typename thrust::device_vector<Capsule<T>>::iterator Geometry<T>::end() {
-  return _capsules.begin()+_nrCapsule;
+typename thrust::device_vector<Shape<T>>::iterator Geometry<T>::end() {
+  return _shapes.begin()+_nrShape;
 }
 template <typename T>
-typename thrust::device_vector<Capsule<T>>::const_iterator Geometry<T>::begin() const {
-  return _capsules.begin();
+typename thrust::device_vector<Shape<T>>::const_iterator Geometry<T>::begin() const {
+  return _shapes.begin();
 }
 template <typename T>
-typename thrust::device_vector<Capsule<T>>::const_iterator Geometry<T>::end() const {
-  return _capsules.begin()+_nrCapsule;
+typename thrust::device_vector<Shape<T>>::const_iterator Geometry<T>::end() const {
+  return _shapes.begin()+_nrShape;
 }
 template <typename T>
-typename thrust::device_ptr<const Capsule<T>> Geometry<T>::getCapsules() const {
-  return _capsules.data();
+typename thrust::device_ptr<const Shape<T>> Geometry<T>::getShapes() const {
+  return _shapes.data();
 }
 template <typename T>
-typename thrust::device_ptr<Capsule<T>> Geometry<T>::getCapsules() {
-  return _capsules.data();
+typename thrust::device_ptr<Shape<T>> Geometry<T>::getShapes() {
+  return _shapes.data();
 }
 
 //declare instance
-template struct Capsule<LSCALAR>;
+template struct Shape<LSCALAR>;
 template struct Geometry<LSCALAR>;
 }

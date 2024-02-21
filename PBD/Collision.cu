@@ -7,23 +7,23 @@ CollisionDetector<T>::CollisionDetector(std::shared_ptr<Geometry<T>> geometry)
   :_geometry(geometry) {}
 template <typename T>
 void CollisionDetector<T>::detectCollisions() {
-  // TODO yeti, no need to create Capsule in lbvh
-  lbvh::bvh<float, Capsule<T>, AABBGetter<Capsule, T>> bvh(_geometry->begin(), _geometry->end(), true);
+  // TODO yeti, no need to create Shape in lbvh
+  lbvh::bvh<float, Shape<T>, AABBGetter<Shape, T>> bvh(_geometry->begin(), _geometry->end(), true);
   const auto bvh_dev = bvh.get_device_repr();
-  std::size_t numCapsules = _geometry->size();
-  if(_collisionsTemporary.size() < numCapsules * maxCollisionPerObject)
-    _collisionsTemporary.resize(numCapsules * maxCollisionPerObject);
+  std::size_t numShapes = _geometry->size();
+  if(_collisionsTemporary.size() < numShapes * maxCollisionPerObject)
+    _collisionsTemporary.resize(numShapes * maxCollisionPerObject);
   Constraint<T>* d_collisionsTemporary = thrust::raw_pointer_cast(_collisionsTemporary.data());
 
   // First fill all the collisions, including invalid ones
   thrust::for_each(thrust::device,
                    thrust::make_counting_iterator<std::size_t>(0),
-                   thrust::make_counting_iterator<std::size_t>(numCapsules),
+                   thrust::make_counting_iterator<std::size_t>(numShapes),
   [bvh_dev, d_collisionsTemporary] __device__ (std::size_t idx) {
     unsigned int buffer[maxCollisionPerObject];
     const auto& self = bvh_dev.objects[idx];
     // broad phase
-    auto num_found = lbvh::query_device(bvh_dev, lbvh::overlaps(AABBGetter<Capsule, T>()(self)), buffer, maxCollisionPerObject);
+    auto num_found = lbvh::query_device(bvh_dev, lbvh::overlaps(AABBGetter<Shape, T>()(self)), buffer, maxCollisionPerObject);
     num_found = min(num_found, maxCollisionPerObject);
     // narrow phase
     Constraint<T>* localMemory = d_collisionsTemporary + idx * maxCollisionPerObject;

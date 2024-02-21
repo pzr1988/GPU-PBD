@@ -15,20 +15,20 @@ int main(int argc,char** argv) {
   typedef LSCALAR T;
   DECL_MAT_VEC_MAP_TYPES_T
   constexpr std::size_t N=5;
-  std::vector<Capsule<T>> ps;
+  std::vector<Shape<T>> ps;
 
   std::mt19937 mt(123456789);
   std::uniform_real_distribution<T> uni(0, 1);
 
   T len = uni(mt);
   T radius = uni(mt)/5.f;
-  // Joint, which includes 5 capsules.
+  // Joint, which includes 5 shapes.
   QuatT fixedRotation(sqrt(24)/5,0,0,1/5.0);
   fixedRotation.normalize();
   QuatT initQ(1,0,0,0);
   auto prevX = Vec3T(-2,1,0);
   for(int i=0; i<N; i++) {
-    Capsule<T> c;
+    Shape<T> c;
     c._len = len;
     c._radius = radius;
     QuatT q = fixedRotation * initQ;
@@ -48,7 +48,7 @@ int main(int argc,char** argv) {
 
   prevX = Vec3T(2, 1, 0);
   for(int i=0; i<N; i++) {
-    Capsule<T> c;
+    Shape<T> c;
     c._len = len;
     c._radius = radius;
     QuatT q(uni(mt),0,0,uni(mt));
@@ -66,7 +66,7 @@ int main(int argc,char** argv) {
   }
 
   // boundary
-  Capsule<T> b_1;
+  Shape<T> b_1;
   b_1._len = 20;
   b_1._radius = 1;
   b_1._mass = 1;
@@ -76,7 +76,7 @@ int main(int argc,char** argv) {
   b_1._isDynamic = false;
   ps.push_back(b_1);
 
-  Capsule<T> b_2;
+  Shape<T> b_2;
   b_2._len = 18.;
   b_2._radius = 1;
   b_2._mass = 1;
@@ -86,7 +86,7 @@ int main(int argc,char** argv) {
   b_2._isDynamic = false;
   ps.push_back(b_2);
 
-  Capsule<T> b_3;
+  Shape<T> b_3;
   b_3._len = 18;
   b_3._radius = 1;
   b_3._mass = 1;
@@ -98,7 +98,7 @@ int main(int argc,char** argv) {
 
   std::shared_ptr<Geometry<T>> geometry(new Geometry<T>);
   geometry->resize(ps.size());
-  geometry->setCapsule(ps);
+  geometry->setShape(ps);
   XPBD<T> xpbd(geometry, 1.0f/60);
   xpbd.addJoint(0,1,ps[0].maxCorner(),ps[1].minCorner());
   xpbd.addJoint(1,2,ps[1].maxCorner(),ps[2].minCorner());
