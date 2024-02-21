@@ -163,6 +163,9 @@ int main(int argc,char** argv) {
   std::vector<Capsule<T>> ps;
   for(auto& b : bodies) {
     Capsule<T> c = b._c;
+    c._v.setZero();
+    c._w.setZero();
+    c._torque.setZero();
     c.initInertiaTensor();
     c._force = Vec3T(0, -9.8f*c._mass,0);
     c._isDynamic = true;
@@ -192,11 +195,11 @@ int main(int argc,char** argv) {
   auto shapeCollision=visualizeOrUpdateCollision(*geometry,xpbd.getDetector());
   drawer.addShape(shapeGeometry);
   drawer.addShape(shapeCollision);
-  // drawer.addCamera3D(90,Eigen::Matrix<GLfloat,3,1>(0,1,0),Eigen::Matrix<GLfloat,3,1>(0,0,5),Eigen::Matrix<GLfloat,3,1>(0,0,-1));
-  // drawer.getCamera3D()->setManipulator(std::shared_ptr<DRAWER::CameraManipulator>(new DRAWER::FirstPersonCameraManipulator(drawer.getCamera3D())));
-  // drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::ImGuiPlugin([&]() {
-  //   drawer.getCamera3D()->getManipulator()->imGuiCallback();
-  // })));
+  drawer.addCamera3D(90,Eigen::Matrix<GLfloat,3,1>(0,1,0),Eigen::Matrix<GLfloat,3,1>(0,0,5),Eigen::Matrix<GLfloat,3,1>(0,0,-1));
+  drawer.getCamera3D()->setManipulator(std::shared_ptr<DRAWER::CameraManipulator>(new DRAWER::FirstPersonCameraManipulator(drawer.getCamera3D())));
+  drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::ImGuiPlugin([&]() {
+    drawer.getCamera3D()->getManipulator()->imGuiCallback();
+  })));
   bool sim=false;
   drawer.setFrameFunc([&](std::shared_ptr<DRAWER::SceneNode>& root) {
     if(sim) {

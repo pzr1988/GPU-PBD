@@ -1,3 +1,4 @@
+#include "Pragma.h"
 #include "XPBD.h"
 #include <cmath>
 #include <thrust/sort.h>
@@ -26,7 +27,7 @@ void XPBD<T>::integrate() {
     capsule._xPrev = capsule._x;
     capsule._qPrev = capsule._q;
     if(capsule._isDynamic) {
-      capsule._v += capsule._force*dt/capsule._mass;
+      capsule._v += capsule._force*dt/max(epsDir,capsule._mass);
       capsule._x += capsule._v*dt;
       capsule._R = capsule._q.toRotationMatrix();
       capsule._Iinv = capsule._R*capsule._Ibodyinv*capsule._R.transpose();
@@ -86,7 +87,7 @@ void XPBD<T>::relaxConstraint() {
     auto constraintViolation = constraint._type == JointAngular ? constraint._theta
                                : (globalPointA-globalPointB).dot(constraint._globalNormal);
     auto alpha = constraint._alpha / (dt*dt);
-    auto deltaLambda = (-constraintViolation-d_lambda[idx]*alpha) / (wA+wB+alpha);
+    auto deltaLambda = (-constraintViolation-d_lambda[idx]*alpha)/max(epsDir,(wA+wB+alpha));
     d_lambda[idx] += deltaLambda;
     pulse = constraint._type == JointAngular ? deltaLambda * constraint._axis
             : deltaLambda * constraint._globalNormal;
@@ -101,8 +102,8 @@ void XPBD<T>::relaxConstraint() {
       d_update[2*idx]._q = getDeltaRot(cA, pulse).coeffs();
       d_update[2*idx+1]._q = -getDeltaRot(cB, pulse).coeffs();
     } else {
-      d_update[2*idx]._x = pulse / cA._mass;
-      d_update[2*idx+1]._x = -pulse / cB._mass;
+      d_update[2*idx]._x = pulse/max(epsDir,cA._mass);
+      d_update[2*idx+1]._x = -pulse/max(epsDir,cB._mass);
       d_update[2*idx]._q = getDeltaRot(cA, placementPointA, pulse).coeffs();
       d_update[2*idx+1]._q = -getDeltaRot(cB, placementPointB, pulse).coeffs();
     }
@@ -123,7 +124,7 @@ void XPBD<T>::updateJointConstraint() {
     auto globalPointB = cB._q.toRotationMatrix()*constraint._localPointB+cB._x;
     auto distSqr = (globalPointA - globalPointB).squaredNorm();
     if(distSqr > epsDist * epsDist)
-      constraint._globalNormal = (globalPointA - globalPointB) / sqrt(distSqr);
+      constraint._globalNormal = (globalPointA-globalPointB)/max(epsDir,sqrt(distSqr));
     else
       constraint._globalNormal.setZero();
   });
@@ -138,7 +139,7 @@ void XPBD<T>::updateJointConstraint() {
     auto len = sqrt(deltaQ.squaredNorm());
     constraint._theta = 2*asin(len);
     if(constraint._theta > epsDir)
-      constraint._axis = deltaQ/len;
+      constraint._axis = deltaQ/max(epsDir,len);
     else {
       constraint._axis=Vec3T(0,0,1);
       constraint._theta=0;
@@ -237,7 +238,7 @@ DEVICE_HOST T XPBD<T>::computeGeneralizedInversMass(const Capsule<T>& c, const V
     return 0;
   auto Iinv = c.getInertiaTensorInv();
   auto rCrossN = r.cross(n);
-  auto w = 1.0f/c._mass+rCrossN.transpose()*Iinv*rCrossN;
+  auto w = 1.0f/max(epsDir,c._mass)+rCrossN.transpose()*Iinv*rCrossN;
   return w;
 }
 template <typename T>
