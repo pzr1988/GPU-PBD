@@ -63,6 +63,16 @@ struct ContactManifold {
   DEVICE_HOST bool canCollide() const {
     return _numCollision < maxCollisionPerObject && _lhs->_parent != _rhsId && _rhs->_parent != _lhsId;
   }
+  DEVICE_HOST void swap() {
+    unsigned int tmpId = _lhsId;
+    _lhsId=_rhsId, _rhsId=tmpId;
+    const Shape<T> *tmpP = _lhs;
+    _lhs=_rhs, _rhs=tmpP;
+    Vec3T tmpV = _lhsMinCorner;
+    _lhsMinCorner=_rhsMinCorner, _rhsMinCorner=tmpV;
+    tmpV = _lhsMaxCorner;
+    _lhsMaxCorner=_rhsMaxCorner, _rhsMaxCorner=tmpV;
+  }
 };
 
 //The collisionDetector has the capability of detecting all pairs of collisions between all pairs of shapes

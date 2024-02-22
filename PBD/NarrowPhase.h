@@ -1,6 +1,7 @@
 #ifndef NARROW_PHASE_H
 #define NARROW_PHASE_H
 
+#include "Geometry.h"
 #include "Pragma.h"
 #include "Collision.h"
 
@@ -13,6 +14,22 @@ class NarrowPhase {
   static DEVICE_HOST int narrowPhaseCollision(ContactManifold<T>& contactM,size_t maxCollisionsPerNode) noexcept {
     if(contactM._numCollision >= maxCollisionPerObject)
       return 0;
+    if(ShapeType::Capsule==contactM._lhs->_type && ShapeType::Capsule==contactM._rhs->_type)
+      return generateManifoldCapsuleCapsule(contactM, maxCollisionsPerNode);
+    if(ShapeType::Capsule==contactM._lhs->_type && ShapeType::Box==contactM._rhs->_type)
+      return generateManifoldCapsuleBox(contactM, maxCollisionsPerNode);
+    if(ShapeType::Box==contactM._lhs->_type && ShapeType::Capsule==contactM._rhs->_type) {
+      contactM.swap();
+      int result =  generateManifoldCapsuleBox(contactM, maxCollisionsPerNode);
+      contactM.swap();
+      return result;
+    }
+    if(ShapeType::Box==contactM._lhs->_type && ShapeType::Box==contactM._rhs->_type)
+      return generateManifoldBoxBox(contactM, maxCollisionsPerNode);
+    return 0;
+  }
+ private:
+  static DEVICE_HOST int generateManifoldCapsuleCapsule(ContactManifold<T>& contactM, size_t maxCollisionsPerNode) {
     int numCollision = 0;
     Vec3T &cA1 = contactM._lhsMinCorner;
     Vec3T &cA2 = contactM._lhsMaxCorner;
@@ -122,7 +139,6 @@ class NarrowPhase {
     }
     return numCollision;
   }
- private:
   // For internal use: sphere-sphere collision
   static DEVICE_HOST int generateManifoldSphereSphereInternal(ContactManifold<T>& contactM, size_t maxCollisionsPerNode) {
     Vec3T &cA1 = contactM._lhsMinCorner;
@@ -236,6 +252,12 @@ class NarrowPhase {
       originCollision._globalNormal = collision._globalNormal;
       originCollision._isValid = true;
     }
+  }
+  static DEVICE_HOST int generateManifoldCapsuleBox(ContactManifold<T>& contactM, size_t maxCollisionsPerNode) {
+    return 0;
+  }
+  static DEVICE_HOST int generateManifoldBoxBox(ContactManifold<T>& contactM, size_t maxCollisionsPerNode) {
+    return 0;
   }
 };
 }
