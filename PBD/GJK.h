@@ -38,6 +38,7 @@ struct Trans {
   DECL_MAT_VEC_MAP_TYPES_T
   Vec3T _x;
   QuatT _q;
+  DEVICE_HOST Trans(const Vec3T& x, const QuatT& q):_x(x),_q(q) {}
 };
 
 template <typename T>

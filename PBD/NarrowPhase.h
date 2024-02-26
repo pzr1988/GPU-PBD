@@ -255,8 +255,8 @@ class NarrowPhase {
     }
   }
   static DEVICE_HOST int generateManifoldCapsuleBox(ContactManifold<T>& contactM, size_t maxCollisionsPerNode) {
-    const auto sA=contactM._lhs;
-    const auto sB=contactM._rhs;
+    const Shape<T>* sA=contactM._lhs;
+    const Shape<T>* sB=contactM._rhs;
     if(sA && sA->isCapsule() && sB) {
       // OMP_CRITICAL_ {
       //   //facets
@@ -271,15 +271,14 @@ class NarrowPhase {
       //     _edgeCache[sB]=sB->edges();
       // }
       // auto FA=_facetCache.find(sA)->second;
-      // auto FB=_facetCache.find(sB)->second;
+      Facet<T> FB[6];
+      sB->getFacets(FB);
       // auto EA=_edgeCache.find(sA)->second;
       // auto EB=_edgeCache.find(sB)->second;
       Vec3T pAL,pBL;
       bool intersect;
-      Trans<T> transA;
-      transA._x = sA->_x, transA._q = sA->_q;
-      Trans<T> transB;
-      transB._x = sB->_x, transB._q = sB->_q;
+      Trans<T> transA(sA->_x, sA->_q);
+      Trans<T> transB(sB->_x, sB->_q);
       T distSqr=GJK<T>::runGJK(sA,sB,transA,transB,pAL,pBL,&intersect);
       if(intersect || distSqr<epsDist*epsDist) {
         // SAT::generateManifold(sA,sB,FA,FB,EA,EB,m._tA,m._tB,m);
@@ -287,25 +286,34 @@ class NarrowPhase {
         //   p._ptA+=p._nA2B*sA->radius();
         // }
       } else if(distSqr<sA->_radius*sA->_radius) {
-        // Facet fA;
-        // Vec3T cA1=ROT(m._tA)*sA->minCorner().template cast<T>()+CTR(m._tA);
-        // Vec3T cA2=ROT(m._tA)*sA->maxCorner().template cast<T>()+CTR(m._tA);
-        // fA._boundary.push_back(ROT(m._tB).transpose()*(cA1-CTR(m._tB)));
-        // fA._boundary.push_back(ROT(m._tB).transpose()*(cA2-CTR(m._tB)));
-        // for(const auto& fB:FB)
-        //   if(abs(fB._n.dot(fA._boundary[0]-fA._boundary[1]))<_epsDir && (fA._boundary[0]-fB._boundary[0]).dot(fB._n)>0) {
-        //     //we can return multiple contacts
-        //     SAT::clip(fA,fB);
-        //     for(const auto& pA:fA._boundary) {
-        //       p._ptA=ROT(m._tB)*(pA-fB._n*sA->radius())+CTR(m._tB);
-        //       p._ptB=ROT(m._tB)*(pA-fB._n*(pA-fB._boundary[0]).dot(fB._n))+CTR(m._tB);
-        //       p._nA2B=-ROT(m._tB)*fB._n;
-        //       m._points.push_back(p);
-        //     }
-        //     return true;
-        //   }
+        Vec3T cA1=sA->globalMinCorner();
+        Vec3T cA2=sA->globalMaxCorner();
+        Vec3T fABoundary[2] = {sB->_q.conjugate().toRotationMatrix()*(cA1-sB->_x), sB->_q.conjugate().toRotationMatrix()*(cA2-sB->_x)};
+        for(int i=0; i<6; i++) {
+          const Facet<T>& fB = FB[i];
+          if(abs(fB._n.dot(fABoundary[0]-fABoundary[1]))<epsDir && (fABoundary[0]-fB._boundary[0]).dot(fB._n)>0) {
+            //we can return multiple contacts
+            // SAT::clip(fA,fB);
+            int numFound = 0;
+            for(int j=0; j<2; j++) {
+              if(contactM._numCollision < maxCollisionsPerNode) {
+                const Vec3T& pA = fABoundary[j];
+                Vec3T globalPointA=sB->_q.toRotationMatrix()*(pA-fB._n*sA->_radius)+sB->_x;
+                contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
+                contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
+                contactM._localMemory[contactM._numCollision]._localPointA = contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
+                contactM._localMemory[contactM._numCollision]._localPointB = pA-fB._n*(pA-fB._boundary[0]).dot(fB._n);
+                contactM._localMemory[contactM._numCollision]._globalNormal = -sB->_q.toRotationMatrix()*fB._n;
+                contactM._localMemory[contactM._numCollision]._isValid = true;
+                contactM._numCollision++;
+                numFound++;
+              } else break;
+            }
+            return numFound;
+          }
+        }
         //just return one closest point
-        if(distSqr>epsDist*epsDist) {
+        if(distSqr>epsDist*epsDist && contactM._numCollision < maxCollisionsPerNode) {
           Vec3T globalPointA = sA->_q.toRotationMatrix()*pAL+sA->_x;
           Vec3T globalPointB = sB->_q.toRotationMatrix()*pBL+sB->_x;
           Vec3T nA2B = (globalPointB-globalPointA)/sqrt((double)distSqr);

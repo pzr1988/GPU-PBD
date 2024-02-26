@@ -20,6 +20,12 @@ enum class ShapeType {
   Unknown,
 };
 template <typename T>
+struct Facet {
+  DECL_MAT_VEC_MAP_TYPES_T
+  Vec3T _boundary[4];
+  Vec3T _n;
+};
+template <typename T>
 struct Shape {
   DECL_MAT_VEC_MAP_TYPES_T
   /* Constant quantities */
@@ -90,7 +96,49 @@ struct Shape {
     return maxV;
   }
   DEVICE_HOST bool isCapsule() const {
-    return ShapeType::Capsule==_type; 
+    return ShapeType::Capsule==_type;
+  }
+  DEVICE_HOST bool isBox() const {
+    return ShapeType::Box==_type;
+  }
+  DEVICE_HOST void getFacets(Facet<T> facets[6]) const {
+    Vec3T pos;
+    Vec3T _minC = minCorner();
+    Vec3T _maxC = maxCorner();
+    for(int a=0; a<3; a++) {
+      int a2=(a+1)%3;
+      int a3=(a+2)%3;
+      for(int d=0; d<2; d++) {
+        Facet<T>& f = facets[2*a+d];
+        //np
+        if(d==0) {
+          f._n=Vec3T::Unit(a);
+          pos[a]=_maxC[a];
+        } else {
+          f._n=-Vec3T::Unit(a);
+          pos[a]=_minC[a];
+          T tmp=a2;
+          a2=a3;
+          a3=tmp;
+        }
+        //v0
+        pos[a2]=_minC[a2];
+        pos[a3]=_minC[a3];
+        f._boundary[0]=pos;
+        //v1
+        pos[a2]=_maxC[a2];
+        pos[a3]=_minC[a3];
+        f._boundary[1]=pos;
+        //v2
+        pos[a2]=_maxC[a2];
+        pos[a3]=_maxC[a3];
+        f._boundary[2]=pos;
+        //v3
+        pos[a2]=_minC[a2];
+        pos[a3]=_maxC[a3];
+        f._boundary[3]=pos;
+      }
+    }
   }
 };
 
