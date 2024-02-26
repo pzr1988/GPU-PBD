@@ -66,7 +66,7 @@ DEVICE_HOST T distToSqrTriangle(const Eigen::Matrix<T,3,1>& pt,
   if(!bary.template cast<double>().array().isFinite().all())
     systemInvertible=false;
   if(!systemInvertible || bary.minCoeff()<0) {
-    T dist,minDist=100000.f;
+    T dist,minDist=FLT_MAX;
     //edge
     bool needTestV[3]= {true,true,true};
     for(int d=0; d<3; d++) {

@@ -70,6 +70,25 @@ struct Shape {
     auto R = _q.toRotationMatrix();
     return R*_Ibodyinv*R.transpose();
   }
+  DEVICE_HOST Vec3T support(const Vec3T& D,int& id) const {
+    id=-1;
+    Vec3T v,maxV;
+    T dist,maxDist=-FLT_MAX;
+    Vec3T _minC = minCorner();
+    Vec3T _maxC = maxCorner();
+    for(int i=0; i<8; i++) {
+      v[0]=(i&1)?_maxC[0]:_minC[0];
+      v[1]=(i&2)?_maxC[1]:_minC[1];
+      v[2]=(i&4)?_maxC[2]:_minC[2];
+      dist=v.dot(D);
+      if(dist>maxDist) {
+        maxDist=dist;
+        maxV=v;
+        id=i;
+      }
+    }
+    return maxV;
+  }
 };
 
 //The geometry stores a vector of shapes

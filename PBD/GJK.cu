@@ -27,8 +27,8 @@ DEVICE_HOST void updateFeat(GJKPoint<T> v[4],int& nrP,int* feat) {
 }
 template <typename T>
 DEVICE_HOST void GJKPoint<T>::calculate(const Trans<T>& transA,const Trans<T>& transB) {
-  _ptAL = transA._q.toRotationMatrix()*_ptAL+transA._x;
-  _ptBL-= transB._q.toRotationMatrix()*_ptBL+transB._x;
+  _ptAB = transA._q.toRotationMatrix()*_ptAL+transA._x;
+  _ptAB-= transB._q.toRotationMatrix()*_ptBL+transB._x;
 }
 template <typename T>
 DEVICE_HOST typename GJK<T>::Vec3T GJK<T>::computeD(const GJKPoint<T> v[4],int nrP,T* bary,
@@ -58,7 +58,7 @@ DEVICE_HOST T GJK<T>::runGJK(const Shape<T>* A,
   v[0]._ptAL=A->support(Vec3T::Zero(),v[0]._idA);
   v[0]._ptBL=B->support(Vec3T::Zero(),v[0]._idB);
   v[0].calculate(transA,transB);
-  dist=minDist=100000.f;
+  dist=minDist=FLT_MAX;
   D=v[0]._ptAB;
   //main loop
   if(intersect)
