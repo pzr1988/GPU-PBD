@@ -89,6 +89,9 @@ struct Shape {
     }
     return maxV;
   }
+  DEVICE_HOST bool isCapsule() const {
+    return ShapeType::Capsule==_type; 
+  }
 };
 
 //The geometry stores a vector of shapes

@@ -14,7 +14,7 @@ DEVICE_HOST T distToSqrLineSegment(const Eigen::Matrix<T,3,1>& pt,
   Vec3T LHSE=v[1]-v[0],RHSE=pt-v[0];
   T alpha;
   bool systemInvertible=true;
-  if(abs(LHSE.dot(LHSE)) > epsDir)
+  if(abs(LHSE.dot(LHSE)) > epsDist)
     alpha=RHSE.dot(LHSE)/LHSE.dot(LHSE);
   else {
     systemInvertible=false;
@@ -57,7 +57,7 @@ DEVICE_HOST T distToSqrTriangle(const Eigen::Matrix<T,3,1>& pt,
   //bary
   bool systemInvertible=true;
   T det = (LHS.transpose()*LHS).determinant();
-  if(abs(det)>epsDir) {
+  if(abs(det)>epsDist) {
     bary.template segment<2>(1)=(LHS.transpose()*LHS).inverse()*(LHS.transpose()*RHS);
     bary[0]=1-bary.template segment<2>(1).sum();
   } else {
@@ -73,7 +73,7 @@ DEVICE_HOST T distToSqrTriangle(const Eigen::Matrix<T,3,1>& pt,
       //|v[(d+1)%3+1]*alpha+v[d+1]*(1-alpha)-v[0]|^2
       Vec3T LHSE=v[(d+1)%3]-v[d],RHSE=pt-v[d];
       systemInvertible=true;
-      if(abs(LHSE.dot(LHSE)) > epsDir)
+      if(abs(LHSE.dot(LHSE)) > epsDist)
         alpha=RHSE.dot(LHSE)/LHSE.dot(LHSE);
       else {
         systemInvertible=false;
@@ -124,8 +124,8 @@ DEVICE_HOST T distToSqrTetrahedron(const Eigen::Matrix<T,3,1>& pt,
   LHS.col(2)=v[3]-v[0];
   Vec3T RHS=pt-v[0];
   bool inside=true;
-  T det=LHS.determinate();
-  if(abs(det)>epsDir) {
+  T det=LHS.determinant();
+  if(abs(det)>epsDist) {
     bary.template segment<3>(1)=LHS.inverse()*RHS;
     bary[0]=1-bary.template segment<3>(1).sum();
   } else {

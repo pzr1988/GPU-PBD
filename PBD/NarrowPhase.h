@@ -4,6 +4,7 @@
 #include "Geometry.h"
 #include "Pragma.h"
 #include "Collision.h"
+#include "GJK.h"
 
 namespace GPUPBD {
 template<typename T>
@@ -254,6 +255,72 @@ class NarrowPhase {
     }
   }
   static DEVICE_HOST int generateManifoldCapsuleBox(ContactManifold<T>& contactM, size_t maxCollisionsPerNode) {
+    const auto sA=contactM._lhs;
+    const auto sB=contactM._rhs;
+    if(sA && sA->isCapsule() && sB) {
+      // OMP_CRITICAL_ {
+      //   //facets
+      //   if(_facetCache.find(sA)==_facetCache.end())
+      //     _facetCache[sA]=sA->facets();
+      //   if(_facetCache.find(sB)==_facetCache.end())
+      //     _facetCache[sB]=sB->facets();
+      //   //edges
+      //   if(_edgeCache.find(sA)==_edgeCache.end())
+      //     _edgeCache[sA]=sA->edges();
+      //   if(_edgeCache.find(sB)==_edgeCache.end())
+      //     _edgeCache[sB]=sB->edges();
+      // }
+      // auto FA=_facetCache.find(sA)->second;
+      // auto FB=_facetCache.find(sB)->second;
+      // auto EA=_edgeCache.find(sA)->second;
+      // auto EB=_edgeCache.find(sB)->second;
+      Vec3T pAL,pBL;
+      bool intersect;
+      Trans<T> transA;
+      transA._x = sA->_x, transA._q = sA->_q;
+      Trans<T> transB;
+      transB._x = sB->_x, transB._q = sB->_q;
+      T distSqr=GJK<T>::runGJK(sA,sB,transA,transB,pAL,pBL,&intersect);
+      if(intersect || distSqr<epsDist*epsDist) {
+        // SAT::generateManifold(sA,sB,FA,FB,EA,EB,m._tA,m._tB,m);
+        // for(auto& p:m._points) {
+        //   p._ptA+=p._nA2B*sA->radius();
+        // }
+      } else if(distSqr<sA->_radius*sA->_radius) {
+        // Facet fA;
+        // Vec3T cA1=ROT(m._tA)*sA->minCorner().template cast<T>()+CTR(m._tA);
+        // Vec3T cA2=ROT(m._tA)*sA->maxCorner().template cast<T>()+CTR(m._tA);
+        // fA._boundary.push_back(ROT(m._tB).transpose()*(cA1-CTR(m._tB)));
+        // fA._boundary.push_back(ROT(m._tB).transpose()*(cA2-CTR(m._tB)));
+        // for(const auto& fB:FB)
+        //   if(abs(fB._n.dot(fA._boundary[0]-fA._boundary[1]))<_epsDir && (fA._boundary[0]-fB._boundary[0]).dot(fB._n)>0) {
+        //     //we can return multiple contacts
+        //     SAT::clip(fA,fB);
+        //     for(const auto& pA:fA._boundary) {
+        //       p._ptA=ROT(m._tB)*(pA-fB._n*sA->radius())+CTR(m._tB);
+        //       p._ptB=ROT(m._tB)*(pA-fB._n*(pA-fB._boundary[0]).dot(fB._n))+CTR(m._tB);
+        //       p._nA2B=-ROT(m._tB)*fB._n;
+        //       m._points.push_back(p);
+        //     }
+        //     return true;
+        //   }
+        //just return one closest point
+        if(distSqr>epsDist*epsDist) {
+          Vec3T globalPointA = sA->_q.toRotationMatrix()*pAL+sA->_x;
+          Vec3T globalPointB = sB->_q.toRotationMatrix()*pBL+sB->_x;
+          Vec3T nA2B = (globalPointB-globalPointA)/sqrt((double)distSqr);
+          globalPointA += nA2B*sA->_radius;
+          contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
+          contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
+          contactM._localMemory[contactM._numCollision]._localPointA = contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
+          contactM._localMemory[contactM._numCollision]._localPointB = pBL;
+          contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
+          contactM._localMemory[contactM._numCollision]._isValid = true;
+          contactM._numCollision++;
+          return 1;
+        }
+      }
+    } else return 0;
     return 0;
   }
   static DEVICE_HOST int generateManifoldBoxBox(ContactManifold<T>& contactM, size_t maxCollisionsPerNode) {
