@@ -3,7 +3,7 @@
 
 namespace GPUPBD {
 template <int DIM, typename T>
-void updateFeat(GJKPoint<T> v[4],int& nrP,int* feat) {
+DEVICE_HOST void updateFeat(GJKPoint<T> v[4],int& nrP,int* feat) {
   if(feat[0]==-1)
     return;
   else if(DIM>=3 && feat[2]>=0) {
@@ -26,15 +26,15 @@ void updateFeat(GJKPoint<T> v[4],int& nrP,int* feat) {
   }
 }
 template <typename T>
-void GJKPoint<T>::calculate(const Trans<T>& transA,const Trans<T>& transB) {
+DEVICE_HOST void GJKPoint<T>::calculate(const Trans<T>& transA,const Trans<T>& transB) {
   _ptAL = transA._q.toRotationMatrix()*_ptAL+transA._x;
   _ptBL-= transB._q.toRotationMatrix()*_ptBL+transB._x;
 }
 template <typename T>
-typename GJK<T>::Vec3T GJK<T>::computeD(const GJKPoint<T> v[4],int nrP,T* bary,
-                                        const Trans<T>& transA,
-                                        const Trans<T>& transB,
-                                        Vec3T& pAL,Vec3T& pBL) {
+DEVICE_HOST typename GJK<T>::Vec3T GJK<T>::computeD(const GJKPoint<T> v[4],int nrP,T* bary,
+    const Trans<T>& transA,
+    const Trans<T>& transB,
+    Vec3T& pAL,Vec3T& pBL) {
   pAL=pBL=Vec3T::Zero();
   for(int d=0; d<nrP; d++) {
     pAL+=v[d]._ptAL*bary[d];
@@ -43,11 +43,11 @@ typename GJK<T>::Vec3T GJK<T>::computeD(const GJKPoint<T> v[4],int nrP,T* bary,
   return (transA._q.toRotationMatrix()*pAL+transA._x)-(transB._q.toRotationMatrix()*pBL+transB._x);
 }
 template <typename T>
-T GJK<T>::runGJK(const Shape<T>* A,
-                 const Shape<T>* B,
-                 const Trans<T>& transA,
-                 const Trans<T>& transB,
-                 Vec3T& pAL,Vec3T& pBL,bool* intersect) {
+DEVICE_HOST T GJK<T>::runGJK(const Shape<T>* A,
+                             const Shape<T>* B,
+                             const Trans<T>& transA,
+                             const Trans<T>& transB,
+                             Vec3T& pAL,Vec3T& pBL,bool* intersect) {
   int nrP;
   Vec3T cp,D;
   GJKPoint<T> v[4];

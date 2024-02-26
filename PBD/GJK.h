@@ -6,7 +6,7 @@
 namespace GPUPBD {
 
 template <typename T>
-void sort2(T& a,T& b) {
+DEVICE_HOST void sort2(T& a,T& b) {
   if(a>b) {
     T tmp = a;
     a = b;
@@ -14,7 +14,7 @@ void sort2(T& a,T& b) {
   }
 }
 template <typename T>
-void sort3(T& a,T& b,T& c) {
+DEVICE_HOST void sort3(T& a,T& b,T& c) {
   T tmp;
   if(a>b) {
     tmp = a;
@@ -42,22 +42,22 @@ struct Trans {
 template <typename T>
 struct GJKPoint {
   DECL_MAT_VEC_MAP_TYPES_T
-  void calculate(const Trans<T>& transA,const Trans<T>& transB);
+  DEVICE_HOST void calculate(const Trans<T>& transA,const Trans<T>& transB);
   Vec3T _ptAL,_ptBL,_ptAB;
   int _idA,_idB;
 };
 template <typename T>
 struct GJK {
   DECL_MAT_VEC_MAP_TYPES_T
-  static Vec3T computeD(const GJKPoint<T> v[4],int nrP,T* bary,
-                        const Trans<T>& transA,
-                        const Trans<T>& transB,
-                        Vec3T& pAL,Vec3T& pBL);
-  static T runGJK(const Shape<T>* A,
-                  const Shape<T>* B,
-                  const Trans<T>& transA,
-                  const Trans<T>& transB,
-                  Vec3T& pAL,Vec3T& pBL,bool* intersect);
+  static DEVICE_HOST Vec3T computeD(const GJKPoint<T> v[4],int nrP,T* bary,
+                                    const Trans<T>& transA,
+                                    const Trans<T>& transB,
+                                    Vec3T& pAL,Vec3T& pBL);
+  static DEVICE_HOST T runGJK(const Shape<T>* A,
+                              const Shape<T>* B,
+                              const Trans<T>& transA,
+                              const Trans<T>& transB,
+                              Vec3T& pAL,Vec3T& pBL,bool* intersect);
 };
 }
 #endif
