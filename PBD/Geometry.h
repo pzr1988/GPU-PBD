@@ -22,7 +22,7 @@ enum class ShapeType {
 template <typename T>
 struct Facet {
   DECL_MAT_VEC_MAP_TYPES_T
-  Vec3T _boundary[4];
+  Vec3T _boundary[BOUNDARYNUM];
   Vec3T _n;
 };
 template <typename T>
@@ -101,7 +101,7 @@ struct Shape {
   DEVICE_HOST bool isBox() const {
     return ShapeType::Box==_type;
   }
-  DEVICE_HOST void getFacets(Facet<T> facets[6]) const {
+  DEVICE_HOST void getFacets(Facet<T> facets[FACETSNUM]) const {
     Vec3T pos;
     Vec3T _minC = minCorner();
     Vec3T _maxC = maxCorner();

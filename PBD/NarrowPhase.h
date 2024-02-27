@@ -271,7 +271,7 @@ class NarrowPhase {
       //     _edgeCache[sB]=sB->edges();
       // }
       // auto FA=_facetCache.find(sA)->second;
-      Facet<T> FB[6];
+      Facet<T> FB[FACETSNUM];
       sB->getFacets(FB);
       // auto EA=_edgeCache.find(sA)->second;
       // auto EB=_edgeCache.find(sB)->second;
@@ -289,7 +289,7 @@ class NarrowPhase {
         Vec3T cA1=sA->globalMinCorner();
         Vec3T cA2=sA->globalMaxCorner();
         Vec3T fABoundary[2] = {sB->_q.conjugate().toRotationMatrix()*(cA1-sB->_x), sB->_q.conjugate().toRotationMatrix()*(cA2-sB->_x)};
-        for(int i=0; i<6; i++) {
+        for(int i=0; i<FACETSNUM; i++) {
           const Facet<T>& fB = FB[i];
           if(abs(fB._n.dot(fABoundary[0]-fABoundary[1]))<epsDir && (fABoundary[0]-fB._boundary[0]).dot(fB._n)>0) {
             //we can return multiple contacts
