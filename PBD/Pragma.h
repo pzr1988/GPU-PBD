@@ -27,6 +27,10 @@
 #define FACETSNUM 6
 const unsigned int maxCollisionPerObject=8;
 
+//assert
+#define ROT(A) A._q.toRotationMatrix()
+#define CTR(A) A._x
+
 #include <Eigen/Dense>
 
 template <typename T>

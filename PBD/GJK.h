@@ -86,8 +86,8 @@ DEVICE_HOST void updateFeat(GJKPoint<T> v[4],int& nrP,int* feat) {
 }
 template <typename T>
 DEVICE_HOST void GJKPoint<T>::calculate(const Trans<T>& transA,const Trans<T>& transB) {
-  _ptAB = transA._q.toRotationMatrix()*_ptAL+transA._x;
-  _ptAB-= transB._q.toRotationMatrix()*_ptBL+transB._x;
+  _ptAB =ROT(transA)*_ptAL+CTR(transA);
+  _ptAB-=ROT(transB)*_ptBL+CTR(transB);
 }
 template <typename T>
 DEVICE_HOST typename GJK<T>::Vec3T GJK<T>::computeD(const GJKPoint<T> v[4],int nrP,T* bary,
@@ -99,7 +99,7 @@ DEVICE_HOST typename GJK<T>::Vec3T GJK<T>::computeD(const GJKPoint<T> v[4],int n
     pAL+=v[d]._ptAL*bary[d];
     pBL+=v[d]._ptBL*bary[d];
   }
-  return (transA._q.toRotationMatrix()*pAL+transA._x)-(transB._q.toRotationMatrix()*pBL+transB._x);
+  return (ROT(transA)*pAL+CTR(transA))-(ROT(transB)*pBL+CTR(transB));
 }
 template <typename T>
 DEVICE_HOST T GJK<T>::runGJK(const Shape<T>* A,
@@ -124,8 +124,8 @@ DEVICE_HOST T GJK<T>::runGJK(const Shape<T>* A,
     *intersect=false;
   while(true) {
     //insert new point
-    v[nrP]._ptAL=A->support(-transA._q.inverse().toRotationMatrix()*D,v[nrP]._idA);
-    v[nrP]._ptBL=B->support( transB._q.inverse().toRotationMatrix()*D,v[nrP]._idB);
+    v[nrP]._ptAL=A->support(-ROT(transA).transpose()*D,v[nrP]._idA);
+    v[nrP]._ptBL=B->support( ROT(transB).transpose()*D,v[nrP]._idB);
     v[nrP++].calculate(transA,transB);
     //calculate distance
     if(nrP==4) {

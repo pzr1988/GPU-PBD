@@ -271,14 +271,14 @@ class NarrowPhase {
       //     _edgeCache[sB]=sB->edges();
       // }
       // auto FA=_facetCache.find(sA)->second;
-      Facet<T> FB[FACETSNUM];
+      FixedVector<Facet<T>,FACETSNUM> FB;
       sB->getFacets(FB);
       // auto EA=_edgeCache.find(sA)->second;
       // auto EB=_edgeCache.find(sB)->second;
       Vec3T pAL,pBL;
       bool intersect;
-      Trans<T> transA(sA->_x, sA->_q);
-      Trans<T> transB(sB->_x, sB->_q);
+      const Trans<T> transA(sA->_x, sA->_q);
+      const Trans<T> transB(sB->_x, sB->_q);
       T distSqr=GJK<T>::runGJK(sA,sB,transA,transB,pAL,pBL,&intersect);
       if(intersect || distSqr<epsDist*epsDist) {
         // SAT::generateManifold(sA,sB,FA,FB,EA,EB,m._tA,m._tB,m);
@@ -286,24 +286,26 @@ class NarrowPhase {
         //   p._ptA+=p._nA2B*sA->radius();
         // }
       } else if(distSqr<sA->_radius*sA->_radius) {
+        Facet<T> fA;
         Vec3T cA1=sA->globalMinCorner();
         Vec3T cA2=sA->globalMaxCorner();
-        Vec3T fABoundary[2] = {sB->_q.conjugate().toRotationMatrix()*(cA1-sB->_x), sB->_q.conjugate().toRotationMatrix()*(cA2-sB->_x)};
-        for(int i=0; i<FACETSNUM; i++) {
+        fA._boundary.push_back(ROT(transB).transpose()*(cA1-CTR(transB)));
+        fA._boundary.push_back(ROT(transB).transpose()*(cA2-CTR(transB)));
+        for(int i=0; i<FB.size(); i++) {
           const Facet<T>& fB = FB[i];
-          if(abs(fB._n.dot(fABoundary[0]-fABoundary[1]))<epsDir && (fABoundary[0]-fB._boundary[0]).dot(fB._n)>0) {
+          if(abs(fB._n.dot(fA._boundary[0]-fA._boundary[1]))<epsDir && (fA._boundary[0]-fB._boundary[0]).dot(fB._n)>0) {
             //we can return multiple contacts
             // SAT::clip(fA,fB);
             int numFound = 0;
             for(int j=0; j<2; j++) {
               if(contactM._numCollision < maxCollisionsPerNode) {
-                const Vec3T& pA = fABoundary[j];
-                Vec3T globalPointA=sB->_q.toRotationMatrix()*(pA-fB._n*sA->_radius)+sB->_x;
+                const Vec3T& pA = fA._boundary[j];
+                Vec3T globalPointA=ROT(transB)*(pA-fB._n*sA->_radius)+CTR(transB);
                 contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
                 contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
-                contactM._localMemory[contactM._numCollision]._localPointA = contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
+                contactM._localMemory[contactM._numCollision]._localPointA = ROT(transA).transpose()*(globalPointA-CTR(transA));
                 contactM._localMemory[contactM._numCollision]._localPointB = pA-fB._n*(pA-fB._boundary[0]).dot(fB._n);
-                contactM._localMemory[contactM._numCollision]._globalNormal = -sB->_q.toRotationMatrix()*fB._n;
+                contactM._localMemory[contactM._numCollision]._globalNormal = -ROT(transB)*fB._n;
                 contactM._localMemory[contactM._numCollision]._isValid = true;
                 contactM._numCollision++;
                 numFound++;
@@ -314,13 +316,13 @@ class NarrowPhase {
         }
         //just return one closest point
         if(distSqr>epsDist*epsDist && contactM._numCollision < maxCollisionsPerNode) {
-          Vec3T globalPointA = sA->_q.toRotationMatrix()*pAL+sA->_x;
-          Vec3T globalPointB = sB->_q.toRotationMatrix()*pBL+sB->_x;
+          Vec3T globalPointA = ROT(transA)*pAL+CTR(transA);
+          Vec3T globalPointB = ROT(transB)*pBL+CTR(transB);
           Vec3T nA2B = (globalPointB-globalPointA)/sqrt((double)distSqr);
           globalPointA += nA2B*sA->_radius;
           contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
           contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
-          contactM._localMemory[contactM._numCollision]._localPointA = contactM._lhs->_q.conjugate().toRotationMatrix()*(globalPointA-contactM._lhs->_x);
+          contactM._localMemory[contactM._numCollision]._localPointA = ROT(transA).transpose()*(globalPointA-CTR(transA));
           contactM._localMemory[contactM._numCollision]._localPointB = pBL;
           contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
           contactM._localMemory[contactM._numCollision]._isValid = true;

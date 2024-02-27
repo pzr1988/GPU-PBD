@@ -1,6 +1,7 @@
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
 #include "Pragma.h"
+#include "FixedVector.h"
 #include "LBVH/aabb.cuh"
 #include <thrust/device_vector.h>
 
@@ -22,7 +23,7 @@ enum class ShapeType {
 template <typename T>
 struct Facet {
   DECL_MAT_VEC_MAP_TYPES_T
-  Vec3T _boundary[BOUNDARYNUM];
+  FixedVector<Vec3T, BOUNDARYNUM> _boundary;
   Vec3T _n;
 };
 template <typename T>
@@ -101,7 +102,7 @@ struct Shape {
   DEVICE_HOST bool isBox() const {
     return ShapeType::Box==_type;
   }
-  DEVICE_HOST void getFacets(Facet<T> facets[FACETSNUM]) const {
+  DEVICE_HOST void getFacets(FixedVector<Facet<T>, FACETSNUM>& facets) const {
     Vec3T pos;
     Vec3T _minC = minCorner();
     Vec3T _maxC = maxCorner();
@@ -109,7 +110,7 @@ struct Shape {
       int a2=(a+1)%3;
       int a3=(a+2)%3;
       for(int d=0; d<2; d++) {
-        Facet<T>& f = facets[2*a+d];
+        Facet<T> f;
         //np
         if(d==0) {
           f._n=Vec3T::Unit(a);
@@ -124,19 +125,21 @@ struct Shape {
         //v0
         pos[a2]=_minC[a2];
         pos[a3]=_minC[a3];
-        f._boundary[0]=pos;
+        f._boundary.push_back(pos);
         //v1
         pos[a2]=_maxC[a2];
         pos[a3]=_minC[a3];
-        f._boundary[1]=pos;
+        f._boundary.push_back(pos);
         //v2
         pos[a2]=_maxC[a2];
         pos[a3]=_maxC[a3];
-        f._boundary[2]=pos;
+        f._boundary.push_back(pos);
         //v3
         pos[a2]=_minC[a2];
         pos[a3]=_maxC[a3];
-        f._boundary[3]=pos;
+        f._boundary.push_back(pos);
+        //insert
+        facets.push_back(f);
       }
     }
   }
