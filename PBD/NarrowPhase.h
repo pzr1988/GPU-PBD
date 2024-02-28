@@ -298,7 +298,7 @@ class NarrowPhase {
             //we can return multiple contacts
             SAT<T>::clip(fA,fB);
             int numFound = 0;
-            for(int j=0; j<2; j++) {
+            for(int j=0; j<fA._boundary.size(); j++) {
               if(contactM._numCollision < maxCollisionsPerNode) {
                 const Vec3T& pA = fA._boundary[j];
                 Vec3T globalPointA=ROT(transB)*(pA-fB._n*sA->_radius)+CTR(transB);
