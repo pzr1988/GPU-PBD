@@ -5,6 +5,7 @@
 #include "Pragma.h"
 #include "Collision.h"
 #include "GJK.h"
+#include "SAT.h"
 
 namespace GPUPBD {
 template<typename T>
@@ -295,7 +296,7 @@ class NarrowPhase {
           const Facet<T>& fB = FB[i];
           if(abs(fB._n.dot(fA._boundary[0]-fA._boundary[1]))<epsDir && (fA._boundary[0]-fB._boundary[0]).dot(fB._n)>0) {
             //we can return multiple contacts
-            // SAT::clip(fA,fB);
+            SAT<T>::clip(fA,fB);
             int numFound = 0;
             for(int j=0; j<2; j++) {
               if(contactM._numCollision < maxCollisionsPerNode) {

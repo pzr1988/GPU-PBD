@@ -23,7 +23,7 @@ enum class ShapeType {
 template <typename T>
 struct Facet {
   DECL_MAT_VEC_MAP_TYPES_T
-  FixedVector<Vec3T, BOUNDARYNUM> _boundary;
+  FixedVector<Vec3T, MAXBOUNDARYSIZE> _boundary;
   Vec3T _n;
 };
 template <typename T>

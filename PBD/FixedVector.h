@@ -31,6 +31,9 @@ class FixedVector {
   DEVICE_HOST size_t capacity() const {
     return Capacity;
   }
+  DEVICE_HOST void clear() {
+    _size = 0;
+  }
 };
 
 #endif

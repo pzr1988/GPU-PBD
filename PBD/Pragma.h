@@ -23,7 +23,7 @@
 #define LSCALAR float
 #define epsDir 1e-3f
 #define epsDist 1e-3f
-#define BOUNDARYNUM 4
+#define MAXBOUNDARYSIZE 4
 #define FACETSNUM 6
 const unsigned int maxCollisionPerObject=8;
 
