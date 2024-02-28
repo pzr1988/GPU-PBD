@@ -24,7 +24,8 @@
 #define epsDir 1e-3f
 #define epsDist 1e-3f
 #define MAXBOUNDARYSIZE 4
-#define FACETSNUM 6
+#define MAXFACETSNUM 6
+#define MAXEDGENUM 12
 const unsigned int maxCollisionPerObject=8;
 
 //assert

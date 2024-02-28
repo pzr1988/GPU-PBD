@@ -272,8 +272,8 @@ class NarrowPhase {
       //     _edgeCache[sB]=sB->edges();
       // }
       // auto FA=_facetCache.find(sA)->second;
-      FixedVector<Facet<T>,FACETSNUM> FB;
-      sB->getFacets(FB);
+      FixedVector<Facet<T>,MAXFACETSNUM> FB;
+      sB->getFacets<MAXFACETSNUM>(FB);
       // auto EA=_edgeCache.find(sA)->second;
       // auto EB=_edgeCache.find(sB)->second;
       Vec3T pAL,pBL;

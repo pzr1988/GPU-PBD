@@ -21,6 +21,11 @@ enum class ShapeType {
   Unknown,
 };
 template <typename T>
+struct Edge {
+  DECL_MAT_VEC_MAP_TYPES_T
+  Vec3T _a,_b;
+};
+template <typename T>
 struct Facet {
   DECL_MAT_VEC_MAP_TYPES_T
   FixedVector<Vec3T, MAXBOUNDARYSIZE> _boundary;
@@ -109,45 +114,95 @@ struct Shape {
   DEVICE_HOST bool isBox() const {
     return ShapeType::Box==_type;
   }
-  DEVICE_HOST void getFacets(FixedVector<Facet<T>, FACETSNUM>& facets) const {
-    Vec3T pos;
+  template <int NUM>
+  DEVICE_HOST void getFacets(FixedVector<Facet<T>, NUM>& facets) const {
+    if(this->isBox()) {
+      assert(NUM >= 6);
+      Vec3T pos;
+      Vec3T _minC = minCorner();
+      Vec3T _maxC = maxCorner();
+      for(int a=0; a<3; a++) {
+        int a2=(a+1)%3;
+        int a3=(a+2)%3;
+        for(int d=0; d<2; d++) {
+          Facet<T> f;
+          //np
+          if(d==0) {
+            f._n=Vec3T::Unit(a);
+            pos[a]=_maxC[a];
+          } else {
+            f._n=-Vec3T::Unit(a);
+            pos[a]=_minC[a];
+            T tmp=a2;
+            a2=a3;
+            a3=tmp;
+          }
+          //v0
+          pos[a2]=_minC[a2];
+          pos[a3]=_minC[a3];
+          f._boundary.push_back(pos);
+          //v1
+          pos[a2]=_maxC[a2];
+          pos[a3]=_minC[a3];
+          f._boundary.push_back(pos);
+          //v2
+          pos[a2]=_maxC[a2];
+          pos[a3]=_maxC[a3];
+          f._boundary.push_back(pos);
+          //v3
+          pos[a2]=_minC[a2];
+          pos[a3]=_maxC[a3];
+          f._boundary.push_back(pos);
+          //insert
+          facets.push_back(f);
+        }
+      }
+    }
+  }
+  template <int NUM>
+  DEVICE_HOST void getEdges(FixedVector<Edge<T>, NUM>& edges) const {
+    Edge<T> e;
     Vec3T _minC = minCorner();
     Vec3T _maxC = maxCorner();
-    for(int a=0; a<3; a++) {
-      int a2=(a+1)%3;
-      int a3=(a+2)%3;
-      for(int d=0; d<2; d++) {
-        Facet<T> f;
-        //np
-        if(d==0) {
-          f._n=Vec3T::Unit(a);
-          pos[a]=_maxC[a];
-        } else {
-          f._n=-Vec3T::Unit(a);
-          pos[a]=_minC[a];
-          T tmp=a2;
-          a2=a3;
-          a3=tmp;
-        }
-        //v0
-        pos[a2]=_minC[a2];
-        pos[a3]=_minC[a3];
-        f._boundary.push_back(pos);
-        //v1
-        pos[a2]=_maxC[a2];
-        pos[a3]=_minC[a3];
-        f._boundary.push_back(pos);
-        //v2
-        pos[a2]=_maxC[a2];
-        pos[a3]=_maxC[a3];
-        f._boundary.push_back(pos);
-        //v3
-        pos[a2]=_minC[a2];
-        pos[a3]=_maxC[a3];
-        f._boundary.push_back(pos);
-        //insert
-        facets.push_back(f);
+    if(this->isBox()) {
+      assert(NUM>=12);
+      for(int a=0; a<3; a++) {
+        int a2=(a+1)%3;
+        int a3=(a+2)%3;
+        //e00
+        e._a[a]=_minC[a];
+        e._a[a2]=_minC[a2];
+        e._a[a3]=_minC[a3];
+        e._b=e._a;
+        e._b[a]=_maxC[a];
+        edges.push_back(e);
+        //e10
+        e._a[a]=_minC[a];
+        e._a[a2]=_maxC[a2];
+        e._a[a3]=_minC[a3];
+        e._b=e._a;
+        e._b[a]=_maxC[a];
+        edges.push_back(e);
+        //e11
+        e._a[a]=_minC[a];
+        e._a[a2]=_maxC[a2];
+        e._a[a3]=_maxC[a3];
+        e._b=e._a;
+        e._b[a]=_maxC[a];
+        edges.push_back(e);
+        //e01
+        e._a[a]=_minC[a];
+        e._a[a2]=_minC[a2];
+        e._a[a3]=_maxC[a3];
+        e._b=e._a;
+        e._b[a]=_maxC[a];
+        edges.push_back(e);
       }
+    } else if(this->isCapsule()) {
+      assert(NUM>=1);
+      e._a=_minC;
+      e._b=_maxC;
+      edges.push_back(e);
     }
   }
   DEVICE_HOST Vec2T project(const Vec3T& d) const {

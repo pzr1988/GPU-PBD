@@ -44,7 +44,7 @@ CUDA_ADD_LIBRARY(PBD STATIC
   ${headerLBVH} ${sourceLBVH} 
   ${headerPBD} ${sourcePBD}
   ${headerSKParser} ${sourceSKParser}
-  OPTIONS --extended-lambda --expt-relaxed-constexpr --std=c++17)
+  OPTIONS --extended-lambda --expt-relaxed-constexpr --std=c++17 -Xcudafe "--diag_suppress=20012")
 SET_TARGET_PROPERTIES(PBD PROPERTIES CUDA_ARCHITECTURES "86")
 TARGET_LINK_LIBRARIES(PBD ${ALL_LIBRARIES})
 TARGET_COMPILE_OPTIONS(PBD PUBLIC "-std=c++17")
