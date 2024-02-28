@@ -5,6 +5,33 @@
 
 namespace GPUPBD {
 template <typename T>
+DEVICE_HOST void sort2(T& a,T& b) {
+  if(a>b) {
+    T tmp = a;
+    a = b;
+    b = tmp;
+  }
+}
+template <typename T>
+DEVICE_HOST void sort3(T& a,T& b,T& c) {
+  T tmp;
+  if(a>b) {
+    tmp = a;
+    a = b;
+    b = tmp;
+  }
+  if(a>c) {
+    tmp = a;
+    a = c;
+    c = tmp;
+  }
+  if(b>c) {
+    tmp = b;
+    b = c;
+    c = tmp;
+  }
+}
+template <typename T>
 DEVICE_HOST T distToSqrLineSegment(const Eigen::Matrix<T,3,1>& pt,
                                    const Eigen::Matrix<T,3,1> v[2],
                                    Eigen::Map<Eigen::Matrix<T,2,1>> bary,

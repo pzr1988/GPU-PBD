@@ -3,6 +3,7 @@
 
 #include "Pragma.h"
 #include "Geometry.h"
+#include "DistanceFunction.h"
 
 namespace GPUPBD {
 template <typename T,typename TF>
@@ -10,14 +11,84 @@ DEVICE_HOST T interp1D(const T& v0,const T& v1,
                        const TF& px) {
   return v0*(TF)(1.0f-px)+v1*(TF)px;
 }
-
 template <typename T>
 struct SAT {
   DECL_MAT_VEC_MAP_TYPES_T
+  struct ProjRange {
+    int _fidA,_eidA;
+    int _fidB,_eidB;
+    Vec2T _rngA,_rngB;
+    Vec3T _n;
+    T _depth;
+    //additional data for edge-edge check
+    Vec3T _ptA,_ptB;
+  };
+  static DEVICE_HOST T depth(const ProjRange& rng);
+  static DEVICE_HOST bool matchWitness(const ProjRange& rng,T witnessA,T* verboseB);
+  static DEVICE_HOST bool matchWitness(const ProjRange& rng,T* verboseA,T witnessB);
+  static DEVICE_HOST bool matchWitness(const ProjRange& rng,T witnessA,T witnessB);
+  static Vec2T project(Shape<T>* S,const Trans<T>& trans,const Vec3T& n);
   static DEVICE_HOST void clip(Facet<T>& f,const Vec3T& pos,const Vec3T& inward);
   static DEVICE_HOST void clip(Facet<T>& f,const Facet<T>& ref);
 };
-
+template <typename T>
+T SAT<T>::depth(const ProjRange& rng) {
+  T a = rng._rngA[1]-rng._rngB[0];
+  T b = rng._rngB[1]-rng._rngA[0];
+  if(a<b) return a;
+  return b;
+}
+template <typename T>
+bool SAT<T>::matchWitness(const ProjRange& rng,T witnessA,T*) {
+  if(rng._rngA[1]-rng._rngB[0]<rng._rngB[1]-rng._rngA[0]) {
+    //check matching witness
+    if(abs(witnessA-rng._rngA[1])<epsDist)
+      return true;
+  } else {
+    //check matching witness
+    if(abs(witnessA-rng._rngA[0])<epsDist)
+      return true;
+  }
+  //witness does not match
+  return false;
+}
+template <typename T>
+bool SAT<T>::matchWitness(const ProjRange& rng,T*,T witnessB) {
+  if(rng._rngA[1]-rng._rngB[0]<rng._rngB[1]-rng._rngA[0]) {
+    //check matching witness
+    if(abs(witnessB-rng._rngB[0])<epsDist)
+      return true;
+  } else {
+    //check matching witness
+    if(abs(witnessB-rng._rngB[1])<epsDist)
+      return true;
+  }
+  //witness does not match
+  return false;
+}
+template <typename T>
+bool SAT<T>::matchWitness(const ProjRange& rng,T witnessA,T witnessB) {
+  if(rng._rngA[1]-rng._rngB[0]<rng._rngB[1]-rng._rngA[0]) {
+    //check matching witness
+    if( abs(witnessA-rng._rngA[1])<epsDist &&
+        abs(witnessB-rng._rngB[0])<epsDist)
+      return true;
+  } else {
+    //check matching witness
+    if( abs(witnessA-rng._rngA[0])<epsDist &&
+        abs(witnessB-rng._rngB[1])<epsDist)
+      return true;
+  }
+  //witness does not match
+  return false;
+}
+template <typename T>
+typename SAT<T>::Vec2T SAT<T>::project(Shape<T>* S,const Trans<T>& trans,const Vec3T& n) {
+  Vec2T ret=S->project(ROT(trans).transpose()*n);
+  ret=(ret.array()+n.dot(CTR(trans))).matrix();
+  sort2(ret[0],ret[1]);
+  return ret;
+}
 template <typename T>
 void SAT<T>::clip(Facet<T>& f,const Vec3T& pos,const Vec3T& inward) {
   int nr=(int)f._boundary.size();

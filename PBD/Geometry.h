@@ -27,6 +27,13 @@ struct Facet {
   Vec3T _n;
 };
 template <typename T>
+struct Trans {
+  DECL_MAT_VEC_MAP_TYPES_T
+  Vec3T _x;
+  QuatT _q;
+  DEVICE_HOST Trans(const Vec3T& x, const QuatT& q):_x(x),_q(q) {}
+};
+template <typename T>
 struct Shape {
   DECL_MAT_VEC_MAP_TYPES_T
   /* Constant quantities */
@@ -142,6 +149,13 @@ struct Shape {
         facets.push_back(f);
       }
     }
+  }
+  DEVICE_HOST Vec2T project(const Vec3T& d) const {
+    Vec3T _minC = minCorner();
+    Vec3T _maxC = maxCorner();
+    Vec3T ctr=(_maxC+_minC)/2,ext=(_maxC-_minC)/2;
+    T ctrD=d.dot(ctr),delta=(d.array()*ext.array()).abs().sum();
+    return Vec2T(ctrD-delta,ctrD+delta);
   }
 };
 

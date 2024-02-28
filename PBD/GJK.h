@@ -4,43 +4,8 @@
 #include "Pragma.h"
 #include "Geometry.h"
 #include "DistanceFunction.h"
+
 namespace GPUPBD {
-
-template <typename T>
-DEVICE_HOST void sort2(T& a,T& b) {
-  if(a>b) {
-    T tmp = a;
-    a = b;
-    b = tmp;
-  }
-}
-template <typename T>
-DEVICE_HOST void sort3(T& a,T& b,T& c) {
-  T tmp;
-  if(a>b) {
-    tmp = a;
-    a = b;
-    b = tmp;
-  }
-  if(a>c) {
-    tmp = a;
-    a = c;
-    c = tmp;
-  }
-  if(b>c) {
-    tmp = b;
-    b = c;
-    c = tmp;
-  }
-}
-template <typename T>
-struct Trans {
-  DECL_MAT_VEC_MAP_TYPES_T
-  Vec3T _x;
-  QuatT _q;
-  DEVICE_HOST Trans(const Vec3T& x, const QuatT& q):_x(x),_q(q) {}
-};
-
 template <typename T>
 struct GJKPoint {
   DECL_MAT_VEC_MAP_TYPES_T
