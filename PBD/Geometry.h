@@ -117,7 +117,7 @@ struct Shape {
   template <int NUM>
   DEVICE_HOST void getFacets(FixedVector<Facet<T>, NUM>& facets) const {
     if(this->isBox()) {
-      assert(NUM >= 6);
+      assert(NUM >= BOXFACENUM);
       Vec3T pos;
       Vec3T _minC = minCorner();
       Vec3T _maxC = maxCorner();
@@ -165,7 +165,7 @@ struct Shape {
     Vec3T _minC = minCorner();
     Vec3T _maxC = maxCorner();
     if(this->isBox()) {
-      assert(NUM>=12);
+      assert(NUM>=BOXEDGENUM);
       for(int a=0; a<3; a++) {
         int a2=(a+1)%3;
         int a3=(a+2)%3;
@@ -199,7 +199,7 @@ struct Shape {
         edges.push_back(e);
       }
     } else if(this->isCapsule()) {
-      assert(NUM>=1);
+      assert(NUM>=CAPSULEEDGENUM);
       e._a=_minC;
       e._b=_maxC;
       edges.push_back(e);

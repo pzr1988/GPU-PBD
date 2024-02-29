@@ -259,30 +259,21 @@ class NarrowPhase {
     const Shape<T>* sA=contactM._lhs;
     const Shape<T>* sB=contactM._rhs;
     if(sA && sA->isCapsule() && sB) {
-      // OMP_CRITICAL_ {
-      //   //facets
-      //   if(_facetCache.find(sA)==_facetCache.end())
-      //     _facetCache[sA]=sA->facets();
-      //   if(_facetCache.find(sB)==_facetCache.end())
-      //     _facetCache[sB]=sB->facets();
-      //   //edges
-      //   if(_edgeCache.find(sA)==_edgeCache.end())
-      //     _edgeCache[sA]=sA->edges();
-      //   if(_edgeCache.find(sB)==_edgeCache.end())
-      //     _edgeCache[sB]=sB->edges();
-      // }
-      // auto FA=_facetCache.find(sA)->second;
-      FixedVector<Facet<T>,MAXFACETSNUM> FB;
-      sB->getFacets<MAXFACETSNUM>(FB);
-      // auto EA=_edgeCache.find(sA)->second;
-      // auto EB=_edgeCache.find(sB)->second;
+      FixedVector<Facet<T>,CAPSULFACENUM> FA;
+      sA->getFacets<CAPSULFACENUM>(FA);
+      FixedVector<Facet<T>,BOXFACENUM> FB;
+      sB->getFacets<BOXFACENUM>(FB);
+      FixedVector<Edge<T>,CAPSULEEDGENUM> EA;
+      sA->getEdges<CAPSULEEDGENUM>(EA);
+      FixedVector<Edge<T>,BOXEDGENUM> EB;
+      sB->getEdges<BOXEDGENUM>(EB);
       Vec3T pAL,pBL;
       bool intersect;
       const Trans<T> transA(sA->_x, sA->_q);
       const Trans<T> transB(sB->_x, sB->_q);
       T distSqr=GJK<T>::runGJK(sA,sB,transA,transB,pAL,pBL,&intersect);
       if(intersect || distSqr<epsDist*epsDist) {
-        // SAT::generateManifold(sA,sB,FA,FB,EA,EB,m._tA,m._tB,m);
+        SAT<T>::generateManifold<CAPSULFACENUM, BOXFACENUM, CAPSULEEDGENUM, BOXEDGENUM>(sA,sB,FA,FB,EA,EB,transA,transB);
         // for(auto& p:m._points) {
         //   p._ptA+=p._nA2B*sA->radius();
         // }
