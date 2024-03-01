@@ -4,6 +4,7 @@
 #include "Pragma.h"
 #include "Geometry.h"
 #include "DistanceFunction.h"
+#include "Collision.h"
 
 namespace GPUPBD {
 template <typename T,typename TF>
@@ -38,14 +39,30 @@ struct SAT {
                                       const Trans<T>& transA,
                                       const Trans<T>& transB,bool* intersect=NULL);
   template<int F1, int F2, int E1, int E2>
-  static DEVICE_HOST ProjRange generateManifold(const Shape<T>* A,
+  static DEVICE_HOST int generateManifold(const Shape<T>* A,
+                                          const Shape<T>* B,
+                                          const FixedVector<Facet<T>, F1>& FA,
+                                          const FixedVector<Facet<T>, F2>& FB,
+                                          const FixedVector<Edge<T>, E1>& EA,
+                                          const FixedVector<Edge<T>, E2>& EB,
+                                          const Trans<T>& transA,
+                                          const Trans<T>& transB,
+                                          ContactManifold<T>& contactM,
+                                          size_t maxCollisionsPerNode,
+                                          bool* Intersect=NULL);
+  //clip a facet f against a reference
+  template<int F1, int F2, int E1, int E2>
+  static DEVICE_HOST void generateManifoldFace(const Shape<T>* A,
       const Shape<T>* B,
       const FixedVector<Facet<T>, F1>& FA,
       const FixedVector<Facet<T>, F2>& FB,
       const FixedVector<Edge<T>, E1>& EA,
       const FixedVector<Edge<T>, E2>& EB,
       const Trans<T>& transA,
-      const Trans<T>& transB,bool* Intersect=NULL);
+      const Trans<T>& transB,
+      int fidA,
+      ContactManifold<T>& contactM,
+      size_t maxCollisionsPerNode);
   static DEVICE_HOST void clip(Facet<T>& f,const Vec3T& pos,const Vec3T& inward);
   static DEVICE_HOST void clip(Facet<T>& f,const Facet<T>& ref);
 };
@@ -119,7 +136,7 @@ typename SAT<T>::ProjRange SAT<T>::runSAT(const Shape<T>* A,
     const Trans<T>& transB,bool* intersect) {
   ProjRange minRng,rng;
   minRng._fidA=minRng._eidA=minRng._fidB=minRng._eidB=-1;
-  minRng._depth=std::numeric_limits<double>::max();
+  minRng._depth=FLT_MAX;
   if(intersect)
     *intersect=false;
   //faceA
@@ -216,38 +233,112 @@ typename SAT<T>::ProjRange SAT<T>::runSAT(const Shape<T>* A,
 //not only run contact, but also generate manifold
 template <typename T>
 template <int F1, int F2, int E1, int E2>
-typename SAT<T>::ProjRange SAT<T>::generateManifold(const Shape<T>* A,
-    const Shape<T>* B,
-    const FixedVector<Facet<T>, F1>& FA,
-    const FixedVector<Facet<T>, F2>& FB,
-    const FixedVector<Edge<T>, E1>& EA,
-    const FixedVector<Edge<T>, E2>& EB,
-    const Trans<T>& transA,
-    const Trans<T>& transB,bool* Intersect) {
+int SAT<T>::generateManifold(const Shape<T>* A,
+                             const Shape<T>* B,
+                             const FixedVector<Facet<T>, F1>& FA,
+                             const FixedVector<Facet<T>, F2>& FB,
+                             const FixedVector<Edge<T>, E1>& EA,
+                             const FixedVector<Edge<T>, E2>& EB,
+                             const Trans<T>& transA,
+                             const Trans<T>& transB,
+                             ContactManifold<T>& contactM,
+                             size_t maxCollisionsPerNode,
+                             bool* Intersect) {
   bool intersect;
   ProjRange rng=runSAT<F1,F2,E1,E2>(A,B,FA,FB,EA,EB,transA,transB,&intersect);
-  // if(Intersect)
-  //   *Intersect=intersect;
-  // if(!intersect)
-  //   return rng;
-  // if(rng._eidA>=0 && rng._eidB>=0) {
-  //   //edge-edge case, only a single contact is generated
-  //   ContactPoint p;
-  //   p._ptA=rng._ptA;
-  //   p._ptB=rng._ptB;
-  //   p._nA2B=rng._n;
-  //   if(p.depth()<0)
-  //     p._nA2B*=-1;
-  //   m._points.push_back(p);
-  // } else if(rng._fidA>=0) {
-  //   generateManifoldFace(A,B,FA,FB,EA,EB,transA,transB,rng._fidA,m._points);
+  if(Intersect)
+    *Intersect=intersect;
+  if(!intersect)
+    return 0;
+  if(rng._eidA>=0 && rng._eidB>=0) {
+    //edge-edge case, only a single contact is generated
+    // ContactPoint p;
+    // p._ptA=rng._ptA;
+    // p._ptB=rng._ptB;
+    // p._nA2B=rng._n;
+    // if(p.depth()<0)
+    //   p._nA2B*=-1;
+    // m._points.push_back(p);
+    // if(contactM._numCollision < maxCollisionsPerNode) {
+    //   const Vec3T& pA = fA._boundary[j];
+    //   Vec3T globalPointA=ROT(transB)*(pA-fB._n*sA->_radius)+CTR(transB);
+    //   contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
+    //   contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
+    //   contactM._localMemory[contactM._numCollision]._localPointA = ROT(transA).transpose()*(globalPointA-CTR(transA));
+    //   contactM._localMemory[contactM._numCollision]._localPointB = pA-fB._n*(pA-fB._boundary[0]).dot(fB._n);
+    //   contactM._localMemory[contactM._numCollision]._globalNormal = -ROT(transB)*fB._n;
+    //   contactM._localMemory[contactM._numCollision]._isValid = true;
+    //   contactM._numCollision++;
+    //   return 1;
+    // }
+  } else if(rng._fidA>=0) {
+    // generateManifoldFace(A,B,FA,FB,EA,EB,transA,transB,rng._fidA,m._points);
+  } else {
+    // int nrP=(int)m._points.size();
+    // generateManifoldFace(B,A,FB,FA,EB,EA,transB,transA,rng._fidB,m._points);
+    // for(int i=nrP; i<(int)m._points.size(); i++)
+    //   m._points[i].swap();
+  }
+  return 0;
+}
+//clip a facet f against a reference
+template <typename T>
+template <int F1, int F2, int E1, int E2>
+void SAT<T>::generateManifoldFace(const Shape<T>* A,
+                                  const Shape<T>* B,
+                                  const FixedVector<Facet<T>, F1>& FA,
+                                  const FixedVector<Facet<T>, F2>& FB,
+                                  const FixedVector<Edge<T>, E1>& EA,
+                                  const FixedVector<Edge<T>, E2>& EB,
+                                  const Trans<T>& transA,
+                                  const Trans<T>& transB,
+                                  int fidA,
+                                  ContactManifold<T>& contactM,
+                                  size_t maxCollisionsPerNode) {
+  // ASSERT(fidA>=0)
+  // const Vec3T& n=FA[fidA]._n;
+  // //clip B against A
+  // ContactPoint p;
+  // Facet b;
+  // if(FB.empty()) {
+  //   //this is a capsule
+  //   ASSERT((int)EB.size()==1)
+  //   b._boundary.push_back(EB[0]._a);
+  //   b._boundary.push_back(EB[0]._b);
   // } else {
-  //   int nrP=(int)m._points.size();
-  //   generateManifoldFace(B,A,FB,FA,EB,EA,transB,transA,rng._fidB,m._points);
-  //   for(int i=nrP; i<(int)m._points.size(); i++)
-  //     m._points[i].swap();
+  //   //find most negative facet
+  //   int minId=-1;
+  //   T minVal=1,val=0;
+  //   for(int i=0; i<(int)FB.size(); i++) {
+  //     val=(ROT(transB)*FB[i]._n).dot(ROT(transA)*n);
+  //     if(val<minVal) {
+  //       minVal=val;
+  //       minId=i;
+  //     }
+  //   }
+  //   //the facet must be negative
+  //   if(minVal>=0)
+  //     return;
+  //   b=FB[minId];
   // }
-  return rng;
+
+  // //transform B->A and clip
+  // for(auto& v:b._boundary) {
+  //   v=ROT(transB)*v+CTR(transB);
+  //   v=ROT(transA).transpose()*(v-CTR(transA));
+  // }
+  // clip(b,FA[fidA]);
+
+  // //retain negative vertices
+  // for(const auto& v:b._boundary) {
+  //   T d=(v-FA[fidA]._boundary[0]).dot(n);
+  //   if(d<0) {
+  //     p._ptA=ROT(transA)*(v-d*n)+CTR(transA);
+  //     p._ptB=ROT(transA)*v+CTR(transA);
+  //     p._nA2B=ROT(transA)*n;
+  //     points.push_back(p);
+  //   }
+  // }
 }
 template <typename T>
 void SAT<T>::clip(Facet<T>& f,const Vec3T& pos,const Vec3T& inward) {

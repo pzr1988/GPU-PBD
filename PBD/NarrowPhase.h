@@ -273,10 +273,7 @@ class NarrowPhase {
       const Trans<T> transB(sB->_x, sB->_q);
       T distSqr=GJK<T>::runGJK(sA,sB,transA,transB,pAL,pBL,&intersect);
       if(intersect || distSqr<epsDist*epsDist) {
-        SAT<T>::generateManifold<CAPSULFACENUM, BOXFACENUM, CAPSULEEDGENUM, BOXEDGENUM>(sA,sB,FA,FB,EA,EB,transA,transB);
-        // for(auto& p:m._points) {
-        //   p._ptA+=p._nA2B*sA->radius();
-        // }
+        return SAT<T>::generateManifold<CAPSULFACENUM, BOXFACENUM, CAPSULEEDGENUM, BOXEDGENUM>(sA,sB,FA,FB,EA,EB,transA,transB, contactM, maxCollisionsPerNode);
       } else if(distSqr<sA->_radius*sA->_radius) {
         Facet<T> fA;
         Vec3T cA1=sA->globalMinCorner();
@@ -326,7 +323,21 @@ class NarrowPhase {
     return 0;
   }
   static DEVICE_HOST int generateManifoldBoxBox(ContactManifold<T>& contactM, size_t maxCollisionsPerNode) {
-    return 0;
+    const Shape<T>* sA=contactM._lhs;
+    const Shape<T>* sB=contactM._rhs;
+    if(sA->isBox() && sB->isBox()) {
+      FixedVector<Facet<T>,BOXFACENUM> FA;
+      sA->getFacets<BOXFACENUM>(FA);
+      FixedVector<Facet<T>,BOXFACENUM> FB;
+      sB->getFacets<BOXFACENUM>(FB);
+      FixedVector<Edge<T>,BOXEDGENUM> EA;
+      sA->getEdges<BOXEDGENUM>(EA);
+      FixedVector<Edge<T>,BOXEDGENUM> EB;
+      sB->getEdges<BOXEDGENUM>(EB);
+      const Trans<T> transA(sA->_x, sA->_q);
+      const Trans<T> transB(sB->_x, sB->_q);
+      return SAT<T>::generateManifold<BOXFACENUM, BOXFACENUM, BOXEDGENUM, BOXEDGENUM>(sA,sB,FA,FB,EA,EB,transA,transB,contactM,maxCollisionsPerNode);
+    } else return 0;
   }
 };
 }
