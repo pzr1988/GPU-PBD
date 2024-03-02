@@ -52,7 +52,7 @@ struct SAT {
                                           bool* Intersect=NULL);
   //clip a facet f against a reference
   template<int F1, int F2, int E1, int E2>
-  static DEVICE_HOST void generateManifoldFace(const Shape<T>* A,
+  static DEVICE_HOST int generateManifoldFace(const Shape<T>* A,
       const Shape<T>* B,
       const FixedVector<Facet<T>, F1>& FA,
       const FixedVector<Facet<T>, F2>& FB,
@@ -62,7 +62,8 @@ struct SAT {
       const Trans<T>& transB,
       int fidA,
       ContactManifold<T>& contactM,
-      size_t maxCollisionsPerNode);
+      size_t maxCollisionsPerNode,
+      bool inverse=false);
   static DEVICE_HOST void clip(Facet<T>& f,const Vec3T& pos,const Vec3T& inward);
   static DEVICE_HOST void clip(Facet<T>& f,const Facet<T>& ref);
 };
@@ -252,93 +253,105 @@ int SAT<T>::generateManifold(const Shape<T>* A,
     return 0;
   if(rng._eidA>=0 && rng._eidB>=0) {
     //edge-edge case, only a single contact is generated
-    // ContactPoint p;
-    // p._ptA=rng._ptA;
-    // p._ptB=rng._ptB;
-    // p._nA2B=rng._n;
-    // if(p.depth()<0)
-    //   p._nA2B*=-1;
-    // m._points.push_back(p);
-    // if(contactM._numCollision < maxCollisionsPerNode) {
-    //   const Vec3T& pA = fA._boundary[j];
-    //   Vec3T globalPointA=ROT(transB)*(pA-fB._n*sA->_radius)+CTR(transB);
-    //   contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
-    //   contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
-    //   contactM._localMemory[contactM._numCollision]._localPointA = ROT(transA).transpose()*(globalPointA-CTR(transA));
-    //   contactM._localMemory[contactM._numCollision]._localPointB = pA-fB._n*(pA-fB._boundary[0]).dot(fB._n);
-    //   contactM._localMemory[contactM._numCollision]._globalNormal = -ROT(transB)*fB._n;
-    //   contactM._localMemory[contactM._numCollision]._isValid = true;
-    //   contactM._numCollision++;
-    //   return 1;
-    // }
+    if(contactM._numCollision < maxCollisionsPerNode) {
+      Vec3T nA2B=rng._n;
+      if((rng._ptA-rng._ptB).dot(nA2B)<0)
+        nA2B*=-1;
+      contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
+      contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
+      contactM._localMemory[contactM._numCollision]._localPointA = ROT(transA).transpose()*(rng._ptA-CTR(transA));
+      contactM._localMemory[contactM._numCollision]._localPointB = ROT(transB).transpose()*(rng._ptB-CTR(transB));
+      contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
+      contactM._localMemory[contactM._numCollision]._isValid = true;
+      contactM._numCollision++;
+      return 1;
+    }
   } else if(rng._fidA>=0) {
-    // generateManifoldFace(A,B,FA,FB,EA,EB,transA,transB,rng._fidA,m._points);
+    return generateManifoldFace<F1, F2, E1, E2>(A,B,FA,FB,EA,EB,transA,transB,rng._fidA,contactM,maxCollisionsPerNode);
   } else {
-    // int nrP=(int)m._points.size();
-    // generateManifoldFace(B,A,FB,FA,EB,EA,transB,transA,rng._fidB,m._points);
-    // for(int i=nrP; i<(int)m._points.size(); i++)
-    //   m._points[i].swap();
+    // TODO check here!
+    return generateManifoldFace<F2, F1, E2, E1>(B,A,FB,FA,EB,EA,transB,transA,rng._fidB,contactM,maxCollisionsPerNode,true);
   }
   return 0;
 }
 //clip a facet f against a reference
 template <typename T>
 template <int F1, int F2, int E1, int E2>
-void SAT<T>::generateManifoldFace(const Shape<T>* A,
-                                  const Shape<T>* B,
-                                  const FixedVector<Facet<T>, F1>& FA,
-                                  const FixedVector<Facet<T>, F2>& FB,
-                                  const FixedVector<Edge<T>, E1>& EA,
-                                  const FixedVector<Edge<T>, E2>& EB,
-                                  const Trans<T>& transA,
-                                  const Trans<T>& transB,
-                                  int fidA,
-                                  ContactManifold<T>& contactM,
-                                  size_t maxCollisionsPerNode) {
-  // ASSERT(fidA>=0)
-  // const Vec3T& n=FA[fidA]._n;
-  // //clip B against A
-  // ContactPoint p;
-  // Facet b;
-  // if(FB.empty()) {
-  //   //this is a capsule
-  //   ASSERT((int)EB.size()==1)
-  //   b._boundary.push_back(EB[0]._a);
-  //   b._boundary.push_back(EB[0]._b);
-  // } else {
-  //   //find most negative facet
-  //   int minId=-1;
-  //   T minVal=1,val=0;
-  //   for(int i=0; i<(int)FB.size(); i++) {
-  //     val=(ROT(transB)*FB[i]._n).dot(ROT(transA)*n);
-  //     if(val<minVal) {
-  //       minVal=val;
-  //       minId=i;
-  //     }
-  //   }
-  //   //the facet must be negative
-  //   if(minVal>=0)
-  //     return;
-  //   b=FB[minId];
-  // }
+int SAT<T>::generateManifoldFace(const Shape<T>* A,
+                                 const Shape<T>* B,
+                                 const FixedVector<Facet<T>, F1>& FA,
+                                 const FixedVector<Facet<T>, F2>& FB,
+                                 const FixedVector<Edge<T>, E1>& EA,
+                                 const FixedVector<Edge<T>, E2>& EB,
+                                 const Trans<T>& transA,
+                                 const Trans<T>& transB,
+                                 int fidA,
+                                 ContactManifold<T>& contactM,
+                                 size_t maxCollisionsPerNode,
+                                 bool inverse) {
+  assert(fidA>=0);
+  const Vec3T& n=FA[fidA]._n;
+  //clip B against A
+  Facet<T> b;
+  if(FB.empty()) {
+    //this is a capsule
+    assert(EB.size()==1);
+    b._boundary.push_back(EB[0]._a);
+    b._boundary.push_back(EB[0]._b);
+  } else {
+    //find most negative facet
+    int minId=-1;
+    T minVal=1,val=0;
+    for(int i=0; i<(int)FB.size(); i++) {
+      val=(ROT(transB)*FB[i]._n).dot(ROT(transA)*n);
+      if(val<minVal) {
+        minVal=val;
+        minId=i;
+      }
+    }
+    //the facet must be negative
+    if(minVal>=0)
+      return 0;
+    b=FB[minId];
+  }
 
-  // //transform B->A and clip
-  // for(auto& v:b._boundary) {
-  //   v=ROT(transB)*v+CTR(transB);
-  //   v=ROT(transA).transpose()*(v-CTR(transA));
-  // }
-  // clip(b,FA[fidA]);
+  //transform B->A and clip
+  for(int i=0; i<b._boundary.size(); i++) {
+    Vec3T &v = b._boundary[i];
+    v=ROT(transB)*v+CTR(transB);
+    v=ROT(transA).transpose()*(v-CTR(transA));
+  }
+  clip(b,FA[fidA]);
 
-  // //retain negative vertices
-  // for(const auto& v:b._boundary) {
-  //   T d=(v-FA[fidA]._boundary[0]).dot(n);
-  //   if(d<0) {
-  //     p._ptA=ROT(transA)*(v-d*n)+CTR(transA);
-  //     p._ptB=ROT(transA)*v+CTR(transA);
-  //     p._nA2B=ROT(transA)*n;
-  //     points.push_back(p);
-  //   }
-  // }
+  //retain negative vertices
+  int origNum = contactM._numCollision;
+  for(int i=0; i<b._boundary.size(); i++) {
+    Vec3T &v = b._boundary[i];
+    T d=(v-FA[fidA]._boundary[0]).dot(n);
+    if(d<0 && contactM._numCollision < maxCollisionsPerNode) {
+      Vec3T globalPointA = ROT(transA)*(v-d*n)+CTR(transA);
+      Vec3T globalPointB = ROT(transA)*v+CTR(transA);
+      Vec3T nA2B=ROT(transA)*n;
+      if(!inverse) {
+        contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
+        contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
+        contactM._localMemory[contactM._numCollision]._localPointA = ROT(transA).transpose()*(globalPointA-CTR(transA));
+        contactM._localMemory[contactM._numCollision]._localPointB = ROT(transB).transpose()*(globalPointB-CTR(transB));
+        contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
+        contactM._localMemory[contactM._numCollision]._isValid = true;
+        contactM._numCollision++;
+      } else {
+        contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
+        contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
+        contactM._localMemory[contactM._numCollision]._localPointA = ROT(transB).transpose()*(globalPointB-CTR(transB));
+        contactM._localMemory[contactM._numCollision]._localPointB = ROT(transA).transpose()*(globalPointA-CTR(transA));
+        contactM._localMemory[contactM._numCollision]._globalNormal = -nA2B;
+        contactM._localMemory[contactM._numCollision]._isValid = true;
+        contactM._numCollision++;
+      }
+    }
+  }
+  return contactM._numCollision-origNum;
 }
 template <typename T>
 void SAT<T>::clip(Facet<T>& f,const Vec3T& pos,const Vec3T& inward) {
