@@ -18,7 +18,11 @@ std::shared_ptr<DRAWER::CompositeShape> visualizeOrUpdateGeometry(const Geometry
     ret.reset(new DRAWER::CompositeShape());
     for(int i=0; i<(int)cpuGeometry.size(); i++) {
       std::shared_ptr<DRAWER::Bullet3DShape> c(new DRAWER::Bullet3DShape);
-      c->addShape(DRAWER::makeSphericalBox(RES,fill,cpuGeometry[i]._radius,Eigen::Matrix<GLfloat,3,1>((GLfloat)cpuGeometry[i]._len/2.0f,0,0)));
+      if(cpuGeometry[i].isCapsule()) {
+        c->addShape(DRAWER::makeSphericalBox(RES,fill,cpuGeometry[i]._radius,Eigen::Matrix<GLfloat,3,1>((GLfloat)cpuGeometry[i]._len/2.0f,0,0)));
+      } else if(cpuGeometry[i].isBox()) {
+        c->addShape(DRAWER::makeBox(RES,fill,Eigen::Matrix<GLfloat,3,1>((GLfloat)cpuGeometry[i]._len/2.0f,(GLfloat)cpuGeometry[i]._width/2.0f,(GLfloat)cpuGeometry[i]._height/2.0f)));
+      }
       c->setColorDiffuse(GL_LINES,.7f,.7f,.7f);
       c->setLineWidth(5);
       ret->addShape(c);
