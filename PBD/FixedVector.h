@@ -10,6 +10,9 @@ class FixedVector {
   size_t _size = 0;
 
  public:
+  DEVICE_HOST FixedVector(int size=0):_size(size) {
+    assert(size >= 0 && size <= Capacity);
+  }
   DEVICE_HOST void push_back(const T& value) {
     assert(_size < Capacity);
     _data[_size++] = value;

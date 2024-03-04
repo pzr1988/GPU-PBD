@@ -357,9 +357,8 @@ template <typename T>
 void SAT<T>::clip(Facet<T>& f,const Vec3T& pos,const Vec3T& inward) {
   int nr=(int)f._boundary.size();
   bool hasIn=false,hasOut=false;
-  FixedVector<T, MAXBOUNDARYSIZE> inside;
+  FixedVector<T, MAXBOUNDARYSIZE> inside(nr);
   for(int i=0; i<nr; i++) {
-    inside.push_back(0);
     inside[i]=(f._boundary[i]-pos).dot(inward);
     hasIn |=inside[i]>0;
     hasOut|=inside[i]<=0;
