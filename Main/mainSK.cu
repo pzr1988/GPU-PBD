@@ -175,59 +175,15 @@ int main(int argc,char** argv) {
 
   // boundary
   Shape<T> b_1;
-  b_1._type = ShapeType::Capsule;
-  b_1._len = 20;
-  b_1._radius = 1;
-  b_1._mass = 1;
+  b_1._type = ShapeType::Box;
+  b_1._len=10;
+  b_1._width=1;
+  b_1._height=10;
   b_1._x = Vec3T(0,-4,0);
   b_1._q = QuatT(1,0,0,0);
   b_1.initInertiaTensor();
   b_1._isDynamic = false;
   ps.push_back(b_1);
-
-  Shape<T> b_2;
-  b_2._type = ShapeType::Capsule;
-  b_2._len = 20;
-  b_2._radius = 1;
-  b_2._mass = 1;
-  b_2._x = Vec3T(0,-4,1);
-  b_2._q = QuatT(1,0,0,0);
-  b_2.initInertiaTensor();
-  b_2._isDynamic = false;
-  ps.push_back(b_2);
-
-  Shape<T> b_3;
-  b_3._type = ShapeType::Capsule;
-  b_3._len = 20;
-  b_3._radius = 1;
-  b_3._mass = 1;
-  b_3._x = Vec3T(0,-4,-1);
-  b_3._q = QuatT(1,0,0,0);
-  b_3.initInertiaTensor();
-  b_3._isDynamic = false;
-  ps.push_back(b_3);
-
-  Shape<T> b_4;
-  b_4._type = ShapeType::Capsule;
-  b_4._len = 20;
-  b_4._radius = 1;
-  b_4._mass = 1;
-  b_4._x = Vec3T(0,-4,2);
-  b_4._q = QuatT(1,0,0,0);
-  b_4.initInertiaTensor();
-  b_4._isDynamic = false;
-  ps.push_back(b_4);
-
-  Shape<T> b_5;
-  b_5._type = ShapeType::Capsule;
-  b_5._len = 20;
-  b_5._radius = 1;
-  b_5._mass = 1;
-  b_5._x = Vec3T(0,-4,-2);
-  b_5._q = QuatT(1,0,0,0);
-  b_5.initInertiaTensor();
-  b_5._isDynamic = false;
-  ps.push_back(b_5);
 
   std::shared_ptr<Geometry<T>> geometry(new Geometry<T>);
   geometry->resize(ps.size());
