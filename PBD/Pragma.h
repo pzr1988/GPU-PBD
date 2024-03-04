@@ -23,10 +23,10 @@
 #define LSCALAR float
 #define epsDir 1e-3f
 #define epsDist 1e-3f
-#define MAXBOUNDARYSIZE 4
+#define MAXBOUNDARYSIZE 16 // boundary size of box's face is 4, boundary is line segment is 2, SAT::clip will double it. 
 #define BOXFACENUM 6
 #define BOXEDGENUM 12
-#define CAPSULFACENUM 1
+#define CAPSULFACENUM 1 // Because new T[0] is no allowed in c++, the minimum is 1.
 #define CAPSULEEDGENUM 1
 const unsigned int maxCollisionPerObject=8;
 
