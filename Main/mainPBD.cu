@@ -14,15 +14,15 @@ using namespace GPUPBD;
 int main(int argc,char** argv) {
   typedef LSCALAR T;
   DECL_MAT_VEC_MAP_TYPES_T
-  constexpr std::size_t N=5;
-  std::vector<Shape<T>> ps(N);
+  std::vector<Shape<T>> ps;
 
   std::mt19937 mt(123456789);
   std::uniform_real_distribution<T> uni(0, 1);
 
   T len = uni(mt);
   T radius = uni(mt)/3.f;
-  for(auto& p:ps) {
+  for(int i=0; i<5; i++) {
+    Shape<T> p;
     p._type = ShapeType::Capsule;
     p._len=len;
     p._radius=radius;
@@ -36,41 +36,42 @@ int main(int argc,char** argv) {
     p.initInertiaTensor();
     p._force = Vec3T(0, -9.8f*p._mass,0);
     p._isDynamic = true;
+    ps.push_back(p);
+  }
+
+  len = uni(mt);
+  for(int i=0; i<5; i++) {
+    Shape<T> p;
+    p._type = ShapeType::Box;
+    p._len=len;
+    p._width=len;
+    p._height=len;
+    // p._radius=radius;
+    QuatT q(uni(mt),0,0,uni(mt));
+    q.normalize();
+    p._q = q;
+    Vec3T trans;
+    trans.setRandom();
+    p._x = trans*3;
+    p._x.z() = 0;
+    p.initInertiaTensor();
+    p._force = Vec3T(0, -9.8f*p._mass,0);
+    p._isDynamic = true;
+    ps.push_back(p);
   }
 
   // boundary
   Shape<T> b_1;
-  b_1._type = ShapeType::Capsule;
-  b_1._len = 20;
-  b_1._radius = 1;
-  b_1._mass = 1;
+  b_1._type = ShapeType::Box;
+  b_1._len=10;
+  b_1._width=1;
+  b_1._height=10;
   b_1._x = Vec3T(0,-4,0);
   b_1._q = QuatT(1,0,0,0);
   b_1.initInertiaTensor();
   b_1._isDynamic = false;
   ps.push_back(b_1);
 
-  Shape<T> b_2;
-  b_2._type = ShapeType::Capsule;
-  b_2._len = 18.;
-  b_2._radius = 1;
-  b_2._mass = 1;
-  b_2._x = Vec3T(5,0,0);
-  b_2._q = QuatT(0.7071f,0,0,0.7071f);
-  b_2.initInertiaTensor();
-  b_2._isDynamic = false;
-  ps.push_back(b_2);
-
-  Shape<T> b_3;
-  b_3._type = ShapeType::Capsule;
-  b_3._len = 18;
-  b_3._radius = 1;
-  b_3._mass = 1;
-  b_3._x = Vec3T(-5,0,0);
-  b_3._q = QuatT(0.7071f,0,0,0.7071f);
-  b_3.initInertiaTensor();
-  b_3._isDynamic = false;
-  ps.push_back(b_3);
 
   std::shared_ptr<Geometry<T>> geometry(new Geometry<T>);
   geometry->resize(ps.size());
