@@ -31,6 +31,10 @@ struct Body {
   Vec3T _x;
   QuatT _q;
   Vec6T _ft;
+  ShapeType _type;
+  Vec3T _boxPos;
+  QuatT _boxQuat;
+  Vec3T _boxSize;
   std::string _name;
   Shape<T> _c;
   Joint<T> _j;
@@ -52,34 +56,54 @@ void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLE
   }
   //read geometry
   if(g->FirstChildElement("geom")->FindAttribute("type") == NULL) {
-    //shape
+    //capsule
     body._isValid=true;
+    body._type = ShapeType::Capsule;
     const tinyxml2::XMLElement* gg=g->FirstChildElement("geom");
     body._ft=PHYSICSMOTION::parsePtreeDef<Vec6T>(*gg,"<xmlattr>.fromto","0 0 0 0 0 0");
     body._radius=PHYSICSMOTION::get<T>(*gg,"<xmlattr>.size");
+  } else if (std::string(g->FirstChildElement("geom")->FindAttribute("type")->Value()) == "box") {
+    //box
+    body._isValid=true;
+    body._type = ShapeType::Box;
+    const tinyxml2::XMLElement* gg=g->FirstChildElement("geom");
+    body._boxPos=PHYSICSMOTION::parsePtreeDef<Vec3T>(*gg,"<xmlattr>.pos","0 0 0");
+    body._boxQuat=PHYSICSMOTION::parsePtreeDef<Vec4T>(*gg,"<xmlattr>.quat","1 0 0 0");
+    body._boxSize=PHYSICSMOTION::parsePtreeDef<Vec3T>(*gg,"<xmlattr>.size","0 0 0");
+    printf("boxPos:%f,%f,%f, boxQuat:%f,%f,%f,%f, boxSize:%f,%f,%f\n",
+           body._boxPos[0], body._boxPos[1],body._boxPos[2],
+           body._boxQuat.w(), body._boxQuat.x(), body._boxQuat.y(), body._boxQuat.z(),
+           body._boxSize[0], body._boxSize[1], body._boxSize[2]);
   } else {
-    // TODO box
+    body._type = ShapeType::Unknown;
     body._isValid=false;
   }
 
   //read joints, temporarily ignore all angular constraints.
   if(g->FirstChildElement("joint")) {
-    body._j._isValid=true;
-    // parent:
-    Body<T>& p = bodies[body._parent];
-    Vec3T pC1 = Vec3T(p._ft[0], p._ft[1], p._ft[2]);
-    Vec3T pC2 = Vec3T(p._ft[3], p._ft[4], p._ft[5]);
-    Vec3T pX = (pC1+pC2)/2;
-    QuatT pQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(pC2-pC1).normalized());
-    body._j._cB=body._parent;
-    body._j._cBPos=pQ.inverse().toRotationMatrix()*(body._x-pX);
-    // son:
-    body._j._cA=_currId;
-    Vec3T sC1 = Vec3T(body._ft[0], body._ft[1], body._ft[2]);
-    Vec3T sC2 = Vec3T(body._ft[3], body._ft[4], body._ft[5]);
-    Vec3T sX = (sC1+sC2)/2;
-    QuatT sQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(sC2-sC1).normalized());
-    body._j._cAPos=-sQ.inverse().toRotationMatrix()*(sX);;
+    if(body._isValid && ShapeType::Capsule == body._type) {
+      body._j._isValid=true;
+      // parent:
+      Body<T>& p = bodies[body._parent];
+      Vec3T pC1 = Vec3T(p._ft[0], p._ft[1], p._ft[2]);
+      Vec3T pC2 = Vec3T(p._ft[3], p._ft[4], p._ft[5]);
+      Vec3T pX = (pC1+pC2)/2;
+      QuatT pQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(pC2-pC1).normalized());
+      body._j._cB=body._parent;
+      body._j._cBPos=pQ.inverse().toRotationMatrix()*(body._x-pX);
+      // son:
+      body._j._cA=_currId;
+      Vec3T sC1 = Vec3T(body._ft[0], body._ft[1], body._ft[2]);
+      Vec3T sC2 = Vec3T(body._ft[3], body._ft[4], body._ft[5]);
+      Vec3T sX = (sC1+sC2)/2;
+      QuatT sQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(sC2-sC1).normalized());
+      body._j._cAPos=-sQ.inverse().toRotationMatrix()*(sX);
+    } else if (body._isValid && ShapeType::Box == body._type) {
+      body._j._isValid=false;
+      // TODO
+    } else {
+      body._j._isValid=false;
+    }
   } else {
     body._j._isValid=false;
   }
@@ -106,21 +130,41 @@ template <typename T>
 void updateShape(std::vector<Body<T>>& bodies) {
   DECL_MAT_VEC_MAP_TYPES_T
   for(auto& body : bodies) {
-    Vec3T c1 = Vec3T(body._ft[0], body._ft[1], body._ft[2]);
-    Vec3T c2 = Vec3T(body._ft[3], body._ft[4], body._ft[5]);
-    c1 = body._x + body._q.toRotationMatrix() * c1;
-    c2 = body._x + body._q.toRotationMatrix() * c2;
-    if(body._parent>=0) {
-      const auto& p = bodies[body._parent];
-      c1 = p._x + p._q.toRotationMatrix()*c1;
-      c2 = p._x + p._q.toRotationMatrix()*c2;
-      body._x = p._x + p._q.toRotationMatrix()*body._x;
-      body._q = (p._q * body._q).normalized();
+    if(ShapeType::Capsule == body._type) {
+      body._c._type = ShapeType::Capsule;
+      Vec3T c1 = Vec3T(body._ft[0], body._ft[1], body._ft[2]);
+      Vec3T c2 = Vec3T(body._ft[3], body._ft[4], body._ft[5]);
+      c1 = body._x + body._q.toRotationMatrix() * c1;
+      c2 = body._x + body._q.toRotationMatrix() * c2;
+      if(body._parent>=0) {
+        const auto& p = bodies[body._parent];
+        c1 = p._x + p._q.toRotationMatrix()*c1;
+        c2 = p._x + p._q.toRotationMatrix()*c2;
+        body._x = p._x + p._q.toRotationMatrix()*body._x;
+        body._q = (p._q * body._q).normalized();
+      }
+      body._c._radius=body._radius;
+      body._c._len=(c2-c1).norm();
+      body._c._x=(c1+c2)/2;
+      body._c._q=QuatT::FromTwoVectors(Vec3T::UnitX(),(c2-c1).normalized());
+    } else if (ShapeType::Box == body._type) {
+      body._c._type = ShapeType::Box;
+      Vec3T x = body._x + body._q.toRotationMatrix() * body._boxPos;
+      QuatT q = (body._q * body._boxQuat).normalized();
+      if(body._parent>=0) {
+        const auto& p = bodies[body._parent];
+        x = p._x + p._q.toRotationMatrix()*x;
+        q = (p._q * q).normalized();
+        body._x = p._x + p._q.toRotationMatrix()*body._x;
+        body._q = (p._q * body._q).normalized();
+      }
+      body._c._x = x;
+      body._c._q = q;
+      body._c._radius = 0;
+      body._c._len = body._boxSize[0];
+      body._c._width = body._boxSize[1];
+      body._c._height = body._boxSize[2];
     }
-    body._c._radius=body._radius;
-    body._c._len=(c2-c1).norm();
-    body._c._x=(c1+c2)/2;
-    body._c._q=QuatT::FromTwoVectors(Vec3T::UnitX(),(c2-c1).normalized());
   }
 }
 
@@ -163,7 +207,6 @@ int main(int argc,char** argv) {
   std::vector<Shape<T>> ps;
   for(auto& b : bodies) {
     Shape<T> c = b._c;
-    c._type = ShapeType::Capsule;
     c._v.setZero();
     c._w.setZero();
     c._torque.setZero();
