@@ -99,8 +99,18 @@ void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLE
       QuatT sQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(sC2-sC1).normalized());
       body._j._cAPos=-sQ.inverse().toRotationMatrix()*(sX);
     } else if (body._isValid && ShapeType::Box == body._type) {
-      body._j._isValid=false;
-      // TODO
+      body._j._isValid=true;
+      // parent is capsule
+      Body<T>& p = bodies[body._parent];
+      Vec3T pC1 = Vec3T(p._ft[0], p._ft[1], p._ft[2]);
+      Vec3T pC2 = Vec3T(p._ft[3], p._ft[4], p._ft[5]);
+      Vec3T pX = (pC1+pC2)/2;
+      QuatT pQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(pC2-pC1).normalized());
+      body._j._cB=body._parent;
+      body._j._cBPos=pQ.inverse().toRotationMatrix()*(body._x-pX);
+      // son:
+      body._j._cA=_currId;
+      body._j._cAPos=-body._boxQuat.inverse().toRotationMatrix()*(body._boxPos);
     } else {
       body._j._isValid=false;
     }
@@ -161,9 +171,9 @@ void updateShape(std::vector<Body<T>>& bodies) {
       body._c._x = x;
       body._c._q = q;
       body._c._radius = 0;
-      body._c._len = body._boxSize[0];
-      body._c._width = body._boxSize[1];
-      body._c._height = body._boxSize[2];
+      body._c._len = body._boxSize[0]*2;
+      body._c._width = body._boxSize[1]*2;
+      body._c._height = body._boxSize[2]*2;
     }
   }
 }
@@ -251,11 +261,11 @@ int main(int argc,char** argv) {
   auto shapeCollision=visualizeOrUpdateCollision(*geometry,xpbd.getDetector());
   drawer.addShape(shapeGeometry);
   drawer.addShape(shapeCollision);
-  drawer.addCamera3D(90,Eigen::Matrix<GLfloat,3,1>(0,1,0),Eigen::Matrix<GLfloat,3,1>(0,0,5),Eigen::Matrix<GLfloat,3,1>(0,0,-1));
-  drawer.getCamera3D()->setManipulator(std::shared_ptr<DRAWER::CameraManipulator>(new DRAWER::FirstPersonCameraManipulator(drawer.getCamera3D())));
-  drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::ImGuiPlugin([&]() {
-    drawer.getCamera3D()->getManipulator()->imGuiCallback();
-  })));
+  // drawer.addCamera3D(90,Eigen::Matrix<GLfloat,3,1>(0,1,0),Eigen::Matrix<GLfloat,3,1>(0,0,5),Eigen::Matrix<GLfloat,3,1>(0,0,-1));
+  // drawer.getCamera3D()->setManipulator(std::shared_ptr<DRAWER::CameraManipulator>(new DRAWER::FirstPersonCameraManipulator(drawer.getCamera3D())));
+  // drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::ImGuiPlugin([&]() {
+  //   drawer.getCamera3D()->getManipulator()->imGuiCallback();
+  // })));
   bool sim=false;
   drawer.setFrameFunc([&](std::shared_ptr<DRAWER::SceneNode>& root) {
     if(sim) {
