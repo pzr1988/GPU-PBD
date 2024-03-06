@@ -68,12 +68,9 @@ void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLE
     body._type = ShapeType::Box;
     const tinyxml2::XMLElement* gg=g->FirstChildElement("geom");
     body._boxPos=PHYSICSMOTION::parsePtreeDef<Vec3T>(*gg,"<xmlattr>.pos","0 0 0");
-    body._boxQuat=PHYSICSMOTION::parsePtreeDef<Vec4T>(*gg,"<xmlattr>.quat","1 0 0 0");
-    body._boxSize=PHYSICSMOTION::parsePtreeDef<Vec3T>(*gg,"<xmlattr>.size","0 0 0");
-    printf("boxPos:%f,%f,%f, boxQuat:%f,%f,%f,%f, boxSize:%f,%f,%f\n",
-           body._boxPos[0], body._boxPos[1],body._boxPos[2],
-           body._boxQuat.w(), body._boxQuat.x(), body._boxQuat.y(), body._boxQuat.z(),
-           body._boxSize[0], body._boxSize[1], body._boxSize[2]);
+    Vec4T tmpQ=PHYSICSMOTION::parsePtreeDef<Vec4T>(*gg,"<xmlattr>.quat","1 0 0 0");
+    body._boxQuat=QuatT(tmpQ[0],tmpQ[1],tmpQ[2],tmpQ[3]);
+    body._boxSize=2*PHYSICSMOTION::parsePtreeDef<Vec3T>(*gg,"<xmlattr>.size","0 0 0");
   } else {
     body._type = ShapeType::Unknown;
     body._isValid=false;
@@ -171,9 +168,9 @@ void updateShape(std::vector<Body<T>>& bodies) {
       body._c._x = x;
       body._c._q = q;
       body._c._radius = 0;
-      body._c._len = body._boxSize[0]*2;
-      body._c._width = body._boxSize[1]*2;
-      body._c._height = body._boxSize[2]*2;
+      body._c._len = body._boxSize[0];
+      body._c._width = body._boxSize[1];
+      body._c._height = body._boxSize[2];
     }
   }
 }
