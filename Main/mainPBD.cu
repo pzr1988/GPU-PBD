@@ -60,6 +60,23 @@ int main(int argc,char** argv) {
     ps.push_back(p);
   }
 
+  for(int i=0; i<5; i++) {
+    Shape<T> p;
+    p._type = ShapeType::Sphere;
+    p._radius=0.2;
+    QuatT q(uni(mt),0,0,uni(mt));
+    q.normalize();
+    p._q = q;
+    Vec3T trans;
+    trans.setRandom();
+    p._x = trans*3;
+    p._x.z() = 0;
+    p.initInertiaTensor();
+    p._force = Vec3T(0, -9.8f*p._mass,0);
+    p._isDynamic = true;
+    ps.push_back(p);
+  }
+
   // boundary
   Shape<T> b_1;
   b_1._type = ShapeType::Box;
