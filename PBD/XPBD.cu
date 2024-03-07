@@ -288,6 +288,10 @@ void XPBD<T>::updateShapeState() {
     }
   });
 }
+template <typename T>
+const thrust::device_vector<Constraint<T>>& XPBD<T>::getJointPositions() const {
+  return _jointPositions;
+}
 
 //declare instance
 template struct XPBD<LSCALAR>;

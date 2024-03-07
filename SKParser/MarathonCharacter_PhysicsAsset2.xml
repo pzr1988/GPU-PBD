@@ -1,0 +1,159 @@
+<mujoco model="MarathonCharacter_PhysicsAsset">
+	<compiler angle="degree" inertiafromgeom="true"/>
+	<option timestep="0.01666"/>
+	<statistic extent="2" center="0 0 1"/>
+	<default>
+		<motor ctrlrange="-1 1" ctrllimited="true"/>
+		<default class="body">
+			<geom type="capsule" condim="1" friction="5.50 5.50 5.50" solimp=".9 .99 .003" solref=".015 1" density="500.00"/>
+			<joint type="hinge" damping="0.00" stiffness="1" armature="0.01" limited="true" solimplimit="0 .99 .01"/>
+		</default>
+	</default>
+	<worldbody>
+		<body name="Hips" pos="0.0208 -0.0000 1.0399" quat="0.7071 -0.0000 0.7071 -0.0000" childclass="body">
+			<freejoint name="Hips"/>
+			<geom name="Hips" fromto="0.0335 0.0849 -0.0278 0.0237 -0.0861 -0.0278" quat="0.4725 -0.5018 -0.4982 -0.5261" size="0.1564"/>
+			<body name="LeftUpLeg" pos="0.0675 0.0821 -0.0160" quat="1.0000 -0.0000 -0.0000 -0.0000">
+				<joint name="LeftUpLeg_x" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-85 85" stiffness="200.0000" damping="50.0000" armature="0.1"/>
+				<joint name="LeftUpLeg_y" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="200.0000" damping="50.0000" armature="0.1"/>
+				<joint name="LeftUpLeg_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-45 45" stiffness="200.0000" damping="50.0000" armature="0.1"/>
+				<geom name="LeftUpLeg" fromto="0.3172 0.0052 0.0110 0.0478 0.0208 0.0034" quat="0.0207 0.6968 -0.0201 0.7167" size="0.1067"/>
+				<body name="LeftLeg" pos="0.4437 -0.0000 0.0028" quat="0.8434 -0.0000 0.5373 -0.0000">
+					<joint name="LeftLeg_x" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-65 65" stiffness="200.0000" damping="50.0000" armature="0.1"/>
+					<geom name="LeftLeg" fromto="0.0639 0.0029 -0.0123 0.3210 -0.0005 -0.0335" quat="0.7356 -0.0045 -0.6774 -0.0049" size="0.0796"/>
+					<body name="LeftFoot" pos="0.4443 0.0000 -0.0298" quat="1.0000 -0.0000 -0.0000 -0.0000">
+						<joint name="LeftFoot_x" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-35 35" stiffness="200.0000" damping="50.0000" armature="0.1"/>
+						<joint name="LeftFoot_y" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="2.0000" damping="5.0000" armature="0.1"/>
+						<joint name="LeftFoot_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-5 5" stiffness="200.0000" damping="50.0000" armature="0.1"/>
+						<geom name="LeftFoot" type="box" pos="0.0333 0.0066 0.0730" quat="1.0000 0.0000 -0.0000 -0.0000" size="0.0500 0.0500 0.1200"/>
+					</body>
+				</body>
+			</body>
+			<body name="RightUpLeg" pos="0.0675 -0.0821 -0.0160" quat="1.0000 -0.0000 -0.0000 -0.0000">
+				<joint name="RightUpLeg_x" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-85 85" stiffness="200.0000" damping="50.0000" armature="0.1"/>
+				<joint name="RightUpLeg_y" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="200.0000" damping="50.0000" armature="0.1"/>
+				<joint name="RightUpLeg_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-45 45" stiffness="200.0000" damping="50.0000" armature="0.1"/>
+				<geom name="RightUpLeg" fromto="0.3167 -0.0045 0.0111 0.0463 -0.0218 0.0034" quat="0.0228 -0.6967 -0.0222 -0.7167" size="0.1062"/>
+				<body name="RightLeg" pos="0.4437 0.0000 0.0029" quat="0.8660 -0.0000 0.5000 -0.0000">
+					<joint name="RightLeg_x" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-65 65" stiffness="200.0000" damping="50.0000" armature="0.1"/>
+					<geom name="RightLeg" fromto="0.0639 -0.0029 -0.0123 0.3210 0.0005 -0.0335" quat="0.7356 0.0045 -0.6774 0.0049" size="0.0796"/>
+					<body name="RightFoot" pos="0.4443 0.0000 -0.0298" quat="1.0000 -0.0000 -0.0000 -0.0000">
+						<joint name="RightFoot_x" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-35 35" stiffness="200.0000" damping="50.0000" armature="0.1"/>
+						<joint name="RightFoot_y" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="2.0000" damping="5.0000" armature="0.1"/>
+						<joint name="RightFoot_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-5 5" stiffness="200.0000" damping="50.0000" armature="0.1"/>
+						<geom name="RightFoot" type="box" pos="0.0333 -0.0066 0.0730" quat="1.0000 0.0000 -0.0000 -0.0000" size="0.0500 0.0500 0.1200"/>
+					</body>
+				</body>
+			</body>
+			<body name="Spine" pos="-0.1018 0.0000 0.0013" quat="1.0000 -0.0000 -0.0000 -0.0000">
+				<joint name="Spine_x" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-30 30" stiffness="500.0000" damping="50.0000" armature="100.01"/>
+				<joint name="Spine_y" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-30 30" stiffness="500.0000" damping="50.0000" armature="0.1"/>
+				<joint name="Spine_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-30 30" stiffness="500.0000" damping="50.0000" armature="0.1"/>
+				<geom name="Spine" fromto="-0.0713 0.0000 -0.0050 -0.1854 -0.0000 -0.0055" quat="0.0001 -0.7054 -0.0001 -0.7088" size="0.1098"/>
+				<body name="Spine1" pos="-0.1008 0.0000 -0.0100" quat="1.0000 -0.0000 -0.0000 -0.0000">
+					<joint name="Spine1_x" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-45 45" stiffness="500.0000" damping="50.0000" armature="100.01"/>
+					<joint name="Spine1_y" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="500.0000" damping="50.0000" armature="100.01"/>
+					<joint name="Spine1_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-45 45" stiffness="500.0000" damping="50.0000" armature="100.01"/>
+					<geom name="Spine1" fromto="-0.0636 -0.0738 0.0023 -0.0636 0.0738 0.0023" quat="0.5003 0.5003 -0.4997 0.4997" size="0.1356"/>
+					<body name="Spine2" pos="-0.0910 0.0000 -0.0137" quat="1.0000 -0.0000 -0.0000 -0.0000">
+						<joint name="Spine2_x" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-45 45" stiffness="500.0000" damping="50.0000" armature="100.01"/>
+						<joint name="Spine2_y" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="500.0000" damping="50.0000" armature="100.01"/>
+						<joint name="Spine2_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-45 45" stiffness="500.0000" damping="50.0000" armature="100.01"/>
+						<geom name="Spine2" fromto="-0.1050 0.0712 0.0051 -0.0998 -0.0759 -0.0318" quat="0.5672 -0.4273 -0.4426 -0.5475" size="0.1364"/>
+						<body name="LeftShoulder" pos="-0.1095 0.0457 -0.0263" quat="1.0000 -0.0000 -0.0000 -0.0000">
+							<joint name="LeftShoulder_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-30 30" stiffness="150.0000" damping="20.0000" armature="0.1"/>
+							<geom name="LeftShoulder" fromto="-0.0265 0.0766 0.0313 -0.0135 0.0638 -0.0629" quat="0.7071 -0.0957 -0.0015 0.7006" size="0.0766"/>
+							<body name="LeftArm" pos="0.0052 0.1059 -0.0223" quat="0.9397 0.3420 -0.0000 0.0000">
+								<joint name="LeftArm_x" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-45 45" stiffness="150.0000" damping="20.0000" armature="0.1"/>
+								<joint name="LeftArm_y" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="150.0000" damping="20.0000" armature="0.1"/>
+								<joint name="LeftArm_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-85 85" stiffness="150.0000" damping="20.0000" armature="0.1"/>
+								<geom name="LeftArm" fromto="0.0064 0.0348 -0.0051 0.0080 0.2051 -0.0051" quat="0.5025 0.4975 -0.5024 0.4975" size="0.0599"/>
+								<body name="LeftForeArm" pos="0.0000 0.2784 0.0000" quat="0.7660 0.6428 0.0000 0.0000">
+									<joint name="LeftForeArm_y" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-85 85" stiffness="1.0000" damping="1.0000" armature="0.1"/>
+									<geom name="LeftForeArm" fromto="-0.0015 0.0385 0.0007 -0.0070 0.1992 0.0002" quat="0.4920 0.5078 -0.4907 0.5091" size="0.0551"/>
+									<body name="LeftHand" pos="0.0000 0.2833 0.0000" quat="1.0000 -0.0000 -0.0000 -0.0000">
+										<joint name="LeftHand_y" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-25 25" stiffness="150.0000" damping="20.0000" armature="0.1"/>
+										<joint name="LeftHand_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-35 35" stiffness="150.0000" damping="20.0000" armature="0.1"/>
+										<geom name="LeftHand" fromto="-0.0003 0.0041 -0.0009 -0.0001 0.0736 -0.0044" quat="0.5133 0.4864 -0.4878 0.5118" size="0.0503"/>
+									</body>
+								</body>
+							</body>
+						</body>
+						<body name="Neck" pos="-0.1667 0.0000 -0.0252" quat="1.0000 -0.0000 -0.0000 -0.0000">
+							<joint name="Neck_x" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-25 25" stiffness="100.0000" damping="20.0000" armature="0.1"/>
+							<geom name="Neck" fromto="-0.0675 -0.0000 0.0133 -0.0148 0.0000 0.0133" quat="0.7071 0.0000 -0.7071 0.0000" size="0.0518"/>
+							<body name="Head" pos="-0.0962 -0.0000 0.0169" quat="1.0000 -0.0000 -0.0000 -0.0000">
+								<joint name="Head_x" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-25 25" stiffness="100.0000" damping="20.0000" armature="0.1"/>
+								<joint name="Head_y" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-15 15" stiffness="100.0000" damping="20.0000" armature="0.1"/>
+								<joint name="Head_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-25 25" stiffness="100.0000" damping="20.0000" armature="0.1"/>
+								<geom name="Head" type="sphere" pos="-0.0725 0.0000 0.0275" size="0.1462"/>
+							</body>
+						</body>
+						<body name="RightShoulder" pos="-0.1095 -0.0457 -0.0263" quat="1.0000 -0.0000 -0.0000 -0.0000">
+							<joint name="RightShoulder_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-30 30" stiffness="150.0000" damping="20.0000" armature="0.1"/>
+							<geom name="RightShoulder" fromto="-0.0267 -0.0766 0.0356 -0.0142 -0.0660 -0.0611" quat="0.7021 -0.0068 -0.0836 0.7071" size="0.0762"/>
+							<body name="RightArm" pos="0.0052 -0.1059 -0.0223" quat="0.9397 -0.3420 -0.0000 -0.0000">
+								<joint name="RightArm_x" pos="0.0000 0.0000 0.0000" axis="0.00000000 1.00000000 0.00000000" range="-45 45" stiffness="150.0000" damping="20.0000" armature="0.1"/>
+								<joint name="RightArm_y" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-45 45" stiffness="150.0000" damping="20.0000" armature="0.1"/>
+								<joint name="RightArm_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-85 85" stiffness="150.0000" damping="20.0000" armature="0.1"/>
+								<geom name="RightArm" fromto="0.0064 -0.0348 -0.0051 0.0080 -0.2051 -0.0051" quat="0.5025 -0.4975 -0.5024 -0.4975" size="0.0599"/>
+								<body name="RightForeArm" pos="0.0000 -0.2784 0.0000" quat="0.7660 -0.6428 0.0000 -0.0000">
+									<joint name="RightForeArm_y" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-85 85" stiffness="1.0000" damping="1.0000" armature="0.1"/>
+									<geom name="RightForeArm" fromto="-0.0015 -0.0385 0.0007 -0.0070 -0.1992 0.0002" quat="0.4920 -0.5078 -0.4907 -0.5091" size="0.0551"/>
+									<body name="RightHand" pos="0.0000 -0.2833 0.0000" quat="1.0000 -0.0000 -0.0000 -0.0000">
+										<joint name="RightHand_y" pos="0.0000 0.0000 0.0000" axis="1.00000000 0.00000000 0.00000000" range="-25 25" stiffness="150.0000" damping="20.0000" armature="0.1"/>
+										<joint name="RightHand_z" pos="0.0000 0.0000 0.0000" axis="0.00000000 0.00000000 1.00000000" range="-35 35" stiffness="150.0000" damping="20.0000" armature="0.1"/>
+										<geom name="RightHand" fromto="-0.0003 -0.0041 -0.0009 -0.0001 -0.0736 -0.0044" quat="0.5134 -0.4863 -0.4879 -0.5117" size="0.0503"/>
+									</body>
+								</body>
+							</body>
+						</body>
+					</body>
+				</body>
+			</body>
+		</body>
+	</worldbody>
+	<actuator>
+		<motor name="LeftUpLeg_x" gear="10" joint="LeftUpLeg_x"/>
+		<motor name="LeftUpLeg_y" gear="10" joint="LeftUpLeg_y"/>
+		<motor name="LeftUpLeg_z" gear="10" joint="LeftUpLeg_z"/>
+		<motor name="LeftLeg_x" gear="10" joint="LeftLeg_x"/>
+		<motor name="LeftFoot_x" gear="10" joint="LeftFoot_x"/>
+		<motor name="LeftFoot_y" gear="10" joint="LeftFoot_y"/>
+		<motor name="LeftFoot_z" gear="10" joint="LeftFoot_z"/>
+		<motor name="RightUpLeg_x" gear="10" joint="RightUpLeg_x"/>
+		<motor name="RightUpLeg_y" gear="10" joint="RightUpLeg_y"/>
+		<motor name="RightUpLeg_z" gear="10" joint="RightUpLeg_z"/>
+		<motor name="RightLeg_x" gear="10" joint="RightLeg_x"/>
+		<motor name="RightFoot_x" gear="10" joint="RightFoot_x"/>
+		<motor name="RightFoot_y" gear="10" joint="RightFoot_y"/>
+		<motor name="RightFoot_z" gear="10" joint="RightFoot_z"/>
+		<motor name="Spine_x" gear="10" joint="Spine_x"/>
+		<motor name="Spine_y" gear="10" joint="Spine_y"/>
+		<motor name="Spine_z" gear="10" joint="Spine_z"/>
+		<motor name="Spine1_x" gear="10" joint="Spine1_x"/>
+		<motor name="Spine1_y" gear="10" joint="Spine1_y"/>
+		<motor name="Spine1_z" gear="10" joint="Spine1_z"/>
+		<motor name="Spine2_x" gear="10" joint="Spine2_x"/>
+		<motor name="Spine2_y" gear="10" joint="Spine2_y"/>
+		<motor name="Spine2_z" gear="10" joint="Spine2_z"/>
+		<motor name="LeftShoulder_z" gear="10" joint="LeftShoulder_z"/>
+		<motor name="LeftArm_x" gear="10" joint="LeftArm_x"/>
+		<motor name="LeftArm_y" gear="10" joint="LeftArm_y"/>
+		<motor name="LeftArm_z" gear="10" joint="LeftArm_z"/>
+		<motor name="LeftForeArm_y" gear="10" joint="LeftForeArm_y"/>
+		<motor name="LeftHand_y" gear="10" joint="LeftHand_y"/>
+		<motor name="LeftHand_z" gear="10" joint="LeftHand_z"/>
+		<motor name="Neck_x" gear="10" joint="Neck_x"/>
+		<motor name="Head_x" gear="10" joint="Head_x"/>
+		<motor name="Head_y" gear="10" joint="Head_y"/>
+		<motor name="Head_z" gear="10" joint="Head_z"/>
+		<motor name="RightShoulder_z" gear="10" joint="RightShoulder_z"/>
+		<motor name="RightArm_x" gear="10" joint="RightArm_x"/>
+		<motor name="RightArm_y" gear="10" joint="RightArm_y"/>
+		<motor name="RightArm_z" gear="10" joint="RightArm_z"/>
+		<motor name="RightForeArm_y" gear="10" joint="RightForeArm_y"/>
+		<motor name="RightHand_y" gear="10" joint="RightHand_y"/>
+		<motor name="RightHand_z" gear="10" joint="RightHand_z"/>
+	</actuator>
+</mujoco>

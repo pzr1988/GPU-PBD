@@ -39,6 +39,8 @@ class XPBD {
   void updateVelocity();
   //Use detector to visulize collisions
   const CollisionDetector<T>& getDetector() const;
+  //Get jointPositions for visulization
+  const thrust::device_vector<Constraint<T>>& getJointPositions() const;
   //Get number of constraints
   size_t numConstraints() const;
   //Add joint between a pair of shapes

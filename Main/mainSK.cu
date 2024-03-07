@@ -206,7 +206,7 @@ int main(int argc,char** argv) {
   typedef LSCALAR T;
   DECL_MAT_VEC_MAP_TYPES_T
   std::vector<Body<T>> bodies;
-  readMJCF(bodies, "/data/GPU-PBD/SKParser/amp_skeleton_full.xml");
+  readMJCF(bodies, "/data/GPU-PBD/SKParser/MarathonCharacter_PhysicsAsset2.xml");
   std::cout<<"==========================original info==========================" << std::endl;
   for(int i=0; i<bodies.size(); i++) {
     Body<T>& b = bodies[i];
@@ -281,7 +281,7 @@ int main(int argc,char** argv) {
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CaptureGIFPlugin(GLFW_KEY_1,"record.gif",drawer.FPS())));
   auto shapeGeometry=visualizeOrUpdateGeometry(*geometry);
-  auto shapeCollision=visualizeOrUpdateCollision(*geometry,xpbd.getDetector());
+  auto shapeCollision=visualizeOrUpdateCollision(*geometry,xpbd.getDetector(),xpbd.getJointPositions());
   drawer.addShape(shapeGeometry);
   drawer.addShape(shapeCollision);
   // drawer.addCamera3D(90,Eigen::Matrix<GLfloat,3,1>(0,1,0),Eigen::Matrix<GLfloat,3,1>(0,0,5),Eigen::Matrix<GLfloat,3,1>(0,0,-1));
@@ -294,7 +294,7 @@ int main(int argc,char** argv) {
     if(sim) {
       xpbd.step();
       visualizeOrUpdateGeometry(*geometry,shapeGeometry);
-      visualizeOrUpdateCollision(*geometry,xpbd.getDetector(),shapeCollision);
+      visualizeOrUpdateCollision(*geometry,xpbd.getDetector(),xpbd.getJointPositions(),shapeCollision);
     }
   });
   //press R to run simulation
