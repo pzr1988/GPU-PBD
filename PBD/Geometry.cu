@@ -23,6 +23,12 @@ void Shape<T>::initInertiaTensor(T rho) {
     T Izz = _mass*(_len*_len+_width*_width)/12.f;
     _Ibody.setIdentity();
     _Ibody.diagonal()=Vec3T(Ixx,Iyy,Izz);
+  } else if(ShapeType::Sphere==_type) {
+    _mass = (4.f/3.f)*3.14f*_radius*_radius*_radius;
+    _mass *= rho;
+    T Ixx = (2.f/5.f)*_mass*_radius*_radius;
+    _Ibody.diagonal()=Vec3T(Ixx,Ixx,Ixx);
+    _Ibody.setIdentity();
   } else {
     _mass = 1.f;
     _Ibody.setIdentity();

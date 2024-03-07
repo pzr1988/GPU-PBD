@@ -18,16 +18,31 @@ class NarrowPhase {
       return 0;
     if(ShapeType::Capsule==contactM._lhs->_type && ShapeType::Capsule==contactM._rhs->_type)
       return generateManifoldCapsuleCapsule(contactM, maxCollisionsPerNode);
-    if(ShapeType::Capsule==contactM._lhs->_type && ShapeType::Box==contactM._rhs->_type)
+    else if(ShapeType::Capsule==contactM._lhs->_type && ShapeType::Box==contactM._rhs->_type)
       return generateManifoldCapsuleBox(contactM, maxCollisionsPerNode);
-    if(ShapeType::Box==contactM._lhs->_type && ShapeType::Capsule==contactM._rhs->_type) {
+    else if(ShapeType::Capsule==contactM._lhs->_type && ShapeType::Sphere==contactM._rhs->_type)
+      return generateManifoldCapsuleSphere(contactM, maxCollisionsPerNode);
+    else if(ShapeType::Box==contactM._lhs->_type && ShapeType::Capsule==contactM._rhs->_type) {
       contactM.swap();
       int result =  generateManifoldCapsuleBox(contactM, maxCollisionsPerNode);
       contactM.swap();
       return result;
-    }
-    if(ShapeType::Box==contactM._lhs->_type && ShapeType::Box==contactM._rhs->_type)
+    } else if(ShapeType::Box==contactM._lhs->_type && ShapeType::Box==contactM._rhs->_type)
       return generateManifoldBoxBox(contactM, maxCollisionsPerNode);
+    else if(ShapeType::Box==contactM._lhs->_type && ShapeType::Sphere==contactM._rhs->_type) {
+      contactM.swap();
+      int result = generateManifoldSphereBox(contactM, maxCollisionsPerNode);
+      contactM.swap();
+      return result;
+    } else if(ShapeType::Sphere==contactM._lhs->_type && ShapeType::Capsule==contactM._rhs->_type) {
+      contactM.swap();
+      int result = generateManifoldCapsuleSphere(contactM, maxCollisionsPerNode);
+      contactM.swap();
+      return result;
+    } else if(ShapeType::Sphere==contactM._lhs->_type && ShapeType::Box==contactM._rhs->_type)
+      return generateManifoldSphereBox(contactM, maxCollisionsPerNode);
+    else if(ShapeType::Sphere==contactM._lhs->_type && ShapeType::Sphere==contactM._rhs->_type)
+      return generateManifoldSphereSphere(contactM, maxCollisionsPerNode);
     return 0;
   }
  private:
@@ -338,6 +353,130 @@ class NarrowPhase {
       const Trans<T> transB(sB->_x, sB->_q);
       return SAT<T>::generateManifold<BOXFACENUM, BOXFACENUM, BOXEDGENUM, BOXEDGENUM>(sA,sB,FA,FB,EA,EB,transA,transB,contactM,maxCollisionsPerNode);
     } else return 0;
+  }
+  static DEVICE_HOST int generateManifoldCapsuleSphere(ContactManifold<T>& contactM, size_t maxCollisionsPerNode) {
+    if(contactM._numCollision>=maxCollisionsPerNode)
+      return 0;
+    const Shape<T>* sA=contactM._lhs;
+    const Shape<T>* sB=contactM._rhs;
+    if(!sA->isCapsule() || !sB->isSphere())
+      return 0;
+    const Vec3T& cB=sB->_x;
+    Constraint<T> collision;
+    T collisionDepth = 0;
+    generateManifoldSphereShapeInternal(collision, collisionDepth, cB, contactM._rhs, contactM._rhsId, contactM._lhs, contactM._lhsId);
+    if (collision._isValid) {
+      contactM._localMemory[contactM._numCollision]._shapeIdA = collision._shapeIdA;
+      contactM._localMemory[contactM._numCollision]._shapeIdB = collision._shapeIdB;
+      contactM._localMemory[contactM._numCollision]._localPointA = collision._localPointA;
+      contactM._localMemory[contactM._numCollision]._localPointB = collision._localPointB;
+      contactM._localMemory[contactM._numCollision]._globalNormal = collision._globalNormal;
+      contactM._localMemory[contactM._numCollision]._isValid = true;
+      contactM._numCollision++;
+      return 1;
+    }
+    return 0;
+  }
+  static DEVICE_HOST int generateManifoldSphereBox(ContactManifold<T>& contactM, size_t maxCollisionsPerNode) {
+    if(contactM._numCollision>=maxCollisionsPerNode)
+      return 0;
+    const Shape<T>* sA=contactM._lhs; //sphere
+    const Shape<T>* sB=contactM._rhs; //box
+    if(!sA->isSphere() || !sB->isBox())
+      return 0;
+    Vec3T cAB = sB->_q.conjugate().toRotationMatrix()*(sA->_x-sB->_x);
+    Vec3T bMin = sB->minCorner();
+    Vec3T bMax = sB->maxCorner();
+    Vec3T bMinL = bMin-epsDist*Vec3T(1,1,1);
+    Vec3T bMaxL = bMax+epsDist*Vec3T(1,1,1);
+    Vec3T nA2B;
+    if((bMinL.array()<=cAB.array()).all() && (bMaxL.array()>=cAB.array()).all()) {
+      T minDist=FLT_MAX,dist=0;
+      for(int d=0; d<3; d++) {
+        dist=cAB[d]-bMinL[d];
+        if(dist<=minDist) {
+          minDist=dist;
+          nA2B=Vec3T::Unit(d);
+        }
+        dist=bMaxL[d]-cAB[d];
+        if(dist<=minDist) {
+          minDist=dist;
+          nA2B=-Vec3T::Unit(d);
+        }
+      }
+      Vec3T pointAB = cAB+nA2B*sA->_radius;
+      Vec3T globalPointA = sB->_q.toRotationMatrix()*pointAB + sB->_x;
+      Vec3T localPointA = sA->_q.conjugate().toRotationMatrix()*(globalPointA - sA->_x);
+      Vec3T localPointB = cAB-nA2B*minDist;
+      nA2B = sB->_q.toRotationMatrix()*nA2B;
+      contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
+      contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
+      contactM._localMemory[contactM._numCollision]._localPointA = localPointA;
+      contactM._localMemory[contactM._numCollision]._localPointB = localPointB;
+      contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
+      contactM._localMemory[contactM._numCollision]._isValid = true;
+      contactM._numCollision++;
+      return 1;
+    } else {
+      Vec3T dist=Vec3T::Zero();
+      for(int i=0; i<3; i++) {
+        if (cAB[i]<bMin[i])
+          dist[i]=cAB[i]-bMin[i];
+        else if(cAB[i]>bMax[i])
+          dist[i]=cAB[i]-bMax[i];
+      }
+      T distSqr=dist.squaredNorm();
+      if(distSqr>=sA->_radius*sA->_radius)
+        return 0;
+      Vec3T nA2B=-dist/sqrt((double)distSqr);
+      Vec3T pointAB = cAB+nA2B*sA->_radius;
+      Vec3T globalPointA = sB->_q.toRotationMatrix()*pointAB + sB->_x;
+      Vec3T localPointA = sA->_q.conjugate().toRotationMatrix()*(globalPointA - sA->_x);
+      nA2B = sB->_q.toRotationMatrix()*nA2B;
+      contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
+      contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
+      contactM._localMemory[contactM._numCollision]._localPointA = localPointA;
+      contactM._localMemory[contactM._numCollision]._localPointB = cAB-dist;
+      contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
+      contactM._localMemory[contactM._numCollision]._isValid = true;
+      contactM._numCollision++;
+      return 1;
+    }
+    return 0;
+  }
+  static DEVICE_HOST int generateManifoldSphereSphere(ContactManifold<T>& contactM, size_t maxCollisionsPerNode) {
+    if(contactM._numCollision>=maxCollisionsPerNode)
+      return 0;
+    const Shape<T>* sA=contactM._lhs;
+    const Shape<T>* sB=contactM._rhs;
+    if(!sA->isSphere() || !sB->isSphere())
+      return 0;
+
+    const Vec3T& cA=sA->_x;
+    const Vec3T& cB=sB->_x;
+    T distSqr=(cA-cB).squaredNorm(),dist=0;
+    T sumRad=sA->_radius+sB->_radius,sumRadSqr=sumRad*sumRad;
+    //not in contact
+    if(distSqr>sumRadSqr)
+      return 0;
+    //in contact
+    Vec3T nA2B;
+    if(distSqr>epsDist*epsDist) {
+      //a single contact point
+      nA2B=cB-cA;
+      nA2B/=dist=sqrt((double)distSqr);
+    } else {
+      //overlapping degenerate case
+      nA2B=Vec3T(0,0,1);
+    }
+    contactM._localMemory[contactM._numCollision]._shapeIdA = contactM._lhsId;
+    contactM._localMemory[contactM._numCollision]._shapeIdB = contactM._rhsId;
+    contactM._localMemory[contactM._numCollision]._localPointA = sA->_q.conjugate().toRotationMatrix()*(nA2B*sA->_radius);
+    contactM._localMemory[contactM._numCollision]._localPointB = -sB->_q.conjugate().toRotationMatrix()*(nA2B*sB->_radius);
+    contactM._localMemory[contactM._numCollision]._globalNormal = nA2B;
+    contactM._localMemory[contactM._numCollision]._isValid = true;
+    contactM._numCollision++;
+    return 1;
   }
 };
 }

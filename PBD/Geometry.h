@@ -18,6 +18,7 @@ namespace GPUPBD {
 enum class ShapeType {
   Capsule,
   Box,
+  Sphere,
   Unknown,
 };
 template <typename T>
@@ -44,7 +45,7 @@ struct Shape {
   /* Constant quantities */
   ShapeType _type=ShapeType::Unknown;
   T _len;
-  T _radius; //capsule
+  T _radius; //capsule or sphere
   T _width, _height; //box
   T _mass;
   Mat3T _Ibody, _Ibodyinv; //body space inertia tensor
@@ -113,6 +114,9 @@ struct Shape {
   }
   DEVICE_HOST bool isBox() const {
     return ShapeType::Box==_type;
+  }
+  DEVICE_HOST bool isSphere() const {
+    return ShapeType::Sphere==_type;
   }
   template <int NUM>
   DEVICE_HOST void getFacets(FixedVector<Facet<T>, NUM>& facets) const {
