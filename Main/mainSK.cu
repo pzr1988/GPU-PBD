@@ -86,36 +86,40 @@ void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLE
 
   //read joints, temporarily ignore all angular constraints.
   if(g->FirstChildElement("joint")) {
-    if(body._isValid && ShapeType::Capsule == body._type) {
+    if(body._isValid) {
       body._j._isValid=true;
       // parent:
       Body<T>& p = bodies[body._parent];
-      Vec3T pC1 = Vec3T(p._ft[0], p._ft[1], p._ft[2]);
-      Vec3T pC2 = Vec3T(p._ft[3], p._ft[4], p._ft[5]);
-      Vec3T pX = (pC1+pC2)/2;
-      QuatT pQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(pC2-pC1).normalized());
-      body._j._cB=body._parent;
-      body._j._cBPos=pQ.inverse().toRotationMatrix()*(body._x-pX);
+      if(p._type == ShapeType::Capsule) {
+        Vec3T pC1 = Vec3T(p._ft[0], p._ft[1], p._ft[2]);
+        Vec3T pC2 = Vec3T(p._ft[3], p._ft[4], p._ft[5]);
+        Vec3T pX = (pC1+pC2)/2;
+        QuatT pQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(pC2-pC1).normalized());
+        body._j._cB=body._parent;
+        body._j._cBPos=pQ.inverse().toRotationMatrix()*(body._x-pX);
+      } else if(p._type == ShapeType::Sphere) {
+        body._j._cB=body._parent;
+        body._j._cBPos=p._q.inverse().toRotationMatrix()*(body._x-p._spherePos);
+      } else {
+        body._j._isValid=false;
+      }
       // son:
-      body._j._cA=_currId;
-      Vec3T sC1 = Vec3T(body._ft[0], body._ft[1], body._ft[2]);
-      Vec3T sC2 = Vec3T(body._ft[3], body._ft[4], body._ft[5]);
-      Vec3T sX = (sC1+sC2)/2;
-      QuatT sQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(sC2-sC1).normalized());
-      body._j._cAPos=-sQ.inverse().toRotationMatrix()*(sX);
-    } else if (body._isValid && ShapeType::Box == body._type) {
-      body._j._isValid=true;
-      // parent is capsule
-      Body<T>& p = bodies[body._parent];
-      Vec3T pC1 = Vec3T(p._ft[0], p._ft[1], p._ft[2]);
-      Vec3T pC2 = Vec3T(p._ft[3], p._ft[4], p._ft[5]);
-      Vec3T pX = (pC1+pC2)/2;
-      QuatT pQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(pC2-pC1).normalized());
-      body._j._cB=body._parent;
-      body._j._cBPos=pQ.inverse().toRotationMatrix()*(body._x-pX);
-      // son:
-      body._j._cA=_currId;
-      body._j._cAPos=-body._boxQuat.inverse().toRotationMatrix()*(body._boxPos);
+      if(body._type == ShapeType::Capsule) {
+        body._j._cA=_currId;
+        Vec3T sC1 = Vec3T(body._ft[0], body._ft[1], body._ft[2]);
+        Vec3T sC2 = Vec3T(body._ft[3], body._ft[4], body._ft[5]);
+        Vec3T sX = (sC1+sC2)/2;
+        QuatT sQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(sC2-sC1).normalized());
+        body._j._cAPos=-sQ.inverse().toRotationMatrix()*(sX);
+      } else if (ShapeType::Box == body._type) {
+        body._j._cA=_currId;
+        body._j._cAPos=-body._boxQuat.inverse().toRotationMatrix()*(body._boxPos);
+      } else if(ShapeType::Sphere == body._type) {
+        body._j._cA=_currId;
+        body._j._cAPos=-body._spherePos;
+      } else {
+        body._j._isValid=false;
+      }
     } else {
       body._j._isValid=false;
     }
