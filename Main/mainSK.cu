@@ -35,6 +35,7 @@ struct Body {
   Vec3T _boxPos;
   QuatT _boxQuat;
   Vec3T _boxSize;
+  Vec3T _spherePos;
   std::string _name;
   Shape<T> _c;
   Joint<T> _j;
@@ -71,6 +72,13 @@ void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLE
     Vec4T tmpQ=PHYSICSMOTION::parsePtreeDef<Vec4T>(*gg,"<xmlattr>.quat","1 0 0 0");
     body._boxQuat=QuatT(tmpQ[0],tmpQ[1],tmpQ[2],tmpQ[3]);
     body._boxSize=2*PHYSICSMOTION::parsePtreeDef<Vec3T>(*gg,"<xmlattr>.size","0 0 0");
+  } else if (std::string(g->FirstChildElement("geom")->FindAttribute("type")->Value()) == "sphere") {
+    //sphere
+    body._isValid=true;
+    body._type = ShapeType::Sphere;
+    const tinyxml2::XMLElement* gg=g->FirstChildElement("geom");
+    body._spherePos=PHYSICSMOTION::parsePtreeDef<Vec3T>(*gg,"<xmlattr>.pos","0 0 0");
+    body._radius=PHYSICSMOTION::get<T>(*gg,"<xmlattr>.size");
   } else {
     body._type = ShapeType::Unknown;
     body._isValid=false;
@@ -171,6 +179,20 @@ void updateShape(std::vector<Body<T>>& bodies) {
       body._c._len = body._boxSize[0];
       body._c._width = body._boxSize[1];
       body._c._height = body._boxSize[2];
+    } else if (ShapeType::Sphere == body._type) {
+      body._c._type = ShapeType::Sphere;
+      Vec3T x = body._x + body._q.toRotationMatrix() * body._spherePos;
+      QuatT q = body._q;
+      if(body._parent>=0) {
+        const auto& p = bodies[body._parent];
+        x = p._x + p._q.toRotationMatrix()*x;
+        q = (p._q * q).normalized();
+        body._x = p._x + p._q.toRotationMatrix()*body._x;
+        body._q = (p._q * body._q).normalized();
+      }
+      body._c._x = x;
+      body._c._q = q;
+      body._c._radius = body._radius;
     }
   }
 }
@@ -180,7 +202,7 @@ int main(int argc,char** argv) {
   typedef LSCALAR T;
   DECL_MAT_VEC_MAP_TYPES_T
   std::vector<Body<T>> bodies;
-  readMJCF(bodies, "/data/GPU-PBD/SKParser/SK_Mannequin_PhysicsAsset_ABFB4_MJCF.xml");
+  readMJCF(bodies, "/data/GPU-PBD/SKParser/amp_skeleton_full.xml");
   std::cout<<"==========================original info==========================" << std::endl;
   for(int i=0; i<bodies.size(); i++) {
     Body<T>& b = bodies[i];

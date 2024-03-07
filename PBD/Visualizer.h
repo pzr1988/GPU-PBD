@@ -22,6 +22,8 @@ std::shared_ptr<DRAWER::CompositeShape> visualizeOrUpdateGeometry(const Geometry
         c->addShape(DRAWER::makeSphericalBox(RES,fill,cpuGeometry[i]._radius,Eigen::Matrix<GLfloat,3,1>((GLfloat)cpuGeometry[i]._len/2.0f,0,0)));
       } else if(cpuGeometry[i].isBox()) {
         c->addShape(DRAWER::makeBox(RES,fill,Eigen::Matrix<GLfloat,3,1>((GLfloat)cpuGeometry[i]._len/2.0f,(GLfloat)cpuGeometry[i]._width/2.0f,(GLfloat)cpuGeometry[i]._height/2.0f)));
+      } else if(cpuGeometry[i].isSphere()) {
+        c->addShape(DRAWER::makeSphere(RES,fill,(GLfloat)cpuGeometry[i]._radius));
       }
       c->setColorDiffuse(GL_LINES,.7f,.7f,.7f);
       c->setLineWidth(5);
