@@ -65,6 +65,7 @@ struct Shape {
   Vec3T _torque;
   // Collision exclusion
   int _parent = -1;
+  int _groupid = -1;
   void initInertiaTensor(T rho=1);
   DEVICE_HOST Vec3T minCorner() const {
     if(ShapeType::Capsule==_type)

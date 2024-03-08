@@ -199,6 +199,7 @@ template <typename T>
 void XPBD<T>::assignCollisionGroup() {
   if(_collisionGroupAssigned)
     return;
+  //generate parent id
   //Step 1: do label propagation in shapes.
   thrust::device_vector<int> _parents(_geometry->size());
   thrust::device_vector<int> _changes(_geometry->size());
@@ -221,13 +222,41 @@ void XPBD<T>::assignCollisionGroup() {
     int change_count = thrust::count_if(thrust::device, _changes.begin(), _changes.end(), thrust::identity<bool>());
     changed = change_count > 0;
   } while (changed);
-  //Step 2: assign collision group id
+  //Step 2: assign collision parent id
   Shape<T>* d_shapes = thrust::raw_pointer_cast(_geometry->getShapes());
   thrust::for_each(thrust::device,
                    thrust::make_counting_iterator(0),
                    thrust::make_counting_iterator((int)_geometry->size()),
   [d_shapes, d_parents] __device__ (int idx) {
     d_shapes[idx]._parent = d_parents[idx];
+  });
+  //generate group id
+  //Step 1: do label propagation in shapes.
+  thrust::sequence(thrust::device, _parents.begin(), _parents.end());
+  do {
+    thrust::transform(thrust::device, _jointPositions.begin(), _jointPositions.end(), _changes.begin(),
+    [d_parents] __device__ (const Constraint<T>& c) {
+      if(c._type!=ConstraintType::JointPosition || !c._isValid)
+        return false;
+      int parentA = d_parents[c._shapeIdA];
+      int parentB = d_parents[c._shapeIdB];
+      if (parentA != parentB) {
+        int min_label = min(parentA, parentB);
+        atomicMin(&d_parents[c._shapeIdA], min_label);
+        atomicMin(&d_parents[c._shapeIdB], min_label);
+        return true;
+      }
+      return false;
+    });
+    int change_count = thrust::count_if(thrust::device, _changes.begin(), _changes.end(), thrust::identity<bool>());
+    changed = change_count > 0;
+  } while (changed);
+  //Step 2: assign collision parent id
+  thrust::for_each(thrust::device,
+                   thrust::make_counting_iterator(0),
+                   thrust::make_counting_iterator((int)_geometry->size()),
+  [d_shapes, d_parents] __device__ (int idx) {
+    d_shapes[idx]._groupid = d_parents[idx];
   });
   _collisionGroupAssigned=true;
 }
