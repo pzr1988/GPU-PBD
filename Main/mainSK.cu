@@ -153,19 +153,23 @@ void updateShape(std::vector<Body<T>>& bodies) {
       body._c._type = ShapeType::Capsule;
       Vec3T c1 = Vec3T(body._ft[0], body._ft[1], body._ft[2]);
       Vec3T c2 = Vec3T(body._ft[3], body._ft[4], body._ft[5]);
+      body._c._q = QuatT::FromTwoVectors(Vec3T::UnitX(),(c2-c1).normalized());
       c1 = body._x + body._q.toRotationMatrix() * c1;
       c2 = body._x + body._q.toRotationMatrix() * c2;
+      body._c._q = body._q * body._c._q;
+      body._c._q.normalize();
       if(body._parent>=0) {
         const auto& p = bodies[body._parent];
         c1 = p._x + p._q.toRotationMatrix()*c1;
         c2 = p._x + p._q.toRotationMatrix()*c2;
+        body._c._q = p._q * body._c._q;
+        body._c._q.normalize();
         body._x = p._x + p._q.toRotationMatrix()*body._x;
         body._q = (p._q * body._q).normalized();
       }
       body._c._radius=body._radius;
       body._c._len=(c2-c1).norm();
       body._c._x=(c1+c2)/2;
-      body._c._q=QuatT::FromTwoVectors(Vec3T::UnitX(),(c2-c1).normalized());
     } else if (ShapeType::Box == body._type) {
       body._c._type = ShapeType::Box;
       Vec3T x = body._x + body._q.toRotationMatrix() * body._boxPos;
