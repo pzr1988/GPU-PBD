@@ -13,13 +13,23 @@
 using namespace GPUPBD;
 
 template <typename T>
-struct Joint {
+struct PositionConstraint {
   DECL_MAT_VEC_MAP_TYPES_T
   bool _isValid=false;
   int _cA=-1;//son
   int _cB=-1;//parent
   Vec3T _cAPos;
   Vec3T _cBPos;
+};
+template <typename T>
+struct AngularConstraint {
+  DECL_MAT_VEC_MAP_TYPES_T
+  bool _isValid=false;
+  int _cA=-1;//son
+  int _cB=-1;//parent
+  QuatT _pQ; //the rotation of parent shape in it's space.
+  QuatT _sQ; //the rotation of son shape in it's space.
+  QuatT _spQ; //the rotation from parent's space to son's space.
 };
 template <typename T>
 struct Body {
@@ -38,7 +48,8 @@ struct Body {
   Vec3T _spherePos;
   std::string _name;
   Shape<T> _c;
-  Joint<T> _j;
+  PositionConstraint<T> _pc;
+  AngularConstraint<T> _ac;
 };
 template <typename T>
 void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLElement* g) {
@@ -87,7 +98,7 @@ void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLE
   //read joints, temporarily ignore all angular constraints.
   if(g->FirstChildElement("joint")) {
     if(body._isValid) {
-      body._j._isValid=true;
+      body._pc._isValid=true;
       // parent:
       Body<T>& p = bodies[body._parent];
       if(p._type == ShapeType::Capsule) {
@@ -95,36 +106,36 @@ void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLE
         Vec3T pC2 = Vec3T(p._ft[3], p._ft[4], p._ft[5]);
         Vec3T pX = (pC1+pC2)/2;
         QuatT pQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(pC2-pC1).normalized());
-        body._j._cB=body._parent;
-        body._j._cBPos=pQ.inverse().toRotationMatrix()*(body._x-pX);
+        body._pc._cB=body._parent;
+        body._pc._cBPos=pQ.inverse().toRotationMatrix()*(body._x-pX);
       } else if(p._type == ShapeType::Sphere) {
-        body._j._cB=body._parent;
-        body._j._cBPos=p._q.inverse().toRotationMatrix()*(body._x-p._spherePos);
+        body._pc._cB=body._parent;
+        body._pc._cBPos=p._q.inverse().toRotationMatrix()*(body._x-p._spherePos);
       } else {
-        body._j._isValid=false;
+        body._pc._isValid=false;
       }
       // son:
       if(body._type == ShapeType::Capsule) {
-        body._j._cA=_currId;
+        body._pc._cA=_currId;
         Vec3T sC1 = Vec3T(body._ft[0], body._ft[1], body._ft[2]);
         Vec3T sC2 = Vec3T(body._ft[3], body._ft[4], body._ft[5]);
         Vec3T sX = (sC1+sC2)/2;
         QuatT sQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(sC2-sC1).normalized());
-        body._j._cAPos=-sQ.inverse().toRotationMatrix()*(sX);
+        body._pc._cAPos=-sQ.inverse().toRotationMatrix()*(sX);
       } else if (ShapeType::Box == body._type) {
-        body._j._cA=_currId;
-        body._j._cAPos=-body._boxQuat.inverse().toRotationMatrix()*(body._boxPos);
+        body._pc._cA=_currId;
+        body._pc._cAPos=-body._boxQuat.inverse().toRotationMatrix()*(body._boxPos);
       } else if(ShapeType::Sphere == body._type) {
-        body._j._cA=_currId;
-        body._j._cAPos=-body._spherePos;
+        body._pc._cA=_currId;
+        body._pc._cAPos=-body._spherePos;
       } else {
-        body._j._isValid=false;
+        body._pc._isValid=false;
       }
     } else {
-      body._j._isValid=false;
+      body._pc._isValid=false;
     }
   } else {
-    body._j._isValid=false;
+    body._pc._isValid=false;
   }
 
   if(!body._isValid) return;
@@ -220,9 +231,9 @@ int main(int argc,char** argv) {
               << ", radius:" << b._radius
               << ", fromto:" << b._ft[0] << " " << b._ft[1] << " "<< b._ft[2] << " "<< b._ft[3] << " "<< b._ft[4] << " "<< b._ft[5]
               << ", parent Name: " << bodies[b._parent>-1?b._parent:0]._name
-              << ", joint._isValid: " << b._j._isValid
-              << ", joint._cAName: " << bodies[b._j._cA>-1?b._j._cA:0]._name
-              << ", joint._cBName: " << bodies[b._j._cB>-1?b._j._cB:0]._name
+              << ", joint._isValid: " << b._pc._isValid
+              << ", joint._cAName: " << bodies[b._pc._cA>-1?b._pc._cA:0]._name
+              << ", joint._cBName: " << bodies[b._pc._cB>-1?b._pc._cB:0]._name
               << std::endl;
   }
 
@@ -269,10 +280,10 @@ int main(int argc,char** argv) {
   geometry->resize(ps.size());
   geometry->setShape(ps);
   XPBD<T> xpbd(geometry, 1.0f/60);
-  // addJoint
+  // addPositionConstraint
   std::cout<<"==========================joint info==========================" << std::endl;
   for(auto& b : bodies) {
-    auto& j = b._j;
+    auto& j = b._pc;
     if(j._isValid) {
       xpbd.addJoint(j._cA,j._cB,j._cAPos,j._cBPos);
       std::cout<<"Parent: " << bodies[j._cB]._name << ", Self: " << bodies[j._cA]._name
