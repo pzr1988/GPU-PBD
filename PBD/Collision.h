@@ -27,10 +27,12 @@ struct Constraint {
   Vec3T _localPointB;
   Vec3T _globalNormal;
   QuatT _targetQ; // the rotation from B to A
+  QuatT _aQ; // the rotation of A in it's world
+  QuatT _bQ; // the rotation of B in it's world
   Vec3T _axis; // rotate axis of angular constraint
   T _theta; // angular of rotation.
   T _alpha; // compliance of the constraint
-  DEVICE_HOST Constraint():_shapeIdA(-1),_shapeIdB(-1), _localPointA(Vec3T()),_localPointB(Vec3T()),_globalNormal(Vec3T()), _alpha(.0001f), _isValid(false) {}
+  DEVICE_HOST Constraint():_shapeIdA(-1),_shapeIdB(-1), _localPointA(Vec3T()),_localPointB(Vec3T()),_globalNormal(Vec3T()),_targetQ(QuatT::Identity()),_aQ(QuatT::Identity()),_bQ(QuatT::Identity()),_alpha(.0001f), _isValid(false) {}
 };
 
 template <typename T>

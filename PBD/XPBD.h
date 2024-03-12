@@ -45,8 +45,8 @@ class XPBD {
   size_t numConstraints() const;
   //Add joint between a pair of shapes
   void addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T& localB);
-  //Fix angle between a pair of shapes, from B to A.
-  void addJointAngular(size_t idA, size_t idB, const QuatT& targetQ);
+  //Fix angle between a pair of shapes, from B to A. aQ is the rotation of shape in its space. bQ is the rotation of shape in its space.
+  void addJointAngular(size_t idA, size_t idB, const QuatT& targetQ, const QuatT& aQ=QuatT::Identity(), const QuatT& bQ=QuatT::Identity());
   //Automatically avoid collision between a Shape<T> and its children
   void assignCollisionGroup();
   //Calculate globalnormal of joint position constraint, and axis/theta of joint angular constraint.

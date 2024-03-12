@@ -134,8 +134,12 @@ void XPBD<T>::updateJointConstraint() {
   [=]  __device__ (Constraint<T>& constraint) {
     auto& cA = d_shapes[constraint._shapeIdA];
     auto& cB = d_shapes[constraint._shapeIdB];
-    auto deltaQ = (constraint._targetQ.conjugate()*cA._q*cB._q.conjugate()).vec();
-    // auto deltaQ = (constraint._targetQ.conjugate()*cB._q*cA._q.conjugate()).vec();
+    // auto deltaQ = (constraint._targetQ.conjugate()*cA._q*cB._q.conjugate()).vec();
+    auto deltaQ = (cA._q*constraint._aQ.conjugate()*constraint._bQ*cB._q.conjugate()*constraint._targetQ.conjugate()).vec();
+    // printf("delta Q:%f,%f,%f, sQ:%f,%f,%f,%f, pQ:%f,%f,%f,%f\n",
+    //  deltaQ.x(), deltaQ.y(), deltaQ.z(),
+    //  cA._q.w(), cA._q.x(), cA._q.y(), cA._q.z(),
+    //  cB._q.w(), cB._q.x(), cB._q.y(), cB._q.z());
     auto len = sqrt(deltaQ.squaredNorm());
     constraint._theta = 2*asin(len);
     if(constraint._theta > epsDir)
@@ -184,7 +188,7 @@ void XPBD<T>::addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T&
   _collisionGroupAssigned=false;    //need to re-assign
 }
 template <typename T>
-void XPBD<T>::addJointAngular(size_t idA, size_t idB, const XPBD<T>::QuatT& targetQ) {
+void XPBD<T>::addJointAngular(size_t idA, size_t idB, const XPBD<T>::QuatT& targetQ, const XPBD<T>::QuatT& aQ, const XPBD<T>::QuatT& bQ) {
   if(idA==idB)
     throw std::runtime_error("Cannot add joint to the same Shape<T>!");
   Constraint<T> c;
@@ -193,6 +197,8 @@ void XPBD<T>::addJointAngular(size_t idA, size_t idB, const XPBD<T>::QuatT& targ
   c._shapeIdA=(int)idA;
   c._shapeIdB=(int)idB;
   c._targetQ=targetQ;
+  c._aQ=aQ;
+  c._bQ=bQ;
   _jointAngulars.push_back(c);
 }
 template <typename T>

@@ -29,7 +29,7 @@ struct AngularConstraint {
   int _cB=-1;//parent
   QuatT _pQ; //the rotation of parent shape in it's space.
   QuatT _sQ; //the rotation of son shape in it's space.
-  QuatT _spQ; //the rotation from parent's space to son's space.
+  QuatT _psQ; //the rotation from parent's space to son's space.
 };
 template <typename T>
 struct Body {
@@ -99,43 +99,51 @@ void readBodies(std::vector<Body<T>>& bodies, int parentId, const tinyxml2::XMLE
   if(g->FirstChildElement("joint")) {
     if(body._isValid) {
       body._pc._isValid=true;
+      body._ac._isValid=true;
+      body._ac._psQ=body._q;
       // parent:
       Body<T>& p = bodies[body._parent];
+      body._pc._cB=body._ac._cB=body._parent;
       if(p._type == ShapeType::Capsule) {
         Vec3T pC1 = Vec3T(p._ft[0], p._ft[1], p._ft[2]);
         Vec3T pC2 = Vec3T(p._ft[3], p._ft[4], p._ft[5]);
         Vec3T pX = (pC1+pC2)/2;
         QuatT pQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(pC2-pC1).normalized());
-        body._pc._cB=body._parent;
         body._pc._cBPos=pQ.inverse().toRotationMatrix()*(body._x-pX);
+        body._ac._pQ=pQ;
       } else if(p._type == ShapeType::Sphere) {
-        body._pc._cB=body._parent;
         body._pc._cBPos=p._q.inverse().toRotationMatrix()*(body._x-p._spherePos);
+        body._ac._pQ=QuatT::Identity();
       } else {
         body._pc._isValid=false;
+        body._ac._isValid=false;
       }
       // son:
+      body._pc._cA=body._ac._cA=_currId;
       if(body._type == ShapeType::Capsule) {
-        body._pc._cA=_currId;
         Vec3T sC1 = Vec3T(body._ft[0], body._ft[1], body._ft[2]);
         Vec3T sC2 = Vec3T(body._ft[3], body._ft[4], body._ft[5]);
         Vec3T sX = (sC1+sC2)/2;
         QuatT sQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(sC2-sC1).normalized());
         body._pc._cAPos=-sQ.inverse().toRotationMatrix()*(sX);
+        body._ac._sQ=sQ;
       } else if (ShapeType::Box == body._type) {
-        body._pc._cA=_currId;
         body._pc._cAPos=-body._boxQuat.inverse().toRotationMatrix()*(body._boxPos);
+        body._ac._sQ=body._boxQuat;
       } else if(ShapeType::Sphere == body._type) {
-        body._pc._cA=_currId;
         body._pc._cAPos=-body._spherePos;
+        body._ac._sQ=QuatT::Identity();
       } else {
         body._pc._isValid=false;
+        body._ac._isValid=false;
       }
     } else {
       body._pc._isValid=false;
+      body._ac._isValid=false;
     }
   } else {
     body._pc._isValid=false;
+    body._ac._isValid=false;
   }
 
   if(!body._isValid) return;
@@ -221,7 +229,7 @@ int main(int argc,char** argv) {
   typedef LSCALAR T;
   DECL_MAT_VEC_MAP_TYPES_T
   std::vector<Body<T>> bodies;
-  readMJCF(bodies, "/data/GPU-PBD/SKParser/MarathonCharacter_PhysicsAsset2.xml");
+  readMJCF(bodies, "/data/GPU-PBD/SKParser/SK_Mannequin_PhysicsAsset_ABFB4_MJCF.xml");
   std::cout<<"==========================original info==========================" << std::endl;
   for(int i=0; i<bodies.size(); i++) {
     Body<T>& b = bodies[i];
@@ -281,7 +289,7 @@ int main(int argc,char** argv) {
   geometry->setShape(ps);
   XPBD<T> xpbd(geometry, 1.0f/60);
   // addPositionConstraint
-  std::cout<<"==========================joint info==========================" << std::endl;
+  std::cout<<"===================position constraint info===================" << std::endl;
   for(auto& b : bodies) {
     auto& j = b._pc;
     if(j._isValid) {
@@ -289,6 +297,18 @@ int main(int argc,char** argv) {
       std::cout<<"Parent: " << bodies[j._cB]._name << ", Self: " << bodies[j._cA]._name
                << ", Parent Pos: " << j._cBPos[0] << ", "  << j._cBPos[2] << ", " << j._cBPos[2]
                << ", Self Pos: " << j._cAPos[0] << ", "  << j._cAPos[2] << ", " << j._cAPos[2]
+               << std::endl;
+    }
+  }
+  std::cout<<"===================angular constraint info===================" << std::endl;
+  for(auto& b : bodies) {
+    auto& j = b._ac;
+    if(j._isValid) {
+      xpbd.addJointAngular(j._cA,j._cB,j._psQ, j._sQ, j._pQ);
+      std::cout<<"Parent: " << bodies[j._cB]._name << ", Self: " << bodies[j._cA]._name
+               << ", _pq: " << j._pQ.w() << ", "  << j._pQ.x() << ", " << j._pQ.y() << ", " << j._pQ.z()
+               << ", _sq: " << j._sQ.w() << ", "  << j._sQ.x() << ", " << j._sQ.y() << ", " << j._sQ.z()
+               << ", _psq: " << j._psQ.w() << ", "  << j._psQ.x() << ", " << j._psQ.y() << ", " << j._psQ.z()
                << std::endl;
     }
   }

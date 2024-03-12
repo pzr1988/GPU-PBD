@@ -110,10 +110,10 @@ int main(int argc,char** argv) {
   xpbd.addJoint(2,3,ps[2].maxCorner(),ps[3].minCorner());
   xpbd.addJoint(3,4,ps[3].maxCorner(),ps[4].minCorner());
   // Because the fixedRotation is from A to B, we need to inverse it.
-  xpbd.addJointAngular(0, 1, fixedRotation.conjugate());
-  xpbd.addJointAngular(1, 2, fixedRotation.conjugate());
-  xpbd.addJointAngular(2, 3, fixedRotation.conjugate());
-  xpbd.addJointAngular(3, 4, fixedRotation.conjugate());
+  xpbd.addJointAngular(1, 0, fixedRotation);
+  xpbd.addJointAngular(2, 1, fixedRotation);
+  xpbd.addJointAngular(3, 2, fixedRotation);
+  xpbd.addJointAngular(4, 3, fixedRotation);
 
 
   xpbd.addJoint(5,6,ps[5].maxCorner(),ps[6].minCorner());
