@@ -134,12 +134,7 @@ void XPBD<T>::updateJointConstraint() {
   [=]  __device__ (Constraint<T>& constraint) {
     auto& cA = d_shapes[constraint._shapeIdA];
     auto& cB = d_shapes[constraint._shapeIdB];
-    // auto deltaQ = (constraint._targetQ.conjugate()*cA._q*cB._q.conjugate()).vec();
-    auto deltaQ = (cA._q*constraint._aQ.conjugate()*constraint._bQ*cB._q.conjugate()*constraint._targetQ.conjugate()).vec();
-    // printf("delta Q:%f,%f,%f, sQ:%f,%f,%f,%f, pQ:%f,%f,%f,%f\n",
-    //  deltaQ.x(), deltaQ.y(), deltaQ.z(),
-    //  cA._q.w(), cA._q.x(), cA._q.y(), cA._q.z(),
-    //  cB._q.w(), cB._q.x(), cB._q.y(), cB._q.z());
+    auto deltaQ = (cA._q*constraint._aQ.conjugate()*constraint._targetQ.conjugate()*constraint._bQ*cB._q.conjugate()).vec();
     auto len = sqrt(deltaQ.squaredNorm());
     constraint._theta = 2*asin(len);
     if(constraint._theta > epsDir)

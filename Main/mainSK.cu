@@ -229,7 +229,7 @@ int main(int argc,char** argv) {
   typedef LSCALAR T;
   DECL_MAT_VEC_MAP_TYPES_T
   std::vector<Body<T>> bodies;
-  readMJCF(bodies, "/data/GPU-PBD/SKParser/SK_Mannequin_PhysicsAsset_ABFB4_MJCF.xml");
+  readMJCF(bodies, "/data/GPU-PBD/SKParser/MarathonCharacter_PhysicsAsset2.xml");
   std::cout<<"==========================original info==========================" << std::endl;
   for(int i=0; i<bodies.size(); i++) {
     Body<T>& b = bodies[i];
