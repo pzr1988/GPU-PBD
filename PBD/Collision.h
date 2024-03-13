@@ -62,11 +62,8 @@ struct ContactManifold {
     _rhsMinCorner = _rhs->globalMinCorner().template cast<T>();
     _rhsMaxCorner = _rhs->globalMaxCorner().template cast<T>();
   }
-  DEVICE_HOST bool canCollide(bool closeSelfCollision=false) const {
-    if(!closeSelfCollision)
-      return _numCollision < maxCollisionPerObject && _lhs->_parent != _rhsId && _rhs->_parent != _lhsId;
-    else
-      return _numCollision < maxCollisionPerObject && _lhs->_groupid != _rhs->_groupid;
+  DEVICE_HOST bool canCollide() const {
+    return _numCollision < maxCollisionPerObject && _lhs->_parent != _rhsId && _rhs->_parent != _lhsId && _lhs->_groupid != _rhs->_groupid;
   }
   DEVICE_HOST void swap() {
     unsigned int tmpId = _lhsId;

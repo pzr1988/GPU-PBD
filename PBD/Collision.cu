@@ -32,7 +32,7 @@ void CollisionDetector<T>::detectCollisions() {
       if(idx < buffer[i] && contactM._numCollision < maxCollisionPerObject) {
         const auto &rhs = bvh_dev.objects[buffer[i]];
         contactM.updateRhs(&rhs, buffer[i]);
-        if(contactM.canCollide(true))
+        if(contactM.canCollide())
           NarrowPhase<T>::narrowPhaseCollision(contactM, maxCollisionPerObject);
       }
     // fill invalid

@@ -23,6 +23,11 @@ class XPBD {
       return result;
     }
   };
+  struct groupLink {
+    int _shapeIdA;
+    int _shapeIdB;
+    groupLink(int a, int b):_shapeIdA(a),_shapeIdB(b) {}
+  };
   //The contructor takes the set of shapes
   XPBD(std::shared_ptr<Geometry<T>> geometry,T dt,int nRelax=8);
   //Timestepping the physical system
@@ -47,6 +52,8 @@ class XPBD {
   void addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T& localB, T alpha=.0001f);
   //Fix angle between a pair of shapes, from B to A. aQ is the rotation of shape in its space. bQ is the rotation of shape in its space.
   void addJointAngular(size_t idA, size_t idB, const QuatT& targetQ, T alpha=.0001f, const QuatT& aQ=QuatT::Identity(), const QuatT& bQ=QuatT::Identity());
+  //Assign a and b to the same group. Shapes in the same group will not collide.
+  void addGroupLink(int a, int b);
   //Automatically avoid collision between a Shape<T> and its children
   void assignCollisionGroup();
   //Calculate globalnormal of joint position constraint, and axis/theta of joint angular constraint.
@@ -65,6 +72,7 @@ class XPBD {
   std::shared_ptr<CollisionDetector<T>> _detector;
   thrust::device_vector<Constraint<T>> _jointPositions;
   thrust::device_vector<Constraint<T>> _jointAngulars;
+  thrust::device_vector<groupLink> _groupLinks;
   T _dt;
   int _nRelax;
   thrust::device_vector<T> _lambda;

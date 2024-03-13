@@ -217,6 +217,10 @@ void XPBD<T>::addJointAngular(size_t idA, size_t idB, const XPBD<T>::QuatT& targ
   _jointAngulars.push_back(c);
 }
 template <typename T>
+void XPBD<T>::addGroupLink(int a, int b) {
+  _groupLinks.push_back(groupLink(a,b));
+}
+template <typename T>
 void XPBD<T>::assignCollisionGroup() {
   if(_collisionGroupAssigned)
     return;
@@ -252,19 +256,19 @@ void XPBD<T>::assignCollisionGroup() {
     d_shapes[idx]._parent = d_parents[idx];
   });
   //generate group id
-  //Step 1: do label propagation in shapes.
-  thrust::sequence(thrust::device, _parents.begin(), _parents.end());
+  //Step 1: do union find in shapes.
+  int* d_groupid = d_parents;
+  auto& _groupid = _parents;
+  thrust::sequence(thrust::device, _groupid.begin(), _groupid.end());
   do {
-    thrust::transform(thrust::device, _jointPositions.begin(), _jointPositions.end(), _changes.begin(),
-    [d_parents] __device__ (const Constraint<T>& c) {
-      if(c._type!=ConstraintType::JointPosition || !c._isValid)
-        return false;
-      int parentA = d_parents[c._shapeIdA];
-      int parentB = d_parents[c._shapeIdB];
-      if (parentA != parentB) {
-        int min_label = min(parentA, parentB);
-        atomicMin(&d_parents[c._shapeIdA], min_label);
-        atomicMin(&d_parents[c._shapeIdB], min_label);
+    thrust::transform(thrust::device, _groupLinks.begin(), _groupLinks.end(), _changes.begin(),
+    [d_groupid] __device__ (const groupLink& c) {
+      int groupidA = d_groupid[c._shapeIdA];
+      int groupidB = d_groupid[c._shapeIdB];
+      if (groupidA != groupidB) {
+        int groupid = min(groupidA, groupidB);
+        atomicMin(&d_groupid[c._shapeIdA], groupid);
+        atomicMin(&d_groupid[c._shapeIdB], groupid);
         return true;
       }
       return false;
@@ -276,8 +280,8 @@ void XPBD<T>::assignCollisionGroup() {
   thrust::for_each(thrust::device,
                    thrust::make_counting_iterator(0),
                    thrust::make_counting_iterator((int)_geometry->size()),
-  [d_shapes, d_parents] __device__ (int idx) {
-    d_shapes[idx]._groupid = d_parents[idx];
+  [d_shapes, d_groupid] __device__ (int idx) {
+    d_shapes[idx]._groupid = d_groupid[idx];
   });
   _collisionGroupAssigned=true;
 }

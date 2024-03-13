@@ -312,6 +312,13 @@ int main(int argc,char** argv) {
                << std::endl;
     }
   }
+  std::cout<<"===================add group info===================" << std::endl;
+  std::vector<std::pair<int, int>> groupLinks= {{0,7},{7,8},{8,9},{9,10},{10,11},{9,14},{14,15},{9,16},{16,17}};
+  for(const auto& g : groupLinks) {
+    xpbd.addGroupLink(g.first, g.second);
+    std::cout << "Add " << bodies[g.first]._name << " and " << bodies[g.second]._name << " into the same group." << std::endl;
+  }
+
   DRAWER::Drawer drawer(argc,argv);
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CaptureGIFPlugin(GLFW_KEY_1,"record.gif",drawer.FPS())));
