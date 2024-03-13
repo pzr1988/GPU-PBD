@@ -169,11 +169,12 @@ size_t XPBD<T>::numConstraints() const {
   return _detector->size() + _jointPositions.size() + _jointAngulars.size();
 }
 template <typename T>
-void XPBD<T>::addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T& localB) {
+void XPBD<T>::addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T& localB, T alpha) {
   if(idA==idB)
     throw std::runtime_error("Cannot add joint to the same Shape<T>!");
   Constraint<T> c;
   c._isValid=true;
+  c._alpha=alpha;
   c._type=ConstraintType::JointPosition;
   c._shapeIdA=(int)idA;
   c._shapeIdB=(int)idB;
@@ -183,11 +184,12 @@ void XPBD<T>::addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T&
   _collisionGroupAssigned=false;    //need to re-assign
 }
 template <typename T>
-void XPBD<T>::addJointAngular(size_t idA, size_t idB, const XPBD<T>::QuatT& targetQ, const XPBD<T>::QuatT& aQ, const XPBD<T>::QuatT& bQ) {
+void XPBD<T>::addJointAngular(size_t idA, size_t idB, const XPBD<T>::QuatT& targetQ, T alpha, const XPBD<T>::QuatT& aQ, const XPBD<T>::QuatT& bQ) {
   if(idA==idB)
     throw std::runtime_error("Cannot add joint to the same Shape<T>!");
   Constraint<T> c;
   c._isValid=true;
+  c._alpha=alpha;
   c._type=ConstraintType::JointAngular;
   c._shapeIdA=(int)idA;
   c._shapeIdB=(int)idB;

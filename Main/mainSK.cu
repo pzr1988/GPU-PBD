@@ -278,7 +278,7 @@ int main(int argc,char** argv) {
   b_1._len=10;
   b_1._width=1;
   b_1._height=10;
-  b_1._x = Vec3T(0,-4,0);
+  b_1._x = Vec3T(0,-2,0);
   b_1._q = QuatT(1,0,0,0);
   b_1.initInertiaTensor();
   b_1._isDynamic = false;
@@ -304,7 +304,7 @@ int main(int argc,char** argv) {
   for(auto& b : bodies) {
     auto& j = b._ac;
     if(j._isValid) {
-      xpbd.addJointAngular(j._cA,j._cB,j._psQ, j._sQ, j._pQ);
+      xpbd.addJointAngular(j._cA,j._cB,j._psQ, 1.f, j._sQ, j._pQ);
       std::cout<<"Parent: " << bodies[j._cB]._name << ", Self: " << bodies[j._cA]._name
                << ", _pq: " << j._pQ.w() << ", "  << j._pQ.x() << ", " << j._pQ.y() << ", " << j._pQ.z()
                << ", _sq: " << j._sQ.w() << ", "  << j._sQ.x() << ", " << j._sQ.y() << ", " << j._sQ.z()
