@@ -134,6 +134,24 @@ void XPBD<T>::updateJointConstraint() {
   [=]  __device__ (Constraint<T>& constraint) {
     auto& cA = d_shapes[constraint._shapeIdA];
     auto& cB = d_shapes[constraint._shapeIdB];
+    // 推导方式1
+    // deltaQ * cB._q = cB_target._q // deltaQ是对parent的修正量。
+    // cB_target._q = cB world target q * sB
+    // = cA world q * psQ.inverse() * sB
+    // = cA._q * sA.inverse() * psQ.inverse() * sB
+    // =>
+    // deltaQ = cA._q * sA.inverse() * psQ.inverse() * sB * cB._q.inverse()
+    // 推导方式2
+    // cB._q = cB's world.q * sB  // sB是胶囊体在局部坐标系的旋转，cB's world.q 是局部坐标系的旋转， cB._q是胶囊体在全局坐标系的旋转
+    // =》 cB_world.q = cB._q * sB.inverse()
+    // deltaQ.inverse() * cA._q = cA_target._q // cA_target._q是胶囊体的目标旋转角度（全局坐标系下），deltaQ是rigid bodyXPBD公式14中的角度修正。
+    // = cA_world._q * sA
+    // = cB_world._q * psQ * sA
+    // = cB._q * sB.inverse() * psQ * sA
+    // =》
+    // deltaQ.inverse() = cB._q * sB.inverse() * psQ * sA * cA._q.inverse()
+    // =》
+    // deltaQ = cA._q * sA.inverse() * psQ.inverse() * sB * cB._q.inverse()
     auto deltaQ = (cA._q*constraint._aQ.conjugate()*constraint._targetQ.conjugate()*constraint._bQ*cB._q.conjugate()).vec();
     auto len = sqrt(deltaQ.squaredNorm());
     constraint._theta = 2*asin(len);
