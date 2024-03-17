@@ -52,6 +52,8 @@ class XPBD {
   void addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T& localB, T alpha=.0001f);
   //Fix angle between a pair of shapes, from B to A. aQ is the rotation of shape in its space. bQ is the rotation of shape in its space.
   void addJointAngular(size_t idA, size_t idB, const QuatT& targetQ, T alpha=.0001f, const QuatT& aQ=QuatT::Identity(), const QuatT& bQ=QuatT::Identity());
+  //Update joint angular to play animation
+  void updateJointAngular(typename thrust::device_vector<QuatT>::const_iterator b, typename thrust::device_vector<QuatT>::const_iterator e);
   //Assign a and b to the same group. Shapes in the same group will not collide.
   void addGroupLink(int a, int b);
   //Automatically avoid collision between a Shape<T> and its children

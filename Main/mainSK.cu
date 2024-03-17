@@ -9,6 +9,7 @@
 #include <TinyVisualizer/Camera3D.h>
 #include <SKParser/tinyxml2.h>
 #include <SKParser/Utils.h>
+#include <fstream>
 
 using namespace GPUPBD;
 
@@ -267,7 +268,8 @@ int main(int argc,char** argv) {
     c._w.setZero();
     c._torque.setZero();
     c.initInertiaTensor();
-    c._force = Vec3T(0, -9.8f*c._mass,0);
+    // c._force = Vec3T(0, -9.8f*c._mass,0);
+    c._force.setZero();
     c._isDynamic = true;
     ps.push_back(c);
   }
@@ -313,11 +315,42 @@ int main(int argc,char** argv) {
     }
   }
   std::cout<<"===================add group info===================" << std::endl;
-  std::vector<std::pair<int, int>> groupLinks= {{0,7},{7,8},{8,9},{9,10},{10,11},{9,14},{14,15},{9,16},{16,17}};
+  std::vector<std::pair<int, int>> groupLinks= {{0,7},{7,8},{8,9},{9,10},{10,11},{9,14},{14,15},{9,16},{16,17},{1,4}};
   for(const auto& g : groupLinks) {
     xpbd.addGroupLink(g.first, g.second);
     std::cout << "Add " << bodies[g.first]._name << " and " << bodies[g.second]._name << " into the same group." << std::endl;
   }
+
+  std::cout<<"==========================animation info==========================" << std::endl;
+  std::ifstream inFile("/data/GPU-PBD/SKParser/animation.data");
+  if (!inFile) {
+    std::cerr << "Unable to open file" << std::endl;
+    return 1;
+  }
+  std::vector<std::vector<double>> rawData;
+  std::vector<QuatT> animation;
+  double value;
+  while (!inFile.eof()) {
+    std::vector<double> row;
+    for (int i = 0; i < 4; ++i) {
+      if (inFile >> value) {
+        row.push_back(value);
+      }
+    }
+    if (!row.empty()) {
+      rawData.push_back(row);
+    }
+  }
+  inFile.close();
+  int numJoints = 20;
+  int framNum = rawData.size() / numJoints;
+  animation.resize(rawData.size());
+  for(int i=0; i<rawData.size(); i++) {
+    const auto& v = rawData.at(i);
+    QuatT q(v[0],v[1],v[2],v[3]);
+    animation[i]=q;
+  }
+  thrust::device_vector<QuatT> d_animation(animation.begin(), animation.end());
 
   DRAWER::Drawer drawer(argc,argv);
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));
@@ -332,11 +365,16 @@ int main(int argc,char** argv) {
   //   drawer.getCamera3D()->getManipulator()->imGuiCallback();
   // })));
   bool sim=false;
+  int frameId = 0;
   drawer.setFrameFunc([&](std::shared_ptr<DRAWER::SceneNode>& root) {
     if(sim) {
       xpbd.step();
       visualizeOrUpdateGeometry(*geometry,shapeGeometry);
       visualizeOrUpdateCollision(*geometry,xpbd.getDetector(),xpbd.getJointPositions(),shapeCollision);
+      const auto b = d_animation.begin() + numJoints*frameId;
+      // xpbd.updateJointAngular(b+1, b+numJoints);
+      ++frameId;
+      frameId=frameId%framNum;
     }
   });
   //press R to run simulation

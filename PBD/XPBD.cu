@@ -217,6 +217,19 @@ void XPBD<T>::addJointAngular(size_t idA, size_t idB, const XPBD<T>::QuatT& targ
   _jointAngulars.push_back(c);
 }
 template <typename T>
+void XPBD<T>::updateJointAngular(typename thrust::device_vector<QuatT>::const_iterator b, typename thrust::device_vector<QuatT>::const_iterator e) {
+  assert(e-b == _jointAngulars.size());
+  thrust::for_each(
+    thrust::make_zip_iterator(thrust::make_tuple(_jointAngulars.begin(), b)),
+    thrust::make_zip_iterator(thrust::make_tuple(_jointAngulars.end(), e)),
+  [] __device__ (thrust::tuple<Constraint<T>&, const QuatT&> t) {
+    auto aJ = t.template get<0>();
+    auto q = t.template get<1>();
+    aJ._targetQ=q;
+  }
+  );
+}
+template <typename T>
 void XPBD<T>::addGroupLink(int a, int b) {
   _groupLinks.push_back(groupLink(a,b));
 }
