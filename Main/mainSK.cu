@@ -306,7 +306,7 @@ int main(int argc,char** argv) {
   for(auto& b : bodies) {
     auto& j = b._ac;
     if(j._isValid) {
-      xpbd.addJointAngular(j._cA,j._cB,j._psQ, 0.01f, j._sQ, j._pQ);
+      xpbd.addJointAngular(j._cA,j._cB,j._psQ, 0.0001f, j._sQ, j._pQ);
       std::cout<<"Parent: " << bodies[j._cB]._name << ", Self: " << bodies[j._cA]._name
                << ", _pq: " << j._pQ.w() << ", "  << j._pQ.x() << ", " << j._pQ.y() << ", " << j._pQ.z()
                << ", _sq: " << j._sQ.w() << ", "  << j._sQ.x() << ", " << j._sQ.y() << ", " << j._sQ.z()
