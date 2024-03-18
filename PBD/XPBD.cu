@@ -223,8 +223,8 @@ void XPBD<T>::updateJointAngular(typename thrust::device_vector<QuatT>::const_it
     thrust::make_zip_iterator(thrust::make_tuple(_jointAngulars.begin(), b)),
     thrust::make_zip_iterator(thrust::make_tuple(_jointAngulars.end(), e)),
   [] __device__ (thrust::tuple<Constraint<T>&, const QuatT&> t) {
-    auto aJ = t.template get<0>();
-    auto q = t.template get<1>();
+    auto& aJ = t.template get<0>();
+    auto& q = t.template get<1>();
     aJ._targetQ=q;
   }
   );
