@@ -42,7 +42,6 @@ void CollisionDetector<T>::detectCollisions() {
     for(size_t i = contactM._numCollision; i < maxCollisionPerObject; i++)
       localMemory[i]._isValid = false;
   });
-  cudaDeviceSynchronize();
 
   // Second remove invalid ones
   int numCollision = thrust::count_if(_collisionsTemporary.begin(), _collisionsTemporary.end(),  [] __device__(const Constraint<T>& c) {

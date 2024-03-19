@@ -38,7 +38,6 @@ void XPBD<T>::integrate() {
       shape._q.normalize();
     }
   });
-  cudaDeviceSynchronize();
 }
 template <typename T>
 void XPBD<T>::initRelaxConstraint() {
@@ -174,7 +173,6 @@ void XPBD<T>::updateVelocity() {
       shape._w = deltaQ.w() >=0 ? shape._w : -shape._w;
     }
   });
-  cudaDeviceSynchronize();
 }
 template <typename T>
 const CollisionDetector<T>& XPBD<T>::getDetector() const {
