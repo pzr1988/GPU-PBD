@@ -274,14 +274,14 @@ int main(int argc,char** argv) {
     ps.push_back(c);
   }
 
-  // boundary
+  // floor
   Shape<T> b_1;
   b_1._type = ShapeType::Box;
   b_1._len=10;
-  b_1._width=1;
-  b_1._height=10;
-  b_1._x = Vec3T(0,-2,0);
-  b_1._q = QuatT(1,0,0,0);
+  b_1._width=10;
+  b_1._height=1;
+  b_1._x = Vec3T(0,0,-0.5);
+  b_1._q = QuatT(1, 0, 0, 0);
   b_1.initInertiaTensor();
   b_1._isDynamic = false;
   ps.push_back(b_1);
