@@ -329,6 +329,7 @@ int main(int argc,char** argv) {
   }
   std::vector<std::vector<double>> rawData;
   std::vector<QuatT> animation;
+  std::vector<QuatT> rootQ;
   double value;
   while (!inFile.eof()) {
     std::vector<double> row;
@@ -343,14 +344,19 @@ int main(int argc,char** argv) {
   }
   inFile.close();
   int numJoints = 20;
-  int framNum = rawData.size() / numJoints;
+  int frameNum = rawData.size() / numJoints;
   animation.resize(rawData.size());
+  rootQ.resize(frameNum);
+  QuatT rootLocalQ = QuatT::FromTwoVectors(Vec3T::UnitX(),Vec3T(0.0237-0.0335, -0.0861-0.0849, -0.0278-(-0.0278)));
   for(int i=0; i<rawData.size(); i++) {
     const auto& v = rawData.at(i);
     QuatT q(v[0],v[1],v[2],v[3]);
     animation[i]=q;
+    if(i%numJoints==0) {
+      rootQ[i/numJoints]=q*rootLocalQ;
+    }
   }
-  xpbd.addAnimation(framNum, animation.begin(), animation.end());
+  xpbd.addAnimation(frameNum, animation.begin(), animation.end(), rootQ.begin(), rootQ.end());
 
   DRAWER::Drawer drawer(argc,argv);
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));

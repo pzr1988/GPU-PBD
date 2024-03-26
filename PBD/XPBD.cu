@@ -216,19 +216,33 @@ void XPBD<T>::addJointAngular(size_t idA, size_t idB, const XPBD<T>::QuatT& targ
   _jointAngulars.push_back(c);
 }
 template <typename T>
-void XPBD<T>::addAnimation(int frameNum, typename std::vector<QuatT>::const_iterator angularB, typename std::vector<QuatT>::const_iterator angularE) {
+void XPBD<T>::addAnimation(int frameNum, QCIter angularB, QCIter angularE, QCIter rootQB, QCIter rootQE) {
   _animationFrameId=0;
   _animationFrameNum=frameNum;
   _isPlay=true;
-  thrust::host_vector<QuatT> tempHostVector(angularB, angularE);
+  thrust::host_vector<QuatT> tempHostAngular(angularB, angularE);
   _animationData.resize(angularE-angularB);
-  _animationData=tempHostVector;
+  _animationData=tempHostAngular;
+  thrust::host_vector<QuatT> tempHostRootQ(rootQB, rootQE);
+  _rootAnimationQ.resize(frameNum);
+  _rootAnimationQ=tempHostRootQ;
 }
 template <typename T>
 void XPBD<T>::playAnimation() {
   if(!_isPlay) return;
   int numJoints = _animationData.size()/_animationFrameNum;
   const auto b = _animationData.begin() + numJoints*_animationFrameId;
+  QuatT rootQ = _rootAnimationQ[_animationFrameId];
+  Shape<T>* d_shapes = thrust::raw_pointer_cast(_geometry->getShapes());
+  Shape<T>& root = d_shapes[0];
+  // TODO  Each SK has its own root, so there will be a list of roots and rootQ.
+  thrust::for_each(thrust::device,
+                   thrust::make_counting_iterator(0),
+                   thrust::make_counting_iterator(1),
+  [d_shapes, rootQ] __device__ (int idx) {
+    Shape<T>& root = d_shapes[0];
+    root._q = rootQ;
+  });
   updateJointAngular(b+1, b+numJoints);
   _animationFrameId=(_animationFrameId+1)%_animationFrameNum;
 }

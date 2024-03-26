@@ -11,6 +11,8 @@ template <typename T>
 class XPBD {
  public:
   DECL_MAT_VEC_MAP_TYPES_T
+  typedef typename std::vector<QuatT>::const_iterator QCIter;
+  typedef typename std::vector<Vec3T>::const_iterator XCIter;
   struct Update {
     Vec3T _x;
     Vec4T _q;
@@ -53,7 +55,7 @@ class XPBD {
   //Fix angle between a pair of shapes, from B to A. aQ is the rotation of shape in its space. bQ is the rotation of shape in its space.
   void addJointAngular(size_t idA, size_t idB, const QuatT& targetQ, T alpha=.0001f, const QuatT& aQ=QuatT::Identity(), const QuatT& bQ=QuatT::Identity());
   //Add animation data
-  void addAnimation(int frameNum, typename std::vector<QuatT>::const_iterator angularB, typename std::vector<QuatT>::const_iterator angularE);
+  void addAnimation(int frameNum, QCIter angularB, QCIter angularE, QCIter rootQB, QCIter rootQE);
   //Play Animation
   void playAnimation();
   //Update joint angular to play animation
@@ -85,6 +87,8 @@ class XPBD {
   int _animationFrameNum;
   bool _isPlay;
   thrust::device_vector<QuatT> _animationData;
+  thrust::device_vector<QuatT> _rootAnimationQ;
+  thrust::device_vector<Vec3T> _rootAnimationX;
   thrust::device_vector<T> _lambda;
   bool _collisionGroupAssigned;
   //Cache deltaX and deltaQ during relaxConstraint to avoid multi write problem
