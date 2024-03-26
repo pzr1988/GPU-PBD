@@ -55,7 +55,7 @@ class XPBD {
   //Fix angle between a pair of shapes, from B to A. aQ is the rotation of shape in its space. bQ is the rotation of shape in its space.
   void addJointAngular(size_t idA, size_t idB, const QuatT& targetQ, T alpha=.0001f, const QuatT& aQ=QuatT::Identity(), const QuatT& bQ=QuatT::Identity());
   //Add animation data
-  void addAnimation(int frameNum, QCIter angularB, QCIter angularE, QCIter rootQB, QCIter rootQE);
+  void addAnimation(int frameNum, QCIter angularB, QCIter angularE, QCIter rootQB, QCIter rootQE, XCIter rootXB, XCIter rootXE);
   //Play Animation
   void playAnimation();
   //Update joint angular to play animation

@@ -347,6 +347,7 @@ int main(int argc,char** argv) {
   int frameNum = rawData.size() / numJoints;
   animation.resize(rawData.size());
   rootQ.resize(frameNum);
+  // TODO fix hardcode of root local rotation.
   QuatT rootLocalQ = QuatT::FromTwoVectors(Vec3T::UnitX(),Vec3T(0.0237-0.0335, -0.0861-0.0849, -0.0278-(-0.0278)));
   for(int i=0; i<rawData.size(); i++) {
     const auto& v = rawData.at(i);
@@ -356,7 +357,27 @@ int main(int argc,char** argv) {
       rootQ[i/numJoints]=q*rootLocalQ;
     }
   }
-  xpbd.addAnimation(frameNum, animation.begin(), animation.end(), rootQ.begin(), rootQ.end());
+  std::ifstream inFileRoot("/data/GPU-PBD/SKParser/root_translation.data");
+  if (!inFileRoot) {
+    std::cerr << "Unable to open file" << std::endl;
+    return 1;
+  }
+  std::vector<Vec3T> rootX;
+  while (!inFileRoot.eof()) {
+    std::vector<double> row;
+    for (int i = 0; i < 3; ++i) {
+      if (inFileRoot >> value) {
+        row.push_back(value);
+      }
+    }
+    if (!row.empty()) {
+      // TODO fix hardcode of root local translation.
+      rootX.push_back(Vec3T(row[0],row[1],row[2])-Vec3T(3.1954-0.0208, -0.0175, 0.9931-1.0399));
+    }
+  }
+  inFileRoot.close();
+
+  xpbd.addAnimation(frameNum, animation.begin(), animation.end(), rootQ.begin(), rootQ.end(), rootX.begin(), rootX.end());
 
   DRAWER::Drawer drawer(argc,argv);
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));

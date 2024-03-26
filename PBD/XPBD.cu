@@ -216,7 +216,7 @@ void XPBD<T>::addJointAngular(size_t idA, size_t idB, const XPBD<T>::QuatT& targ
   _jointAngulars.push_back(c);
 }
 template <typename T>
-void XPBD<T>::addAnimation(int frameNum, QCIter angularB, QCIter angularE, QCIter rootQB, QCIter rootQE) {
+void XPBD<T>::addAnimation(int frameNum, QCIter angularB, QCIter angularE, QCIter rootQB, QCIter rootQE, XCIter rootXB, XCIter rootXE) {
   _animationFrameId=0;
   _animationFrameNum=frameNum;
   _isPlay=true;
@@ -226,24 +226,29 @@ void XPBD<T>::addAnimation(int frameNum, QCIter angularB, QCIter angularE, QCIte
   thrust::host_vector<QuatT> tempHostRootQ(rootQB, rootQE);
   _rootAnimationQ.resize(frameNum);
   _rootAnimationQ=tempHostRootQ;
+  thrust::host_vector<Vec3T> tempHostRootX(rootXB, rootXE);
+  _rootAnimationX.resize(frameNum);
+  _rootAnimationX=tempHostRootX;
 }
 template <typename T>
 void XPBD<T>::playAnimation() {
   if(!_isPlay) return;
   int numJoints = _animationData.size()/_animationFrameNum;
   const auto b = _animationData.begin() + numJoints*_animationFrameId;
-  QuatT rootQ = _rootAnimationQ[_animationFrameId];
+  updateJointAngular(b+1, b+numJoints);
+  Vec3T* d_rootX = thrust::raw_pointer_cast(_rootAnimationX.data());
+  QuatT* d_rootQ = thrust::raw_pointer_cast(_rootAnimationQ.data());
   Shape<T>* d_shapes = thrust::raw_pointer_cast(_geometry->getShapes());
-  Shape<T>& root = d_shapes[0];
   // TODO  Each SK has its own root, so there will be a list of roots and rootQ.
+  int animationFrameId=_animationFrameId;
   thrust::for_each(thrust::device,
                    thrust::make_counting_iterator(0),
                    thrust::make_counting_iterator(1),
-  [d_shapes, rootQ] __device__ (int idx) {
-    Shape<T>& root = d_shapes[0];
-    root._q = rootQ;
+  [d_shapes, d_rootX, d_rootQ, animationFrameId] __device__ (int idx) {
+    Shape<T>& root = d_shapes[idx];
+    root._q = d_rootQ[animationFrameId];
+    root._x = d_rootX[animationFrameId];
   });
-  updateJointAngular(b+1, b+numJoints);
   _animationFrameId=(_animationFrameId+1)%_animationFrameNum;
 }
 template <typename T>
