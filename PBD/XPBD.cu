@@ -234,22 +234,23 @@ template <typename T>
 void XPBD<T>::playAnimation() {
   if(!_isPlay) return;
   int numJoints = _animationData.size()/_animationFrameNum;
-  const auto b = _animationData.begin() + numJoints*_animationFrameId;
+  int animationFrameId=_animationFrameId%_animationFrameNum;
+  int roundNum=_animationFrameId/_animationFrameNum;
+  const auto b = _animationData.begin() + numJoints*(_animationFrameId%_animationFrameNum);
   updateJointAngular(b+1, b+numJoints);
-  Vec3T* d_rootX = thrust::raw_pointer_cast(_rootAnimationX.data());
-  QuatT* d_rootQ = thrust::raw_pointer_cast(_rootAnimationQ.data());
+  Vec3T* d_rootAnimationX = thrust::raw_pointer_cast(_rootAnimationX.data());
+  QuatT* d_rootAnimationQ = thrust::raw_pointer_cast(_rootAnimationQ.data());
   Shape<T>* d_shapes = thrust::raw_pointer_cast(_geometry->getShapes());
   // TODO  Each SK has its own root, so there will be a list of roots and rootQ.
-  int animationFrameId=_animationFrameId;
   thrust::for_each(thrust::device,
                    thrust::make_counting_iterator(0),
                    thrust::make_counting_iterator(1),
-  [d_shapes, d_rootX, d_rootQ, animationFrameId] __device__ (int idx) {
+  [d_shapes, d_rootAnimationX, d_rootAnimationQ, animationFrameId,roundNum] __device__ (int idx) {
     Shape<T>& root = d_shapes[idx];
-    root._q = d_rootQ[animationFrameId];
-    root._x = d_rootX[animationFrameId];
+    root._q = d_rootAnimationQ[animationFrameId];
+    root._x = d_rootAnimationX[animationFrameId]+Vec3T((7.6654-3.1954)*roundNum, 0, 0);
   });
-  _animationFrameId=(_animationFrameId+1)%_animationFrameNum;
+  ++_animationFrameId;
 }
 template <typename T>
 void XPBD<T>::updateJointAngular(typename thrust::device_vector<QuatT>::const_iterator b, typename thrust::device_vector<QuatT>::const_iterator e) {

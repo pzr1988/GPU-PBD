@@ -277,8 +277,8 @@ int main(int argc,char** argv) {
   // floor
   Shape<T> b_1;
   b_1._type = ShapeType::Box;
-  b_1._len=10;
-  b_1._width=10;
+  b_1._len=30;
+  b_1._width=30;
   b_1._height=1;
   b_1._x = Vec3T(0,0,-0.5);
   b_1._q = QuatT(1, 0, 0, 0);
