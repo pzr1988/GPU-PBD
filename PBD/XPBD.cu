@@ -7,11 +7,12 @@
 namespace GPUPBD {
 template <typename T>
 XPBD<T>::XPBD(std::shared_ptr<Geometry<T>> geometry,T dt,int nRelax)
-  :_geometry(geometry),_detector(new CollisionDetector<T>(geometry)),_dt(dt),_nRelax(nRelax),_collisionGroupAssigned(false) {}
+  :_geometry(geometry),_detector(new CollisionDetector<T>(geometry)),_dt(dt),_nRelax(nRelax),_isPlay(false),_collisionGroupAssigned(false) {}
 template <typename T>
 void XPBD<T>::step() {
   assignCollisionGroup();
   integrate();
+  playAnimation();
   _detector->detectCollisions();
   initRelaxConstraint();
   for(int i=0; i<_nRelax; i++) {
@@ -213,6 +214,23 @@ void XPBD<T>::addJointAngular(size_t idA, size_t idB, const XPBD<T>::QuatT& targ
   c._aQ=aQ;
   c._bQ=bQ;
   _jointAngulars.push_back(c);
+}
+template <typename T>
+void XPBD<T>::addAnimation(int frameNum, typename std::vector<QuatT>::const_iterator angularB, typename std::vector<QuatT>::const_iterator angularE) {
+  _animationFrameId=0;
+  _animationFrameNum=frameNum;
+  _isPlay=true;
+  thrust::host_vector<QuatT> tempHostVector(angularB, angularE);
+  _animationData.resize(angularE-angularB);
+  _animationData=tempHostVector;
+}
+template <typename T>
+void XPBD<T>::playAnimation() {
+  if(!_isPlay) return;
+  int numJoints = _animationData.size()/_animationFrameNum;
+  const auto b = _animationData.begin() + numJoints*_animationFrameId;
+  updateJointAngular(b+1, b+numJoints);
+  _animationFrameId=(_animationFrameId+1)%_animationFrameNum;
 }
 template <typename T>
 void XPBD<T>::updateJointAngular(typename thrust::device_vector<QuatT>::const_iterator b, typename thrust::device_vector<QuatT>::const_iterator e) {

@@ -350,7 +350,7 @@ int main(int argc,char** argv) {
     QuatT q(v[0],v[1],v[2],v[3]);
     animation[i]=q;
   }
-  thrust::device_vector<QuatT> d_animation(animation.begin(), animation.end());
+  xpbd.addAnimation(framNum, animation.begin(), animation.end());
 
   DRAWER::Drawer drawer(argc,argv);
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));
@@ -371,10 +371,6 @@ int main(int argc,char** argv) {
       xpbd.step();
       visualizeOrUpdateGeometry(*geometry,shapeGeometry);
       visualizeOrUpdateCollision(*geometry,xpbd.getDetector(),xpbd.getJointPositions(),shapeCollision);
-      const auto b = d_animation.begin() + numJoints*frameId;
-      xpbd.updateJointAngular(b+1, b+numJoints);
-      ++frameId;
-      frameId=frameId%framNum;
     }
   });
   //press R to run simulation

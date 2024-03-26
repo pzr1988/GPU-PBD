@@ -52,6 +52,10 @@ class XPBD {
   void addJoint(size_t idA, size_t idB, const Vec3T& localA, const Vec3T& localB, T alpha=.0001f);
   //Fix angle between a pair of shapes, from B to A. aQ is the rotation of shape in its space. bQ is the rotation of shape in its space.
   void addJointAngular(size_t idA, size_t idB, const QuatT& targetQ, T alpha=.0001f, const QuatT& aQ=QuatT::Identity(), const QuatT& bQ=QuatT::Identity());
+  //Add animation data
+  void addAnimation(int frameNum, typename std::vector<QuatT>::const_iterator angularB, typename std::vector<QuatT>::const_iterator angularE);
+  //Play Animation
+  void playAnimation();
   //Update joint angular to play animation
   void updateJointAngular(typename thrust::device_vector<QuatT>::const_iterator b, typename thrust::device_vector<QuatT>::const_iterator e);
   //Assign a and b to the same group. Shapes in the same group will not collide.
@@ -77,6 +81,10 @@ class XPBD {
   thrust::device_vector<groupLink> _groupLinks;
   T _dt;
   int _nRelax;
+  int _animationFrameId;
+  int _animationFrameNum;
+  bool _isPlay;
+  thrust::device_vector<QuatT> _animationData;
   thrust::device_vector<T> _lambda;
   bool _collisionGroupAssigned;
   //Cache deltaX and deltaQ during relaxConstraint to avoid multi write problem
