@@ -8,7 +8,7 @@
 
 namespace GPUPBD {
 template <typename T>
-std::shared_ptr<DRAWER::CompositeShape> visualizeOrUpdateGeometry(const Geometry<T>& g,std::shared_ptr<DRAWER::CompositeShape> s=NULL,int RES=8,bool fill=false) {
+std::shared_ptr<DRAWER::CompositeShape> visualizeOrUpdateGeometry(const Geometry<T>& g,std::shared_ptr<DRAWER::CompositeShape> s=NULL,int RES=8,bool fill=true) {
   //geometry
   std::vector<Shape<T>> cpuGeometry(g.size());
   thrust::copy(g.begin(),g.end(),cpuGeometry.begin());

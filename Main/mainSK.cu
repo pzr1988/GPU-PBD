@@ -19,49 +19,45 @@ int main(int argc,char** argv) {
 
   std::vector<Shape<T>> ps; //shapes list
   //MJCF Info
-  auto mjcfParser=PHYSICSMOTION::MJCFParser<T>("/data/GPU-PBD/SKParser/MarathonCharacter_PhysicsAsset2.xml");
+  auto mjcfParser=PHYSICSMOTION::MJCFParser<T>("SKParser/MarathonCharacter_PhysicsAsset2.xml");
   mjcfParser.getShape(ps);
 
-  // Add floor to shapes list
-  Shape<T> b_1;
-  b_1._type = ShapeType::Box;
-  b_1._len=30;
-  b_1._width=30;
-  b_1._height=1;
-  b_1._x = Vec3T(0,0,-0.5);
-  b_1._q = QuatT(1, 0, 0, 0);
-  b_1.initInertiaTensor();
-  b_1._isDynamic = false;
-  ps.push_back(b_1);
+  //add floor
+  Shape<T> floor;
+  floor._type=ShapeType::Box;
+  floor._len=30;
+  floor._width=5;
+  floor._height=1;
+  floor._x=Vec3T(0,0,-0.5);
+  floor._q=QuatT(1,0,0,0);
+  floor.initInertiaTensor();
+  floor._isDynamic=false;
+  ps.push_back(floor);
 
   std::shared_ptr<Geometry<T>> geometry(new Geometry<T>);
   geometry->resize(ps.size());
   geometry->setShape(ps);
   XPBD<T> xpbd(geometry, 1.0f/60);
 
-  // addPositionConstraint
+  //addPositionConstraint
   std::vector<PHYSICSMOTION::PositionConstraint<T>> pc;
   mjcfParser.getPositionConstraint(pc);
-  for(auto& j: pc) {
+  for(auto& j:pc)
     xpbd.addJoint(j._cA,j._cB,j._cAPos,j._cBPos);
-  }
 
-  // addAngularConstraint
+  //addAngularConstraint
   std::vector<PHYSICSMOTION::AngularConstraint<T>> ac;
   mjcfParser.getAngularConstraint(ac);
-  for(auto& j: ac) {
-    xpbd.addJointAngular(j._cA,j._cB,j._psQ, 0.0001f, j._sQ, j._pQ);
-  }
+  for(auto& j:ac)
+    xpbd.addJointAngular(j._cA,j._cB,j._psQ,1e-4f,j._sQ,j._pQ);
 
-  // addGoupInfo, shapes in the same group will not collide.
-  // TODO remove hardcode
-  std::vector<std::pair<int, int>> groupLinks= {{0,7},{7,8},{8,9},{9,10},{10,11},{9,14},{14,15},{9,16},{16,17},{1,4}};
-  for(const auto& g : groupLinks) {
-    xpbd.addGroupLink(g.first, g.second);
-  }
+  //addGoupInfo, shapes in the same group will not collide
+  std::vector<std::pair<int,int>> groupLinks={{0,7},{7,8},{8,9},{9,10},{10,11},{9,14},{14,15},{9,16},{16,17},{1,4}};
+  for(const auto& g:groupLinks)
+    xpbd.addGroupLink(g.first,g.second);
 
-  // Animation Data
-  auto animationData=PHYSICSMOTION::AnimationData<T>("/data/GPU-PBD/SKParser/animation.data", "/data/GPU-PBD/SKParser/root_translation.data");
+  //Animation Data
+  auto animationData=PHYSICSMOTION::AnimationData<T>("SKParser/animation.data", "SKParser/root_translation.data");
   xpbd.addAnimation(animationData._frameNum, animationData._animation.begin(), animationData._animation.end(), animationData._rootQ.begin(), animationData._rootQ.end(), animationData._rootX.begin(), animationData._rootX.end());
 
   DRAWER::Drawer drawer(argc,argv);
@@ -71,13 +67,21 @@ int main(int argc,char** argv) {
   auto shapeCollision=visualizeOrUpdateCollision(*geometry,xpbd.getDetector(),xpbd.getJointPositions());
   drawer.addShape(shapeGeometry);
   drawer.addShape(shapeCollision);
-  // drawer.addCamera3D(90,Eigen::Matrix<GLfloat,3,1>(0,1,0),Eigen::Matrix<GLfloat,3,1>(0,0,5),Eigen::Matrix<GLfloat,3,1>(0,0,-1));
-  // drawer.getCamera3D()->setManipulator(std::shared_ptr<DRAWER::CameraManipulator>(new DRAWER::FirstPersonCameraManipulator(drawer.getCamera3D())));
-  // drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::ImGuiPlugin([&]() {
-  //   drawer.getCamera3D()->getManipulator()->imGuiCallback();
-  // })));
+  drawer.addCamera3D(90,Eigen::Matrix<GLfloat,3,1>(0,0,1),Eigen::Matrix<GLfloat,3,1>(0,2,1),Eigen::Matrix<GLfloat,3,1>(0,-1,0));
+  drawer.getCamera3D()->setManipulator(std::shared_ptr<DRAWER::CameraManipulator>(new DRAWER::FirstPersonCameraManipulator(drawer.getCamera3D())));
+  drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::ImGuiPlugin([&]() {
+    drawer.getCamera3D()->getManipulator()->imGuiCallback();
+  })));
+#define USE_LIGHT
+#ifdef USE_LIGHT
+  drawer.addLightSystem(2048,20);
+  drawer.getLight()->lightSz(10);
+  drawer.getLight()->addLight(Eigen::Matrix<GLfloat,3,1>(0,0,3),
+                              Eigen::Matrix<GLfloat,3,1>(1,1,1),
+                              Eigen::Matrix<GLfloat,3,1>(1,1,1),
+                              Eigen::Matrix<GLfloat,3,1>(0,0,0));
+#endif
   bool sim=false;
-  int frameId = 0;
   drawer.setFrameFunc([&](std::shared_ptr<DRAWER::SceneNode>& root) {
     if(sim) {
       xpbd.step();
