@@ -8,6 +8,7 @@
 #include <TinyVisualizer/ImGuiPlugin.h>
 #include <TinyVisualizer/Camera3D.h>
 #include <SKParser/MJCFParser.h>
+#include <SKParser/AnimationParser.h>
 #include <fstream>
 
 using namespace GPUPBD;
@@ -53,68 +54,15 @@ int main(int argc,char** argv) {
   }
 
   // addGoupInfo, shapes in the same group will not collide.
+  // TODO remove hardcode
   std::vector<std::pair<int, int>> groupLinks= {{0,7},{7,8},{8,9},{9,10},{10,11},{9,14},{14,15},{9,16},{16,17},{1,4}};
   for(const auto& g : groupLinks) {
     xpbd.addGroupLink(g.first, g.second);
   }
 
-  std::cout<<"==========================animation info==========================" << std::endl;
-  std::ifstream inFile("/data/GPU-PBD/SKParser/animation.data");
-  if (!inFile) {
-    std::cerr << "Unable to open file" << std::endl;
-    return 1;
-  }
-  std::vector<std::vector<double>> rawData;
-  std::vector<QuatT> animation;
-  std::vector<QuatT> rootQ;
-  double value;
-  while (!inFile.eof()) {
-    std::vector<double> row;
-    for (int i = 0; i < 4; ++i) {
-      if (inFile >> value) {
-        row.push_back(value);
-      }
-    }
-    if (!row.empty()) {
-      rawData.push_back(row);
-    }
-  }
-  inFile.close();
-  int numJoints = 20;
-  int frameNum = rawData.size() / numJoints;
-  animation.resize(rawData.size());
-  rootQ.resize(frameNum);
-  // TODO fix hardcode of root local rotation.
-  QuatT rootLocalQ = QuatT::FromTwoVectors(Vec3T::UnitX(),Vec3T(0.0237-0.0335, -0.0861-0.0849, -0.0278-(-0.0278)));
-  for(int i=0; i<rawData.size(); i++) {
-    const auto& v = rawData.at(i);
-    QuatT q(v[0],v[1],v[2],v[3]);
-    animation[i]=q;
-    if(i%numJoints==0) {
-      rootQ[i/numJoints]=q*rootLocalQ;
-    }
-  }
-  std::ifstream inFileRoot("/data/GPU-PBD/SKParser/root_translation.data");
-  if (!inFileRoot) {
-    std::cerr << "Unable to open file" << std::endl;
-    return 1;
-  }
-  std::vector<Vec3T> rootX;
-  while (!inFileRoot.eof()) {
-    std::vector<double> row;
-    for (int i = 0; i < 3; ++i) {
-      if (inFileRoot >> value) {
-        row.push_back(value);
-      }
-    }
-    if (!row.empty()) {
-      // TODO fix hardcode of root local translation.
-      rootX.push_back(Vec3T(row[0],row[1],row[2])-Vec3T(3.1954-0.0208, -0.0175, 0.9931-1.0399));
-    }
-  }
-  inFileRoot.close();
-
-  xpbd.addAnimation(frameNum, animation.begin(), animation.end(), rootQ.begin(), rootQ.end(), rootX.begin(), rootX.end());
+  // Animation Data
+  auto animationData=PHYSICSMOTION::AnimationData<T>("/data/GPU-PBD/SKParser/animation.data", "/data/GPU-PBD/SKParser/root_translation.data");
+  xpbd.addAnimation(animationData._frameNum, animationData._animation.begin(), animationData._animation.end(), animationData._rootQ.begin(), animationData._rootQ.end(), animationData._rootX.begin(), animationData._rootX.end());
 
   DRAWER::Drawer drawer(argc,argv);
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));
