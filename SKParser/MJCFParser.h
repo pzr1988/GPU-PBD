@@ -59,7 +59,6 @@ class MJCFParser {
   void readMJCF(const std::string& file);
   void readBodies(int parentId, const tinyxml2::XMLElement* g);
   void updateShape();
- public:
   std::vector<Body> _bodies;
 };
 }

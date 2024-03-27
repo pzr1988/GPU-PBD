@@ -17,6 +17,7 @@ int main(int argc,char** argv) {
   DECL_MAT_VEC_MAP_TYPES_T
 
   std::vector<Shape<T>> ps; //shapes list
+  //MJCF Info
   auto mjcfParser=PHYSICSMOTION::MJCFParser<T>("/data/GPU-PBD/SKParser/MarathonCharacter_PhysicsAsset2.xml");
   mjcfParser.getShape(ps);
 
