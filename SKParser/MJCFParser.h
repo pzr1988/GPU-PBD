@@ -5,6 +5,7 @@
 #include <PBD/Geometry.h>
 #include <SKParser/tinyxml2.h>
 #include <SKParser/Utils.h>
+#include <SKParser/AnimationParser.h>
 #include <fstream>
 
 namespace PHYSICSMOTION {
@@ -34,6 +35,7 @@ class MJCFParser {
  public:
   DECL_MAT_VEC_MAP_TYPES_T
   MJCFParser(const std::string& file);
+  void modifyInitPosByAnimation(AnimationData<T>& animationData);
   void getShape(std::vector<GPUPBD::Shape<T>>& ps);
   void getPositionConstraint(std::vector<PositionConstraint<T>>& pc);
   void getAngularConstraint(std::vector<AngularConstraint<T>>& ac);
@@ -43,8 +45,10 @@ class MJCFParser {
     int _parent;
     int _depth;
     T _radius;
-    Vec3T _x;
-    QuatT _q;
+    Vec3T _localX;
+    QuatT _localQ;
+    Vec3T _globalX;
+    QuatT _globalQ;
     Vec6T _ft;
     GPUPBD::ShapeType _type;
     Vec3T _boxPos;

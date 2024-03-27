@@ -17,9 +17,13 @@ int main(int argc,char** argv) {
   typedef LSCALAR T;
   DECL_MAT_VEC_MAP_TYPES_T
 
-  std::vector<Shape<T>> ps; //shapes list
   //MJCF Info
   auto mjcfParser=PHYSICSMOTION::MJCFParser<T>("/data/GPU-PBD/SKParser/MarathonCharacter_PhysicsAsset2.xml");
+  //Animation Data
+  auto animationData=PHYSICSMOTION::AnimationData<T>("/data/GPU-PBD/SKParser/animation.data", "/data/GPU-PBD/SKParser/root_translation.data");
+  mjcfParser.modifyInitPosByAnimation(animationData);
+  //Shapes list
+  std::vector<Shape<T>> ps;
   mjcfParser.getShape(ps);
 
   // Add floor to shapes list
@@ -52,6 +56,8 @@ int main(int argc,char** argv) {
   for(auto& j: ac) {
     xpbd.addJointAngular(j._cA,j._cB,j._psQ, 0.0001f, j._sQ, j._pQ);
   }
+  //AddAnimationData
+  xpbd.addAnimation(animationData._frameNum, animationData._animation.begin(), animationData._animation.end(), animationData._rootQ.begin(), animationData._rootQ.end(), animationData._rootX.begin(), animationData._rootX.end());
 
   // addGoupInfo, shapes in the same group will not collide.
   // TODO remove hardcode
@@ -59,10 +65,6 @@ int main(int argc,char** argv) {
   for(const auto& g : groupLinks) {
     xpbd.addGroupLink(g.first, g.second);
   }
-
-  // Animation Data
-  auto animationData=PHYSICSMOTION::AnimationData<T>("/data/GPU-PBD/SKParser/animation.data", "/data/GPU-PBD/SKParser/root_translation.data");
-  xpbd.addAnimation(animationData._frameNum, animationData._animation.begin(), animationData._animation.end(), animationData._rootQ.begin(), animationData._rootQ.end(), animationData._rootX.begin(), animationData._rootX.end());
 
   DRAWER::Drawer drawer(argc,argv);
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::CameraExportPlugin(GLFW_KEY_2,GLFW_KEY_3,"camera.dat")));
