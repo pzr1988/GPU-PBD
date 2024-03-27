@@ -116,6 +116,7 @@ int main(int argc,char** argv) {
                               Eigen::Matrix<GLfloat,3,1>(0,0,0));
 #endif
   bool sim=false;
+  int sid=geometry->size()-2;
   drawer.setFrameFunc([&](std::shared_ptr<DRAWER::SceneNode>& root) {
     if(sim) {
       xpbd.step();
@@ -123,7 +124,19 @@ int main(int argc,char** argv) {
       visualizeOrUpdateCollision(*geometry,xpbd.getDetector(),shapeCollision);
     }
   });
-  //press R to run simulation
+  drawer.setMouseFunc([&](GLFWwindow* wnd,int button,int action,int,bool captured) {
+    if(captured)
+      return;
+    else if(button==GLFW_MOUSE_BUTTON_2 && action==GLFW_PRESS) {
+      double x=0,y=0;
+      glfwGetCursorPos(wnd,&x,&y);
+      Eigen::Matrix<GLfloat,6,1> ray=drawer.getCameraRay(x,y);
+      Shape<T> s=geometry->operator[](sid);
+      s._x=ray.template segment<3>(0).template cast<T>();
+      s._v=ray.template segment<3>(3).template cast<T>().normalized()*10;
+      geometry->setShape(sid,s);
+    }
+  });
   drawer.setKeyFunc([&](GLFWwindow* wnd,int key,int scan,int action,int mods,bool captured) {
     if(captured)
       return;

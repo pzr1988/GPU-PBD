@@ -52,7 +52,7 @@ int main(int argc,char** argv) {
     xpbd.addJointAngular(j._cA,j._cB,j._psQ,1e-4f,j._sQ,j._pQ);
 
   //addGoupInfo, shapes in the same group will not collide
-  std::vector<std::pair<int,int>> groupLinks={{0,7},{7,8},{8,9},{9,10},{10,11},{9,14},{14,15},{9,16},{16,17},{1,4}};
+  std::vector<std::pair<int,int>> groupLinks= {{0,7},{7,8},{8,9},{9,10},{10,11},{9,14},{14,15},{9,16},{16,17},{1,4}};
   for(const auto& g:groupLinks)
     xpbd.addGroupLink(g.first,g.second);
 
@@ -89,7 +89,6 @@ int main(int argc,char** argv) {
       visualizeOrUpdateCollision(*geometry,xpbd.getDetector(),xpbd.getJointPositions(),shapeCollision);
     }
   });
-  //press R to run simulation
   drawer.setKeyFunc([&](GLFWwindow* wnd,int key,int scan,int action,int mods,bool captured) {
     if(captured)
       return;

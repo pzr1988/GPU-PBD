@@ -149,7 +149,6 @@ int main(int argc,char** argv) {
       visualizeOrUpdateCollision(*geometry,xpbd.getDetector(),shapeCollision);
     }
   });
-  //press R to run simulation
   drawer.setKeyFunc([&](GLFWwindow* wnd,int key,int scan,int action,int mods,bool captured) {
     if(captured)
       return;
