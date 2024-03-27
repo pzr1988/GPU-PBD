@@ -19,76 +19,75 @@ int main(int argc,char** argv) {
   std::mt19937 mt(123456789);
   std::uniform_real_distribution<T> uni(0, 1);
 
-  T len = uni(mt);
-  T radius = uni(mt)/3.f;
+  T len=uni(mt);
+  T radius=uni(mt)/3.f;
   for(int i=0; i<5; i++) {
     Shape<T> p;
-    p._type = ShapeType::Capsule;
+    p._type=ShapeType::Capsule;
     p._len=len;
     p._radius=radius;
     QuatT q(uni(mt),0,0,uni(mt));
     q.normalize();
-    p._q = q;
+    p._q=q;
     Vec3T trans;
     trans.setRandom();
-    p._x = trans*3;
-    p._x.z() = 0;
+    p._x=trans*3;
+    p._x.z()=0;
     p.initInertiaTensor();
-    p._force = Vec3T(0, -9.8f*p._mass,0);
-    p._isDynamic = true;
+    p._force=Vec3T(0,-9.8f*p._mass,0);
+    p._isDynamic=true;
     ps.push_back(p);
   }
 
-  len = uni(mt);
+  len=uni(mt);
   for(int i=0; i<5; i++) {
     Shape<T> p;
-    p._type = ShapeType::Box;
+    p._type=ShapeType::Box;
     p._len=len;
     p._width=len;
     p._height=len;
     // p._radius=radius;
     QuatT q(uni(mt),0,0,uni(mt));
     q.normalize();
-    p._q = q;
+    p._q=q;
     Vec3T trans;
     trans.setRandom();
-    p._x = trans*3;
-    p._x.z() = 0;
+    p._x=trans*3;
+    p._x.z()=0;
     p.initInertiaTensor();
-    p._force = Vec3T(0, -9.8f*p._mass,0);
-    p._isDynamic = true;
+    p._force=Vec3T(0,-9.8f*p._mass,0);
+    p._isDynamic=true;
     ps.push_back(p);
   }
 
   for(int i=0; i<5; i++) {
     Shape<T> p;
-    p._type = ShapeType::Sphere;
+    p._type=ShapeType::Sphere;
     p._radius=0.2;
     QuatT q(uni(mt),0,0,uni(mt));
     q.normalize();
-    p._q = q;
+    p._q=q;
     Vec3T trans;
     trans.setRandom();
-    p._x = trans*3;
-    p._x.z() = 0;
+    p._x=trans*3;
+    p._x.z()=0;
     p.initInertiaTensor();
-    p._force = Vec3T(0, -9.8f*p._mass,0);
-    p._isDynamic = true;
+    p._force=Vec3T(0,-9.8f*p._mass,0);
+    p._isDynamic=true;
     ps.push_back(p);
   }
 
   // boundary
   Shape<T> b_1;
-  b_1._type = ShapeType::Box;
+  b_1._type=ShapeType::Box;
   b_1._len=10;
   b_1._width=1;
   b_1._height=10;
-  b_1._x = Vec3T(0,-4,0);
-  b_1._q = QuatT(1,0,0,0);
+  b_1._x=Vec3T(0,-4,0);
+  b_1._q=QuatT(1,0,0,0);
   b_1.initInertiaTensor();
-  b_1._isDynamic = false;
+  b_1._isDynamic=false;
   ps.push_back(b_1);
-
 
   std::shared_ptr<Geometry<T>> geometry(new Geometry<T>);
   geometry->resize(ps.size());
@@ -107,6 +106,15 @@ int main(int argc,char** argv) {
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::ImGuiPlugin([&]() {
     drawer.getCamera3D()->getManipulator()->imGuiCallback();
   })));
+#define USE_LIGHT
+#ifdef USE_LIGHT
+  drawer.addLightSystem(2048,20);
+  drawer.getLight()->lightSz(10);
+  drawer.getLight()->addLight(Eigen::Matrix<GLfloat,3,1>(0,0,3),
+                              Eigen::Matrix<GLfloat,3,1>(1,1,1),
+                              Eigen::Matrix<GLfloat,3,1>(1,1,1),
+                              Eigen::Matrix<GLfloat,3,1>(0,0,0));
+#endif
   bool sim=false;
   drawer.setFrameFunc([&](std::shared_ptr<DRAWER::SceneNode>& root) {
     if(sim) {

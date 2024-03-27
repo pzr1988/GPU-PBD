@@ -18,87 +18,87 @@ int main(int argc,char** argv) {
   std::vector<Shape<T>> ps;
 
   std::mt19937 mt(123456789);
-  std::uniform_real_distribution<T> uni(0, 1);
+  std::uniform_real_distribution<T> uni(0,1);
 
-  T len = uni(mt);
-  T radius = uni(mt)/5.f;
+  T len=uni(mt);
+  T radius=uni(mt)/5.f;
   // Joint, which includes 5 shapes.
   QuatT fixedRotation(sqrt(24)/5,0,0,1/5.0);
   fixedRotation.normalize();
   QuatT initQ(1,0,0,0);
-  auto prevX = Vec3T(-2,1,0);
+  auto prevX=Vec3T(-2,1,0);
   for(int i=0; i<N; i++) {
     Shape<T> c;
-    c._type = ShapeType::Capsule;
-    c._len = len;
-    c._radius = radius;
-    QuatT q = fixedRotation * initQ;
+    c._type=ShapeType::Capsule;
+    c._len=len;
+    c._radius=radius;
+    QuatT q=fixedRotation*initQ;
     q.normalize();
-    initQ = q;
-    c._q = q;
+    initQ=q;
+    c._q=q;
     Vec3T trans;
-    trans = prevX + q.toRotationMatrix()*Vec3T(len/2,0,0);
-    prevX = prevX + q.toRotationMatrix()*Vec3T(len,0,0);
-    c._x = trans;
-    c._x.z() = 0;
+    trans=prevX+q.toRotationMatrix()*Vec3T(len/2,0,0);
+    prevX=prevX+q.toRotationMatrix()*Vec3T(len,0,0);
+    c._x=trans;
+    c._x.z()=0;
     c.initInertiaTensor();
-    c._force = Vec3T(0, -9.8f*c._mass,0);
-    c._isDynamic = true;
+    c._force=Vec3T(0,-9.8f*c._mass,0);
+    c._isDynamic=true;
     ps.push_back(c);
   }
 
-  prevX = Vec3T(2, 1, 0);
+  prevX=Vec3T(2, 1, 0);
   for(int i=0; i<N; i++) {
     Shape<T> c;
-    c._type = ShapeType::Capsule;
-    c._len = len;
-    c._radius = radius;
+    c._type=ShapeType::Capsule;
+    c._len=len;
+    c._radius=radius;
     QuatT q(uni(mt),0,0,uni(mt));
     q.normalize();
-    c._q = q;
+    c._q=q;
     Vec3T trans;
-    trans = prevX + q.toRotationMatrix()*Vec3T(len/2,0,0);
-    prevX = prevX + q.toRotationMatrix()*Vec3T(len,0,0);
-    c._x = trans;
-    c._x.z() = 0;
+    trans=prevX+q.toRotationMatrix()*Vec3T(len/2,0,0);
+    prevX=prevX+q.toRotationMatrix()*Vec3T(len,0,0);
+    c._x=trans;
+    c._x.z()=0;
     c.initInertiaTensor();
-    c._force = Vec3T(0, -9.8f*c._mass,0);
-    c._isDynamic = true;
+    c._force=Vec3T(0,-9.8f*c._mass,0);
+    c._isDynamic=true;
     ps.push_back(c);
   }
 
   // boundary
   Shape<T> b_1;
-  b_1._type = ShapeType::Capsule;
-  b_1._len = 20;
-  b_1._radius = 1;
-  b_1._mass = 1;
-  b_1._x = Vec3T(0,-4,0);
-  b_1._q = QuatT(1,0,0,0);
+  b_1._type=ShapeType::Capsule;
+  b_1._len=20;
+  b_1._radius=1;
+  b_1._mass=1;
+  b_1._x=Vec3T(0,-4,0);
+  b_1._q=QuatT(1,0,0,0);
   b_1.initInertiaTensor();
-  b_1._isDynamic = false;
+  b_1._isDynamic=false;
   ps.push_back(b_1);
 
   Shape<T> b_2;
-  b_2._type = ShapeType::Capsule;
-  b_2._len = 18.;
-  b_2._radius = 1;
-  b_2._mass = 1;
-  b_2._x = Vec3T(5,0,0);
-  b_2._q = QuatT(0.7071f,0,0,0.7071f);
+  b_2._type=ShapeType::Capsule;
+  b_2._len=18.;
+  b_2._radius=1;
+  b_2._mass=1;
+  b_2._x=Vec3T(5,0,0);
+  b_2._q=QuatT(0.7071f,0,0,0.7071f);
   b_2.initInertiaTensor();
-  b_2._isDynamic = false;
+  b_2._isDynamic=false;
   ps.push_back(b_2);
 
   Shape<T> b_3;
-  b_3._type = ShapeType::Capsule;
-  b_3._len = 18;
-  b_3._radius = 1;
-  b_3._mass = 1;
-  b_3._x = Vec3T(-5,0,0);
-  b_3._q = QuatT(0.7071f,0,0,0.7071f);
+  b_3._type=ShapeType::Capsule;
+  b_3._len=18;
+  b_3._radius=1;
+  b_3._mass=1;
+  b_3._x=Vec3T(-5,0,0);
+  b_3._q=QuatT(0.7071f,0,0,0.7071f);
   b_3.initInertiaTensor();
-  b_3._isDynamic = false;
+  b_3._isDynamic=false;
   ps.push_back(b_3);
 
   std::shared_ptr<Geometry<T>> geometry(new Geometry<T>);
@@ -110,11 +110,10 @@ int main(int argc,char** argv) {
   xpbd.addJoint(2,3,ps[2].maxCorner(),ps[3].minCorner());
   xpbd.addJoint(3,4,ps[3].maxCorner(),ps[4].minCorner());
   // Because the fixedRotation is from A to B, we need to inverse it.
-  xpbd.addJointAngular(1, 0, fixedRotation);
-  xpbd.addJointAngular(2, 1, fixedRotation);
-  xpbd.addJointAngular(3, 2, fixedRotation);
-  xpbd.addJointAngular(4, 3, fixedRotation);
-
+  xpbd.addJointAngular(1,0,fixedRotation);
+  xpbd.addJointAngular(2,1,fixedRotation);
+  xpbd.addJointAngular(3,2,fixedRotation);
+  xpbd.addJointAngular(4,3,fixedRotation);
 
   xpbd.addJoint(5,6,ps[5].maxCorner(),ps[6].minCorner());
   xpbd.addJoint(6,7,ps[6].maxCorner(),ps[7].minCorner());
@@ -133,6 +132,15 @@ int main(int argc,char** argv) {
   drawer.addPlugin(std::shared_ptr<DRAWER::Plugin>(new DRAWER::ImGuiPlugin([&]() {
     drawer.getCamera3D()->getManipulator()->imGuiCallback();
   })));
+#define USE_LIGHT
+#ifdef USE_LIGHT
+  drawer.addLightSystem(2048,20);
+  drawer.getLight()->lightSz(10);
+  drawer.getLight()->addLight(Eigen::Matrix<GLfloat,3,1>(0,0,3),
+                              Eigen::Matrix<GLfloat,3,1>(1,1,1),
+                              Eigen::Matrix<GLfloat,3,1>(1,1,1),
+                              Eigen::Matrix<GLfloat,3,1>(0,0,0));
+#endif
   bool sim=false;
   drawer.setFrameFunc([&](std::shared_ptr<DRAWER::SceneNode>& root) {
     if(sim) {
