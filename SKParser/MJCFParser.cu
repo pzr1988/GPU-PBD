@@ -9,8 +9,8 @@ MJCFParser<T>::MJCFParser(const std::string& file) {
   for(int i=0; i<_bodies.size(); i++) {
     Body& b = _bodies[i];
     std::string indent(b._depth * 2, ' ');
-    std::cout << indent  << b._name <<": x:" << b._x[0] << " " << b._x[1] << " " << b._x[2]
-              << ", q:" << b._q.w() << " " << b._q.x() << " " << b._q.y() << " " << b._q.z()
+    std::cout << indent  << b._name <<": x:" << b._localX[0] << " " << b._localX[1] << " " << b._localX[2]
+              << ", q:" << b._localQ.w() << " " << b._localQ.x() << " " << b._localQ.y() << " " << b._localQ.z()
               << ", radius:" << b._radius
               << ", fromto:" << b._ft[0] << " " << b._ft[1] << " "<< b._ft[2] << " "<< b._ft[3] << " "<< b._ft[4] << " "<< b._ft[5]
               << ", parent Name: " << _bodies[b._parent>-1?b._parent:0]._name
@@ -25,14 +25,34 @@ MJCFParser<T>::MJCFParser(const std::string& file) {
     Body& b = _bodies[i];
     std::string indent(b._depth * 2, ' ');
     auto tmpx = b._c._q.toRotationMatrix() * Vec3T(b._c._len, 0, 0);
-    std::cout << indent  << b._name <<": x:" << b._x[0] << " " << b._x[1] << " " << b._x[2]
-              << ", q:" << b._q.w() << " " << b._q.x() << " " << b._q.y() << " " << b._q.z()
+    std::cout << indent  << b._name <<": x:" << b._globalX[0] << " " << b._globalX[1] << " " << b._globalX[2]
+              << ", q:" << b._globalQ.w() << " " << b._globalQ.x() << " " << b._globalQ.y() << " " << b._globalQ.z()
               << ", shape radius: " << b._c._radius << ", len:" << b._c._len
               <<", x:" << b._c._x[0] << " " << b._c._x[1] << " " << b._c._x[2]
               << ", q:" << b._c._q.w() << " " << b._c._q.x() << " " << b._c._q.y() << " " << b._c._q.z()
               << ", parent Name: " << _bodies[b._parent>-1?b._parent:0]._name
               << std::endl;
   }
+}
+template <typename T>
+void MJCFParser<T>::getRootPos(QuatT& rootLocalQ, Vec3T& rootLocalX) {
+  auto& root = _bodies[0];
+  Vec3T c1 = Vec3T(root._ft[0], root._ft[1], root._ft[2]);
+  Vec3T c2 = Vec3T(root._ft[3], root._ft[4], root._ft[5]);
+  rootLocalQ = QuatT::FromTwoVectors(Vec3T::UnitX(),c2-c1);
+  rootLocalX = root._localX;
+}
+template <typename T>
+void MJCFParser<T>::modifyInitGestureByAnimation(const AnimationData<T>& animationData) {
+  int sId, pId;
+  for(sId=0; sId < animationData._numJoints; sId++) {
+    pId = animationData._parentIndices[sId];
+    if(pId<0) continue;
+    auto& son = _bodies[sId];
+    son._localQ = animationData._animation[sId];
+    son._ac._psQ = son._localQ;
+  }
+  updateShape();
 }
 template <typename T>
 void MJCFParser<T>::getShape(std::vector<Shape<T>>& ps) {
@@ -89,9 +109,9 @@ void MJCFParser<T>::readBodies(int parentId, const tinyxml2::XMLElement* g) {
   int _currId=(int)_bodies.size();
   //read trans
   {
-    body._x=parsePtreeDef<Vec3T>(*g,"<xmlattr>.pos","0 0 0");
+    body._localX=parsePtreeDef<Vec3T>(*g,"<xmlattr>.pos","0 0 0");
     Vec4T tmpQ=parsePtreeDef<Vec4T>(*g,"<xmlattr>.quat","1 0 0 0");
-    body._q=QuatT(tmpQ[0],tmpQ[1],tmpQ[2],tmpQ[3]);
+    body._localQ=QuatT(tmpQ[0],tmpQ[1],tmpQ[2],tmpQ[3]);
   }
   //read geometry
   if(g->FirstChildElement("geom")->FindAttribute("type") == NULL) {
@@ -126,7 +146,7 @@ void MJCFParser<T>::readBodies(int parentId, const tinyxml2::XMLElement* g) {
     if(body._isValid) {
       body._pc._isValid=true;
       body._ac._isValid=true;
-      body._ac._psQ=body._q;
+      body._ac._psQ=body._localQ;
       // parent:
       Body& p = _bodies[body._parent];
       body._pc._cB=body._ac._cB=body._parent;
@@ -135,10 +155,10 @@ void MJCFParser<T>::readBodies(int parentId, const tinyxml2::XMLElement* g) {
         Vec3T pC2 = Vec3T(p._ft[3], p._ft[4], p._ft[5]);
         Vec3T pX = (pC1+pC2)/2;
         QuatT pQ = QuatT::FromTwoVectors(Vec3T::UnitX(),(pC2-pC1).normalized());
-        body._pc._cBPos=pQ.inverse().toRotationMatrix()*(body._x-pX);
+        body._pc._cBPos=pQ.inverse().toRotationMatrix()*(body._localX-pX);
         body._ac._pQ=pQ;
       } else if(p._type == ShapeType::Sphere) {
-        body._pc._cBPos=p._q.inverse().toRotationMatrix()*(body._x-p._spherePos);
+        body._pc._cBPos=p._localQ.inverse().toRotationMatrix()*(body._localX-p._spherePos);
         body._ac._pQ=QuatT::Identity();
       } else {
         body._pc._isValid=false;
@@ -189,57 +209,35 @@ void MJCFParser<T>::readMJCF(const std::string& file) {
 template <typename T>
 void MJCFParser<T>::updateShape() {
   for(auto& body : _bodies) {
+    if(body._parent>=0) {
+      const auto& p = _bodies[body._parent];
+      body._globalX = p._globalX + p._globalQ.toRotationMatrix()*body._localX;
+      body._globalQ = (p._globalQ * body._localQ).normalized();
+    } else {
+      body._globalX=body._localX;
+      body._globalQ=body._localQ;
+    }
     if(ShapeType::Capsule == body._type) {
       body._c._type = ShapeType::Capsule;
       Vec3T c1 = Vec3T(body._ft[0], body._ft[1], body._ft[2]);
       Vec3T c2 = Vec3T(body._ft[3], body._ft[4], body._ft[5]);
-      body._c._q = QuatT::FromTwoVectors(Vec3T::UnitX(),(c2-c1).normalized());
-      c1 = body._x + body._q.toRotationMatrix() * c1;
-      c2 = body._x + body._q.toRotationMatrix() * c2;
-      body._c._q = body._q * body._c._q;
-      body._c._q.normalize();
-      if(body._parent>=0) {
-        const auto& p = _bodies[body._parent];
-        c1 = p._x + p._q.toRotationMatrix()*c1;
-        c2 = p._x + p._q.toRotationMatrix()*c2;
-        body._c._q = p._q * body._c._q;
-        body._c._q.normalize();
-        body._x = p._x + p._q.toRotationMatrix()*body._x;
-        body._q = (p._q * body._q).normalized();
-      }
       body._c._radius=body._radius;
       body._c._len=(c2-c1).norm();
-      body._c._x=(c1+c2)/2;
+      body._c._x=body._globalQ.toRotationMatrix()*(c1+c2)/2+body._globalX;
+      body._c._q=body._globalQ*QuatT::FromTwoVectors(Vec3T::UnitX(),(c2-c1).normalized());
+      body._c._q.normalize();
     } else if (ShapeType::Box == body._type) {
       body._c._type = ShapeType::Box;
-      Vec3T x = body._x + body._q.toRotationMatrix() * body._boxPos;
-      QuatT q = (body._q * body._boxQuat).normalized();
-      if(body._parent>=0) {
-        const auto& p = _bodies[body._parent];
-        x = p._x + p._q.toRotationMatrix()*x;
-        q = (p._q * q).normalized();
-        body._x = p._x + p._q.toRotationMatrix()*body._x;
-        body._q = (p._q * body._q).normalized();
-      }
-      body._c._x = x;
-      body._c._q = q;
+      body._c._x = body._globalX + body._globalQ.toRotationMatrix() * body._boxPos;
+      body._c._q = (body._globalQ * body._boxQuat).normalized();
       body._c._radius = 0;
       body._c._len = body._boxSize[0];
       body._c._width = body._boxSize[1];
       body._c._height = body._boxSize[2];
     } else if (ShapeType::Sphere == body._type) {
       body._c._type = ShapeType::Sphere;
-      Vec3T x = body._x + body._q.toRotationMatrix() * body._spherePos;
-      QuatT q = body._q;
-      if(body._parent>=0) {
-        const auto& p = _bodies[body._parent];
-        x = p._x + p._q.toRotationMatrix()*x;
-        q = (p._q * q).normalized();
-        body._x = p._x + p._q.toRotationMatrix()*body._x;
-        body._q = (p._q * body._q).normalized();
-      }
-      body._c._x = x;
-      body._c._q = q;
+      body._c._x = body._globalX + body._globalQ.toRotationMatrix() * body._spherePos;
+      body._c._q = body._globalQ;
       body._c._radius = body._radius;
     }
   }
