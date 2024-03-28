@@ -35,8 +35,24 @@ MJCFParser<T>::MJCFParser(const std::string& file) {
   }
 }
 template <typename T>
-void MJCFParser<T>::modifyInitPosByAnimation(AnimationData<T>& animationData) {
-
+void MJCFParser<T>::getRootPos(QuatT& rootLocalQ, Vec3T& rootLocalX) {
+  auto& root = _bodies[0];
+  Vec3T c1 = Vec3T(root._ft[0], root._ft[1], root._ft[2]);
+  Vec3T c2 = Vec3T(root._ft[3], root._ft[4], root._ft[5]);
+  rootLocalQ = QuatT::FromTwoVectors(Vec3T::UnitX(),c2-c1);
+  rootLocalX = root._localX;
+}
+template <typename T>
+void MJCFParser<T>::modifyInitGestureByAnimation(const AnimationData<T>& animationData) {
+  int sId, pId;
+  for(sId=0; sId < animationData._numJoints; sId++) {
+    pId = animationData._parentIndices[sId];
+    if(pId<0) continue;
+    auto& son = _bodies[sId];
+    son._localQ = animationData._animation[sId];
+    son._ac._psQ = son._localQ;
+  }
+  updateShape();
 }
 template <typename T>
 void MJCFParser<T>::getShape(std::vector<Shape<T>>& ps) {

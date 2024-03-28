@@ -35,7 +35,8 @@ class MJCFParser {
  public:
   DECL_MAT_VEC_MAP_TYPES_T
   MJCFParser(const std::string& file);
-  void modifyInitPosByAnimation(AnimationData<T>& animationData);
+  void modifyInitGestureByAnimation(const AnimationData<T>& animationData);
+  void getRootPos(QuatT& rootLocalQ, Vec3T& rootLocalX);
   void getShape(std::vector<GPUPBD::Shape<T>>& ps);
   void getPositionConstraint(std::vector<PositionConstraint<T>>& pc);
   void getAngularConstraint(std::vector<AngularConstraint<T>>& ac);
