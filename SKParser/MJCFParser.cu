@@ -120,7 +120,8 @@ void MJCFParser<T>::readBodies(int parentId, const tinyxml2::XMLElement* g) {
     body._type = ShapeType::Capsule;
     const tinyxml2::XMLElement* gg=g->FirstChildElement("geom");
     body._ft=parsePtreeDef<Vec6T>(*gg,"<xmlattr>.fromto","0 0 0 0 0 0");
-    body._radius=get<T>(*gg,"<xmlattr>.size");
+    const char* _sizeStr = gg->Attribute("size");
+		body._radius = atof(_sizeStr);
   } else if (std::string(g->FirstChildElement("geom")->FindAttribute("type")->Value()) == "box") {
     //box
     body._isValid=true;
@@ -136,7 +137,8 @@ void MJCFParser<T>::readBodies(int parentId, const tinyxml2::XMLElement* g) {
     body._type = ShapeType::Sphere;
     const tinyxml2::XMLElement* gg=g->FirstChildElement("geom");
     body._spherePos=parsePtreeDef<Vec3T>(*gg,"<xmlattr>.pos","0 0 0");
-    body._radius=get<T>(*gg,"<xmlattr>.size");
+    const char* _sizeStr = gg->Attribute("size");
+		body._radius = atof(_sizeStr);
   } else {
     body._type = ShapeType::Unknown;
     body._isValid=false;
